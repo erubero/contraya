@@ -1,17 +1,33 @@
 # Brand assets
 
-Source art for Warraya. Every web and app icon is generated from the master
+Source art for Contraya. Every web and app icon is generated from the master
 logo in this folder, so this is the single source of truth for the brand mark.
+
+## STATUS: Contraya has no logo yet (launch blocker)
+
+This folder is intentionally empty of art. The icons currently shipping in
+`public/icons/` and `mobile/assets/` were inherited from the Warraya fork and
+are **Warraya's** shield-and-clock mark, not Contraya's. They are still in the
+tree only so the app and the landing page build; they must be replaced before
+launch. Two apps from the same developer sharing one icon is a brand problem
+and an App Review risk.
+
+Warraya's source art was removed from this folder so nothing regenerates
+Contraya's icons from the wrong brand again.
 
 ## Drop the logo here
 
 Save the official logo as:
 
-    brand/warraya-logo.png
+    brand/contraya-logo.png
 
 Use the highest resolution you have (1024x1024 or larger, transparent
-background). If you have the original vector, add `brand/warraya-logo.svg` too;
-it scales to every size without any quality loss.
+background). If you have the original vector, add `brand/contraya-logo.svg`
+too; it scales to every size without any quality loss.
+
+Design note: the mark should read as documents, clarity, or reading, not as
+protection. A shield says "warranty" (that is Warraya's job). Contraya's job
+is telling you what a contract says.
 
 ## What gets generated from it
 
@@ -20,3 +36,6 @@ it scales to every size without any quality loss.
 - **Mobile** (`mobile/assets/`): `icon.png` (app icon, white background),
   `adaptive-icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`,
   `splash-icon.png`, and `favicon.png`.
+
+After regenerating, re-run `npx expo prebuild --platform ios` so the native
+project picks up the new app icon.

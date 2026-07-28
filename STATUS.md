@@ -302,9 +302,11 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 1. **Supabase project** (new, separate from Warraya): create it, then
    `supabase link` + `supabase db push` (owner has the password). After push,
    verify anon probes bounce 42501 on every table.
-2. **Secrets:** `ANTHROPIC_API_KEY` (new key, separate cost tracking from
-   Warraya), `CRON_SECRET` (owner-held), `RESEND_API_KEY` (later; email
-   channel soft-skips without it).
+2. **Secrets:** `ANTHROPIC_API_KEY` **DONE** (2026-07-28, owner set it as a
+   Supabase edge secret; it is a new key so Contraya's token spend tracks
+   separately from Warraya's). Still to set: `CRON_SECRET` (owner-held,
+   needed before the reminder cron can run), `INGEST_SECRET` (see item 10),
+   `RESEND_API_KEY` (later; the email channel soft-skips without it).
 3. **Deploy functions** (Claude can do this once the project exists):
    `analyze-contract`, `chat-contract`, `delete-account` (normal),
    `send-date-reminders` (`--no-verify-jwt`, see its SETUP.md),
@@ -388,8 +390,21 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     forward rule stays and takes precedence). Verify: email a PDF to your
     address from Settings → expect the push + the Dashboard row; email with
     no attachment → expect a bounce.
-10. **Trademark/handles** (from the plan): USPTO first-pass for "Contraya",
+11. **Trademark/handles** (from the plan): USPTO first-pass for "Contraya",
     social handles. Runners-up if a conflict surfaces: Firmaya, Inkaya, Duly.
+12. **LAUNCH BLOCKER: Contraya has no logo.** Every icon shipping today in
+    `public/icons/` and `mobile/assets/` is **Warraya's shield-and-clock
+    mark**, inherited by the fork and never replaced (found 2026-07-28 during
+    a repo polish pass; verified by eye, not just filename). They are left in
+    the tree only so the app and landing build. Shipping them would put the
+    same icon on two App Store apps from one developer, which is a brand
+    problem and an App Review risk. Warraya's source art has been removed
+    from `brand/` so nothing regenerates from the wrong mark again. To fix:
+    drop the real logo at `brand/contraya-logo.png` (see `brand/README.md`
+    for the full generated-asset list and the design note), regenerate, then
+    `npx expo prebuild --platform ios`. The mascot art (Contry, all four
+    slots still null) is a separate owner-supplied item and is NOT blocking:
+    those slots fall back to icons by design.
 
 ## Device E2E smoke (after setup, before TestFlight)
 
