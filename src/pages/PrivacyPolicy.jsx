@@ -8,7 +8,7 @@ const LOGO = "/icons/icon-192.png";
 export default function PrivacyPolicy() {
   usePageMeta({
     title: 'Privacy Policy',
-    description: 'How Warraya handles your data: what is collected, how receipts are stored securely, and the rights you have over your account.',
+    description: 'How Contraya handles your data: what is collected, how your documents are stored securely, and the rights you have over your account.',
     canonicalPath: '/privacy',
   });
   return (
@@ -19,8 +19,8 @@ export default function PrivacyPolicy() {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <Link to="/" className="flex items-center gap-2.5 select-none">
-            <img src={LOGO} alt="Warraya" className="w-7 h-7 rounded-xl object-cover" />
-            <span className="font-bold tracking-tight">Warraya</span>
+            <img src={LOGO} alt="Contraya" className="w-7 h-7 rounded-xl object-cover" />
+            <span className="font-bold tracking-tight">Contraya</span>
           </Link>
         </div>
       </header>
@@ -29,26 +29,26 @@ export default function PrivacyPolicy() {
         <h1>Privacy Policy</h1>
         <p className="text-muted-foreground text-sm">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
 
-        <p>Your privacy matters to us. This policy explains what data Warraya collects, how we use it, and your rights as a user.</p>
+        <p>Your privacy matters to us. This policy explains what data Contraya collects, how we use it, and your rights as a user.</p>
 
         <h2>1. Information We Collect</h2>
         <h3>Account Information</h3>
         <p>When you sign up, we collect your email address. This is used to identify your account and sign you in.</p>
 
-        <h3>Warranty Data</h3>
-        <p>We store the warranty records you create, including product names, purchase dates, prices, store names, serial numbers, and notes.</p>
+        <h3>Contract Data</h3>
+        <p>We store the contract records you create, including titles, party names, dates, summaries, obligations, and notes.</p>
 
         <h3>Uploaded Files</h3>
-        <p>Receipts and documents you upload are stored securely in private storage and are only accessible to you. When you use Scan Receipt, the photo is also sent to our receipt-reading service to extract the product, date, and price for you.</p>
+        <p>Contracts and documents you upload are stored securely in private storage and are only accessible to you. When you add a contract, the document is also sent to our document-reading service to produce the plain-English summary, dates, and highlights for you. It is not used to train any model.</p>
 
         <h3>Usage Data</h3>
         <p>We may collect basic usage analytics (e.g., which features are used) to improve the app. This data is anonymized and never sold.</p>
 
         <h2>2. How We Use Your Information</h2>
         <ul>
-          <li>To provide and operate the warranty tracking service</li>
-          <li>To send warranty expiry reminders, if you enable notifications</li>
-          <li>To read product details from a scanned receipt when you use Scan Receipt</li>
+          <li>To provide and operate the contract organizing service</li>
+          <li>To send contract date reminders, if you enable notifications</li>
+          <li>To read your document and produce its summary when you add a contract</li>
           <li>To respond to support requests</li>
         </ul>
 
@@ -61,7 +61,7 @@ export default function PrivacyPolicy() {
         </ul>
 
         <h2>4. Data Retention</h2>
-        <p>Your data is retained as long as your account is active. If you delete your account, all your personal data and warranty records are permanently deleted within 30 days.</p>
+        <p>Your data is retained as long as your account is active. If you delete your account, all your personal data and contract records are permanently deleted within 30 days.</p>
 
         <h2>5. Your Rights</h2>
         <p>Depending on your location, you may have the following rights:</p>
@@ -73,13 +73,13 @@ export default function PrivacyPolicy() {
         </ul>
 
         <h2>6. Cookies</h2>
-        <p>Warraya uses only essential session cookies required for authentication. We do not use tracking or advertising cookies.</p>
+        <p>Contraya uses only essential session cookies required for authentication. We do not use tracking or advertising cookies.</p>
 
         <h2>7. Security</h2>
         <p>We use industry-standard security measures including encrypted data transmission (HTTPS) and secure cloud storage. However, no method of transmission over the internet is 100% secure.</p>
 
         <h2>8. Children's Privacy</h2>
-        <p>Warraya is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.</p>
+        <p>Contraya is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13.</p>
 
         <h2>9. Changes to This Policy</h2>
         <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via email or in-app notification. Continued use of the Service after changes constitutes acceptance.</p>

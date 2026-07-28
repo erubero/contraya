@@ -23,7 +23,7 @@ export default function PageNotFound() {
                             Page not found
                         </h2>
                         <p className="text-slate-600 leading-relaxed">
-                            We couldn't find <span className="font-medium text-slate-700">"{pageName}"</span> in Warraya.
+                            We couldn't find <span className="font-medium text-slate-700">"{pageName}"</span> in Contraya.
                         </p>
                     </div>
 

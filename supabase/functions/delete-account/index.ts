@@ -1,5 +1,5 @@
-// Deletes the calling user for real: stored receipts and avatar, then the auth
-// user. Warranty rows go with the FK cascade.
+// Deletes the calling user for real: stored documents and avatar, then the
+// auth user. Contract rows go with the FK cascade.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         if (files.length < 100) break;
       }
     };
-    await purgeFolder('receipts');
+    await purgeFolder('documents');
     await purgeFolder('avatars');
 
     const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);

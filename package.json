@@ -1,7 +1,7 @@
 {
-  "name": "warraya",
+  "name": "contraya",
   "description": "Keep every warranty and receipt in one place, and get a heads up before coverage runs out.",
-  "homepage": "https://warraya.com",
+  "homepage": "https://usecontraya.com",
   "private": true,
   "version": "0.1.0",
   "type": "module",

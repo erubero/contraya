@@ -1,8 +1,8 @@
 {
-  "name": "Warraya",
-  "short_name": "Warraya",
-  "description": "Keep every warranty and receipt in one place, and get a heads up before coverage runs out.",
-  "start_url": "/dashboard",
+  "name": "Contraya",
+  "short_name": "Contraya",
+  "description": "Your contracts in plain English, with reminders before payments, renewals, and deadlines.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f8faff",
   "theme_color": "#0a1440",

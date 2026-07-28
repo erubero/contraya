@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 
-const DEFAULT_TITLE = 'Warraya | Warranty Tracker & Receipt Organizer App';
+const DEFAULT_TITLE = 'Contraya | Warranty Tracker & Receipt Organizer App';
 const DEFAULT_DESCRIPTION =
-  'Warraya is the warranty tracking app and receipt organizer that saves you money: snap a receipt, track every warranty, and get reminded before coverage ends.';
-const SITE_ORIGIN = 'https://warraya.com';
+  'Contraya is the warranty tracking app and receipt organizer that saves you money: snap a receipt, track every warranty, and get reminded before coverage ends.';
+const SITE_ORIGIN = 'https://usecontraya.com';
 
 function upsertMeta(name, content) {
   let tag = document.head.querySelector(`meta[name="${name}"]`);
@@ -34,7 +34,7 @@ function upsertCanonical(href) {
 // are what they index.
 export function usePageMeta({ title, description, canonicalPath, noindex = false } = {}) {
   useEffect(() => {
-    document.title = title ? `${title} | Warraya` : DEFAULT_TITLE;
+    document.title = title ? `${title} | Contraya` : DEFAULT_TITLE;
     upsertMeta('description', description || DEFAULT_DESCRIPTION);
     upsertCanonical(`${SITE_ORIGIN}${canonicalPath || '/'}`);
     upsertMeta('robots', noindex ? 'noindex' : null);

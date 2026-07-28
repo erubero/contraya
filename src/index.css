@@ -7,7 +7,7 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
-    /* Warraya brand: deep navy + blue, matching the landing page */
+    /* Contraya brand: deep navy + blue, matching the landing page */
     --background: 220 100% 99%;          /* #f8faff */
     --foreground: 222 47% 11%;           /* slate-900 */
     --card: 0 0% 100%;

@@ -1,11 +1,11 @@
--- Warraya avatars bucket: stores each user's profile picture.
+-- Contraya avatars bucket: stores each user's profile picture.
 --
--- Mirrors the receipts bucket's security posture (private, folder-scoped RLS
+-- Mirrors the documents bucket's security posture (private, folder-scoped RLS
 -- keyed on the owner's user id), with two differences:
 --  * Smaller size cap (2MB) and images only; profile pictures are downscaled
 --    to a small JPEG on-device before upload.
 --  * An UPDATE policy is included so the client can upsert-overwrite the single
---    object at {user_id}/avatar.jpg in place (receipts are immutable, so they
+--    object at {user_id}/avatar.jpg in place (documents are immutable, so they
 --    have no update policy).
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

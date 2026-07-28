@@ -1,10 +1,15 @@
 -- Server-side reminder delivery: native push tokens per user, plus a dedup
--- ledger so each (warranty, window, channel) reminder is sent at most once.
--- The daily cron (send-expiry-reminders) reads these with the service role.
+-- ledger so each (date row, occurrence, window, channel) reminder is sent at
+-- most once. The daily cron (send-date-reminders) reads these with the
+-- service role.
 --
--- Security posture mirrors the initial schema: RLS on every table, anon grants
--- revoked, authenticated granted explicitly (default privileges are unreliable
--- under db push), and the dedup ledger is service-role only.
+-- The ledger differs from Warraya's in two ways a contract forces:
+--  * A contract has N date rows, each with its own reminder windows, so the
+--    ledger keys on the date row rather than the parent.
+--  * A date row can recur (rent due monthly), so the key includes the
+--    concrete occurrence being reminded about.
+-- Windows are validated on contract_dates.reminder_windows (the single
+-- source of truth); the ledger only bounds them loosely.
 
 -- 1. push_tokens ------------------------------------------------------------
 -- One row per device push token, owned by the currently signed-in user. The
@@ -69,21 +74,24 @@ $$;
 revoke all on function public.register_push_token(text, text) from public, anon;
 grant execute on function public.register_push_token(text, text) to authenticated;
 
--- 2. warranty_reminders (dedup ledger; service role only) -------------------
--- A row means "this warranty's N-day reminder was already sent on this
--- channel." The cron upserts with ignoreDuplicates to claim a slot atomically.
+-- 2. contract_date_reminders (dedup ledger; service role only) ---------------
+-- A row means "this date row's N-day reminder for this occurrence was already
+-- sent on this channel." The cron upserts with ignoreDuplicates to claim a
+-- slot atomically.
 
-create table public.warranty_reminders (
-  warranty_id uuid not null references public.warranties (id) on delete cascade,
+create table public.contract_date_reminders (
+  contract_date_id uuid not null references public.contract_dates (id) on delete cascade,
+  occurrence date not null
+    constraint contract_date_reminders_occurrence_sane check (occurrence between date '1900-01-01' and date '2200-12-31'),
   reminder_window integer not null
-    constraint warranty_reminders_window_enum check (reminder_window in (7, 30)),
+    constraint contract_date_reminders_window_range check (reminder_window between 1 and 365),
   channel text not null
-    constraint warranty_reminders_channel_enum check (channel in ('push', 'email')),
+    constraint contract_date_reminders_channel_enum check (channel in ('push', 'email')),
   sent_at timestamptz not null default now(),
-  primary key (warranty_id, reminder_window, channel)
+  primary key (contract_date_id, occurrence, reminder_window, channel)
 );
 
-alter table public.warranty_reminders enable row level security;
-revoke all on public.warranty_reminders from anon, authenticated;
-grant all on public.warranty_reminders to service_role;
+alter table public.contract_date_reminders enable row level security;
+revoke all on public.contract_date_reminders from anon, authenticated;
+grant all on public.contract_date_reminders to service_role;
 -- No policies for anon or authenticated on purpose: only the cron touches this.
