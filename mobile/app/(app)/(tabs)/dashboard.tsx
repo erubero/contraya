@@ -16,15 +16,21 @@ import { useTabBarClearance } from '@/components/TabBar';
 import StatsOverview, { TileKey } from '@/components/StatsOverview';
 import ContractCard from '@/components/ContractCard';
 import LottieLoader from '@/components/LottieLoader';
+import PersonalizedInsight from '@/components/PersonalizedInsight';
+import { getPersonalizedInsightDismissed, dismissPersonalizedInsight } from '@/lib/onboarding';
 
 export default function Dashboard() {
   const theme = useTheme();
   const clearance = useTabBarClearance();
   const router = useRouter();
-  const { displayName, email, avatarPath } = useAuth();
+  const { displayName, email, avatarPath, onboardingAnswers } = useAuth();
 
   // Same avatar resolution as Settings: storage path -> displayable URL.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [insightDismissed, setInsightDismissed] = useState(false);
+  useEffect(() => {
+    getPersonalizedInsightDismissed().then(setInsightDismissed);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     if (!avatarPath) {
@@ -137,6 +143,17 @@ export default function Dashboard() {
 
       <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 20 }}>
         <StatsOverview contracts={contracts} occurrences={occurrences} onSelect={openTile} />
+
+        {!insightDismissed && (
+          <PersonalizedInsight
+            answers={onboardingAnswers}
+            dismissible
+            onDismiss={() => {
+              dismissPersonalizedInsight();
+              setInsightDismissed(true);
+            }}
+          />
+        )}
 
         {inbox.length > 0 && (
           <View style={{ gap: 10 }}>
