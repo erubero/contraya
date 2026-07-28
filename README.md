@@ -30,8 +30,7 @@ Start with `STATUS.md` (current state + setup checklist) and `CLAUDE.md`
 Claude works in a cloud container and pushes to GitHub; nothing lands on the
 Mac by itself. Clone it next to Warraya to get it locally:
 
-    mkdir -p ~/Developer/apps
-    cd ~/Developer/apps
+    cd ~/Developer/sppa
     git clone https://github.com/erubero/contraya.git
     cd contraya
 
