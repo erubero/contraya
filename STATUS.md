@@ -114,6 +114,23 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   tailwindcss-animate); bundled CSS dropped 52.8 kB → 38.4 kB. CSP tightened
   to match: `img-src`/`connect-src` no longer whitelist `*.supabase.co`,
   since the landing makes no network calls at all.
+  **The same pass over `mobile/` (2026-07-28) found no dead code**, which is
+  the expected result since the app was written for Contraya rather than
+  inherited: an import-graph walk from all 33 route/test entry points reaches
+  all 59 `src/` files, every dependency is imported or referenced by
+  `app.config.ts`/jest, and every exported symbol flagged as
+  "unreferenced elsewhere" turned out to be a type, cap, or helper used inside
+  its own file. Only stragglers removed: four unreferenced icon files
+  (`android-icon-background/foreground/monochrome.png`, `favicon.png`) that
+  `app.config.ts` never consumed and that were Warraya art anyway. Also fixed
+  `assets/animations/README.md`, which still listed four deleted
+  `loading-contry-*.json` files as current and described the success animation
+  as firing "after a warranty saves".
+  **Open question, not acted on:** `mobile/eas.json` is a complete EAS build
+  config, but CLAUDE.md and `app.config.ts` both say builds go through Xcode
+  and never `eas build`. Left in place rather than deleted, but it is a
+  contradiction someone could act on by mistake; delete it if EAS is truly
+  never coming back.
   **Known, deliberate:** `react-router-dom` 6.30.4 carries two moderate
   advisories (open-redirect→XSS, SSR `deserializeErrors`) whose fix requires
   the v7 major. Neither is reachable here — static SPA, no SSR, three fixed

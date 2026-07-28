@@ -17,12 +17,13 @@ README.
 ## Current files
 
 - `loading-main.json`, `loading-pulse-core.json` — owner-supplied; one plays at
-  random on the scan wait and the dashboard/vault first load
-- `loading-contry-1.json` ... `loading-contry-4.json` — the four Contry shield
-  variants (owner-supplied 2026-07-27), in the same random loading pool
-- `success-check.json` — shown after a warranty saves (placeholder, swap when
-  distinct Contry art exists)
-- `celebrate-confetti.json` — onboarding 100% moment (placeholder, same deal)
+  random on the dashboard's first load
+- `success-check.json` — shown after a contract saves
+- `celebrate-confetti.json` — the onboarding finish moment
+
+The analysis wait ("Contry is reading your contract") no longer uses this pool:
+it renders the `reading` mascot slot from `../mascot/` instead, which falls
+back to an icon until real art is supplied.
 
 ## Replacing an animation
 
