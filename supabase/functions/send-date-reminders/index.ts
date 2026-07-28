@@ -81,13 +81,23 @@ function when(days: number): string {
   return `in ${days} days`;
 }
 
+// Labels and titles are user-entered (or model-extracted) text landing in an
+// HTML body; escape them so markup in a title renders as text.
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
 function reminderEmailHtml(label: string, contractTitle: string, daysLeft: number): string {
   return `<!doctype html><html><body style="margin:0;padding:0;background:#0a1440;">
   <div style="max-width:480px;margin:0 auto;padding:36px 24px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#e8ecff;">
     <div style="font-size:22px;font-weight:700;color:#ffffff;margin-bottom:24px;">Contraya</div>
     <div style="background:#111a4a;border-radius:14px;padding:24px;">
-      <p style="margin:0 0 12px;font-size:18px;color:#ffffff;font-weight:600;">${label} is ${when(daysLeft)}.</p>
-      <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#c7d0f5;">Your contract "${contractTitle}" has this date coming up. The details are in the app, in the contract's own words.</p>
+      <p style="margin:0 0 12px;font-size:18px;color:#ffffff;font-weight:600;">${escapeHtml(label)} is ${when(daysLeft)}.</p>
+      <p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#c7d0f5;">Your contract "${escapeHtml(contractTitle)}" has this date coming up. The details are in the app, in the contract's own words.</p>
       <a href="https://usecontraya.com" style="display:inline-block;background:#3b82f6;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 20px;border-radius:10px;">Open Contraya</a>
     </div>
     <p style="margin:20px 0 0;font-size:12px;color:#8b96c9;">You are getting this because you saved this contract in Contraya. You can turn reminders off anytime in the app under Settings.</p>

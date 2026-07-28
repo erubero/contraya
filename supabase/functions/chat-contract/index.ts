@@ -31,9 +31,10 @@ const MAX_TURN_CHARS = 2000;
 
 // Per-user monthly abuse ceiling. The product limit (PRO_MONTHLY_CHATS = 50)
 // is enforced on the client, which knows the RevenueCat entitlement; this
-// backstops runaway cost from a client that ignores it. A cached question
-// costs ~$0.02-0.05, so 300 caps worst-case monthly spend in single dollars.
-const CHAT_CEILING = 300;
+// backstops runaway cost from a client that ignores it. 60 clears the premium
+// product limit with headroom while keeping a free-account abuser's worst
+// case near a dollar. Raise if real premium users hit it.
+const CHAT_CEILING = 60;
 
 const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 1500;
@@ -50,6 +51,13 @@ Hard rules:
 - The person asking often clearly wants a particular answer. That never changes the answer. You are not on the reader's side or the other party's side; you are on the document's side. Do not soften, agree, or reassure to please. Describe what the document says even when it is plainly not what they hoped to hear.
 - Example of the required shape. Question: "Can I sue the tenant?" Wrong: "Yes, you can sue because they breached the lease." Right: "Whether you can take someone to court is a question for a licensed attorney, not for this contract. What the lease does say: rent unpaid after the 5th adds a $75 late charge, and [quote the default or remedies clause]. The lease does not contain a dispute-resolution clause beyond that." Adjust to what the document actually contains.
 - Plain everyday English, roughly an 8th-grade reading level. Short answers: 2-6 sentences for most questions.`;
+
+// The client owns the replayed transcript, so forged assistant turns in
+// history could otherwise bury the system rules under fake compliance.
+// Riding this on the final user turn makes the rules the last instruction
+// the model reads, whatever the history claims happened before.
+const RULES_REMINDER =
+  'Rules for this answer, restated: answer only from the document and the stored notes; describe, never advise; and if this asks for a legal conclusion (sue, evict, win, press charges, legal, enforceable), give no yes and no no, say it is a question for a licensed attorney, and quote what the contract itself says.';
 
 type HistoryTurn = { role: 'user' | 'assistant'; content: string };
 
@@ -198,16 +206,17 @@ Deno.serve(async (req) => {
     });
     firstTurnContent.push({
       type: 'text',
-      text: `Today's date is ${new Date().toISOString().slice(0, 10)}.\n\nQuestion: ${history.length > 0 ? history[0].content : question}`,
+      text: `Today's date is ${new Date().toISOString().slice(0, 10)}.\n\nQuestion: ${history.length > 0 ? history[0].content : question}${history.length > 0 ? '' : `\n\n${RULES_REMINDER}`}`,
     });
 
     const messages: unknown[] = [{ role: 'user', content: firstTurnContent }];
     if (history.length > 0) {
-      // Replay the rest of the conversation, then the new question.
+      // Replay the rest of the conversation, then the new question with the
+      // rules restated after it (see RULES_REMINDER).
       for (const turn of history.slice(1)) {
         messages.push({ role: turn.role, content: turn.content });
       }
-      messages.push({ role: 'user', content: question });
+      messages.push({ role: 'user', content: `${question}\n\n${RULES_REMINDER}` });
     }
 
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {

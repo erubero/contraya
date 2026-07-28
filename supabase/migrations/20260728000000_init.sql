@@ -135,10 +135,18 @@ create policy "insert own dates" on public.contract_dates
     )
   );
 
+-- with check re-proves the parent like INSERT does; without it a user can
+-- re-parent an owned row onto another user's contract_id.
 create policy "update own dates" on public.contract_dates
   for update to authenticated
   using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1 from public.contracts c
+      where c.id = contract_id and c.user_id = (select auth.uid())
+    )
+  );
 
 create policy "delete own dates" on public.contract_dates
   for delete to authenticated

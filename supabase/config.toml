@@ -1,0 +1,22 @@
+# Codifies the deploy posture so `supabase functions deploy` gets the JWT
+# gate right without remembering flags. The two secret-guarded functions
+# receive `Bearer <secret>` (not a JWT) from the cron / email worker, so the
+# platform JWT gate must be off for them; both verify their shared secret
+# timing-safe in-function and fail closed when it is unset. The user-facing
+# functions verify the caller's JWT in-function as well; the platform gate
+# is defense in depth on top.
+
+[functions.analyze-contract]
+verify_jwt = true
+
+[functions.chat-contract]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.send-date-reminders]
+verify_jwt = false
+
+[functions.ingest-email]
+verify_jwt = false

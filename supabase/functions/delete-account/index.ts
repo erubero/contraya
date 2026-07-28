@@ -11,6 +11,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+  // Destructive endpoint: POST only, like every other function here.
+  if (req.method !== 'POST') {
+    return Response.json({ error: 'Method not allowed' }, { status: 405, headers: corsHeaders });
+  }
 
   try {
     const authHeader = req.headers.get('Authorization') ?? '';

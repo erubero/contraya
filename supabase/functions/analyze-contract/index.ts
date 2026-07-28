@@ -26,9 +26,10 @@ const MAX_PDF_PAGE_COUNT = 50; // heuristic cap; the byte cap is the hard stop
 // Per-user monthly abuse ceiling. The product limits (2 lifetime free, 15/mo
 // premium) are enforced on the client, which knows the RevenueCat
 // entitlement; this only backstops runaway cost from a client that ignores
-// them. An analysis costs roughly $0.15-0.50 in tokens, so 40 caps a single
-// user's worst-case monthly spend near $20.
-const ANALYSIS_CEILING = 40;
+// them. An analysis costs roughly $0.15-0.50 in tokens, so 20 caps a single
+// user's worst-case monthly spend near $10 while still clearing the premium
+// product limit (15/month) with headroom. Raise if real premium users hit it.
+const ANALYSIS_CEILING = 20;
 
 // The model call. Effort low keeps thinking tokens (billed as output) and
 // latency bounded — the edge function has a 150s wall clock. If date accuracy
@@ -402,7 +403,17 @@ Deno.serve(async (req) => {
     }
 
     const textBlock = message.content?.find((b: { type: string }) => b.type === 'text');
-    const analysis = textBlock ? JSON.parse(textBlock.text) : null;
+    // Parsed in its own try: a JSON.parse error message quotes a slice of the
+    // unparsed input, which is document-derived text that must not reach the
+    // outer catch's error log.
+    let analysis = null;
+    if (textBlock) {
+      try {
+        analysis = JSON.parse(textBlock.text);
+      } catch {
+        analysis = null;
+      }
+    }
     if (!analysis) {
       await refund();
       return Response.json({ error: "Couldn't read this document" }, { status: 422, headers: corsHeaders });
@@ -453,7 +464,13 @@ Deno.serve(async (req) => {
           console.log('verify usage', JSON.stringify({ user: user.id, usage: verifyMessage.usage }));
           const vText = verifyMessage.content?.find((b: { type: string }) => b.type === 'text');
           if (verifyMessage.stop_reason !== 'refusal' && vText) {
-            applyVerification(keyDates, JSON.parse(vText.text));
+            // Same reason as the analysis parse: keep document-derived parse
+            // errors out of the logs. A bad payload just leaves 'unchecked'.
+            try {
+              applyVerification(keyDates, JSON.parse(vText.text));
+            } catch {
+              // dates stay 'unchecked'
+            }
           }
         } else {
           console.error('verify request failed', verifyResponse.status, await verifyResponse.text());

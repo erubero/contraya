@@ -58,9 +58,10 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const token = clean(body.token, 32);
+    // Reject, never truncate: an over-long value must not match on a prefix.
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
     const data = typeof body.data === 'string' ? body.data : '';
-    if (!token || !/^[a-f0-9]{32}$/.test(token)) {
+    if (!/^[a-f0-9]{32}$/.test(token)) {
       return Response.json({ error: 'Invalid token' }, { status: 404, headers: corsHeaders });
     }
     // 10MB of PDF is ~13.7M base64 chars; anything bigger is rejected before
