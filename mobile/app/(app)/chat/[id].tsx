@@ -14,6 +14,8 @@ import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ContryFace from '@/components/ContryFace';
+import InsightCard from '@/components/InsightCard';
+import { splitLeadIn } from '@/lib/textFormat';
 
 const DISCLAIMER = 'Contry explains what the contract says. It is not legal advice.';
 
@@ -145,30 +147,65 @@ export default function ContractChat() {
           </View>
         )}
 
-        {turns.map((t, i) => (
-          <View
-            key={i}
-            style={{
-              alignSelf: t.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '85%',
-              backgroundColor: t.role === 'user' ? theme.primary : theme.card,
-              borderColor: theme.border,
-              borderWidth: t.role === 'user' ? 0 : 1,
-              borderRadius: RADIUS,
-              padding: 12,
-            }}
-          >
-            <Text
-              style={{
-                color: t.role === 'user' ? theme.primaryForeground : theme.foreground,
-                fontSize: 15,
-                lineHeight: 21,
-              }}
-            >
-              {t.content}
-            </Text>
-          </View>
-        ))}
+        {(() => {
+          const firstAssistant = turns.findIndex((t) => t.role === 'assistant');
+          return turns.map((t, i) => {
+            if (t.role === 'user') {
+              return (
+                <View
+                  key={i}
+                  style={{
+                    alignSelf: 'flex-end',
+                    maxWidth: '85%',
+                    backgroundColor: theme.primary,
+                    borderRadius: RADIUS,
+                    padding: 12,
+                  }}
+                >
+                  <Text style={{ color: theme.primaryForeground, fontSize: 15, lineHeight: 21 }}>{t.content}</Text>
+                </View>
+              );
+            }
+            const { lead, rest } = splitLeadIn(t.content);
+            const body = (
+              <Text style={{ color: theme.foreground, fontSize: 15, lineHeight: 21 }}>
+                {lead ? <Text style={{ fontWeight: '700' }}>{lead}</Text> : null}
+                {lead && rest ? ' ' : ''}
+                {rest || (!lead ? t.content : '')}
+              </Text>
+            );
+            // Only the first answer in the conversation gets the labeled
+            // card treatment; a repeated header on every turn would feel
+            // noisy in a genuine back-and-forth. The screen's pinned
+            // disclaimer strip above already covers "always visible", so no
+            // footer is passed here.
+            if (i === firstAssistant) {
+              return (
+                <View key={i} style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+                  <InsightCard label="Contry says" icon="sparkles-outline">
+                    {body}
+                  </InsightCard>
+                </View>
+              );
+            }
+            return (
+              <View
+                key={i}
+                style={{
+                  alignSelf: 'flex-start',
+                  maxWidth: '85%',
+                  backgroundColor: theme.card,
+                  borderColor: theme.border,
+                  borderWidth: 1,
+                  borderRadius: RADIUS,
+                  padding: 12,
+                }}
+              >
+                {body}
+              </View>
+            );
+          });
+        })()}
 
         {busy && (
           <View
