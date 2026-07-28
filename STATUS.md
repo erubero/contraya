@@ -77,9 +77,17 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
   summed across periods), PRO_MONTHLY_ANALYSES=15 (client gate; hard alert,
   no paywall, when a premium user hits it). Contracts + reminders unlimited
   on both tiers.
-- **Landing** (repo root): one-page pre-launch Contraya page + adapted
-  Privacy/Terms (Terms now carries a "Not Legal Advice" section), builds
-  clean. Web dashboard, guides, service worker all deleted — landing only.
+- **Landing** (repo root): full marketing page mirroring Warraya's landing
+  structure (nav, gradient hero with a floating lease-card mock, pain/fix
+  features panel, how-it-works, contract-type chips, pricing, FAQ, CTA,
+  footer), adapted for pre-launch: the only CTA is the early-access mailto
+  (hello@usecontraya.com) — swap in the App Store badge at launch. Advertised
+  pricing is **$7.99/mo or $49.99/yr** (middle of the approved $6.99-9.99
+  range; align the RevenueCat products with this or tell Claude the final
+  number and the page gets updated). Not-legal-advice line appears under the
+  hero CTA, in the features closer, in the FAQ, and in the footer. Adapted
+  Privacy/Terms (Terms carries a "Not Legal Advice" section), builds clean.
+  Web dashboard, guides, service worker all deleted — landing only.
 - **Email-in ingestion (2026-07-28):** every user gets a secret forwarding
   address `c-<32 hex>@usecontraya.com` (minted server-side by the
   `get_or_create_email_token` RPC; the token IS the credential — senders are

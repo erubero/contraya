@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
-const DEFAULT_TITLE = 'Contraya | Warranty Tracker & Receipt Organizer App';
+const DEFAULT_TITLE = 'Contraya | Contract Reader & Reminder App';
 const DEFAULT_DESCRIPTION =
-  'Contraya is the warranty tracking app and receipt organizer that saves you money: snap a receipt, track every warranty, and get reminded before coverage ends.';
+  'Contraya reads your contracts, explains them in plain English, and reminds you before every deadline: renewal notices, payments, notice windows, and end dates.';
 const SITE_ORIGIN = 'https://usecontraya.com';
 
 function upsertMeta(name, content) {
