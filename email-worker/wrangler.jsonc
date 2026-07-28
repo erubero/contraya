@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Inbound-email worker for c-<token>@usecontraya.com. Separate worker from
+  // the landing (repo root); in Cloudflare's git integration add it as a
+  // second Workers project with this directory as the project root.
+  "name": "contraya-email-ingest",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-09",
+  "observability": {
+    "enabled": true
+  }
+  // Required configuration (dashboard or `wrangler secret put`):
+  //   INGEST_URL    (plain var)  https://<project-ref>.supabase.co/functions/v1/ingest-email
+  //   INGEST_SECRET (secret)     shared with the ingest-email edge function
+  // Then: Email Routing -> Routing rules -> Catch-all -> Send to Worker ->
+  // contraya-email-ingest. hello@ keeps its explicit forwarding rule, which
+  // takes precedence over the catch-all.
+}

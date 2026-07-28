@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -10,12 +10,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import {
   createContract, analyzeContract, getAnalysisCounts, listAllDates,
-  uploadSourceImage, uploadSourcePdf, attachDocument,
+  uploadSourceImage, uploadSourcePdf, attachDocument, getInboxItem, removeInboxItem,
 } from '@/data/repo';
 import { downscaleToBase64 } from '@/lib/downscale';
 import { isSizeAllowed } from '@/data/documents';
 import { rebuildAll, requestPermission } from '@/lib/notifications';
 import { ContractAnalysis, AnalyzedDate } from '@/data/analysis';
+import { InboxItem, inboxItemTitle } from '@/data/inbox';
 import {
   CONTRACT_TYPES, CONTRACT_TYPE_LABELS, ContractType,
   ContractInsert, ContractDateInsert, DEFAULT_WINDOWS, DATE_TYPE_LABELS,
@@ -52,8 +53,10 @@ export default function AddContract() {
   const queryClient = useQueryClient();
   const { userId } = useAuth();
   const { isPro, offeringReady, refresh: refreshPro } = usePurchases();
+  const params = useLocalSearchParams<{ inbox?: string }>();
 
   const [step, setStep] = useState<Step>('source');
+  const [inboxItem, setInboxItem] = useState<InboxItem | null>(null);
   const [source, setSource] = useState<Source | null>(null);
   const [stageIndex, setStageIndex] = useState(0);
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
@@ -75,6 +78,40 @@ export default function AddContract() {
     const t = setInterval(() => setStageIndex((i) => (i + 1) % STAGES.length), 6000);
     return () => clearInterval(t);
   }, [step]);
+
+  // Opened from the email inbox: the PDF is already in storage, so skip the
+  // source picker and go straight to quota gate -> analysis -> review.
+  useEffect(() => {
+    const id = params.inbox;
+    if (!id || inboxItem) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const item = await getInboxItem(id);
+        if (cancelled) return;
+        setInboxItem(item);
+        if (!(await passQuotaGate())) {
+          router.back();
+          return;
+        }
+        setSourcePaths([item.storage_path]);
+        setStep('analyzing');
+        const a = await analyzeContract([item.storage_path], 'pdf');
+        if (!cancelled) applyAnalysis(a);
+      } catch {
+        if (cancelled) return;
+        Alert.alert(
+          "Contry couldn't read this document",
+          'You can still add the details yourself. The email stays in your inbox.'
+        );
+        setStep('source');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.inbox]);
 
   // The analysis is the metered operation (the model call). Gate at the wall:
   // free tier gets FREE_ANALYSIS_LIFETIME_LIMIT ever; Pro gets a monthly
@@ -148,6 +185,15 @@ export default function AddContract() {
     await addPage(null, from);
   };
 
+  const applyAnalysis = (a: ContractAnalysis) => {
+    setAnalysis(a);
+    setTitle(a.title ?? '');
+    setType(a.contract_type);
+    setPartyOther(a.party_other ?? '');
+    setDates(a.key_dates);
+    setStep('review');
+  };
+
   const runAnalysis = async (src: Source) => {
     setSource(src);
     setStep('analyzing');
@@ -170,12 +216,7 @@ export default function AddContract() {
       setSourcePaths(paths);
 
       const a = await analyzeContract(paths, kind);
-      setAnalysis(a);
-      setTitle(a.title ?? '');
-      setType(a.contract_type);
-      setPartyOther(a.party_other ?? '');
-      setDates(a.key_dates);
-      setStep('review');
+      applyAnalysis(a);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       Alert.alert(
@@ -240,7 +281,20 @@ export default function AddContract() {
       // Attach the analyzed source files; a failed attach must never cost the
       // user their saved contract (they can re-attach from the detail screen).
       let attachFailed = false;
-      if (source?.kind === 'pdf' && sourcePaths[0]) {
+      if (inboxItem && sourcePaths[0]) {
+        await attachDocument(
+          bundle.contract.id,
+          sourcePaths[0],
+          'pdf',
+          inboxItemTitle(inboxItem),
+          null
+        ).catch(() => {
+          attachFailed = true;
+        });
+        // The object now lives as the contract's document; drop the inbox row
+        // but keep the file. Best effort: a leftover row is harmless.
+        await removeInboxItem(inboxItem, false).catch(() => {});
+      } else if (source?.kind === 'pdf' && sourcePaths[0]) {
         await attachDocument(bundle.contract.id, sourcePaths[0], 'pdf', source.name, null).catch(() => {
           attachFailed = true;
         });
@@ -261,6 +315,7 @@ export default function AddContract() {
     onSuccess: ({ attachFailed }) => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['inbox'] });
       if (attachFailed) {
         Alert.alert('Saved, but a document did not attach', 'You can add it again from the contract.');
         router.back();

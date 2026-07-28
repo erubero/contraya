@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, Pressable, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { listContracts, listAllDates, getAvatarUrl } from '@/data/repo';
+import { listContracts, listAllDates, getAvatarUrl, listInbox, removeInboxItem } from '@/data/repo';
+import { InboxItem, inboxItemTitle } from '@/data/inbox';
 import { daysUntil } from '@/data/status';
 import { nextOccurrences } from '@/lib/reminderPlanner';
 import { useAuth } from '@/lib/AuthContext';
@@ -45,6 +46,16 @@ export default function Dashboard() {
   const { data: allDates = [] } = useQuery({
     queryKey: ['contract-dates'],
     queryFn: listAllDates,
+  });
+  const { data: inbox = [] } = useQuery({
+    queryKey: ['inbox'],
+    queryFn: listInbox,
+  });
+  const queryClient = useQueryClient();
+  const dismissInbox = useMutation({
+    mutationFn: (item: InboxItem) => removeInboxItem(item, true),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inbox'] }),
+    onError: () => Alert.alert("Couldn't dismiss", 'Please try again.'),
   });
 
   // Concrete occurrences (recurring rows expanded) so tiles and the "coming
@@ -126,6 +137,55 @@ export default function Dashboard() {
 
       <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 20 }}>
         <StatsOverview contracts={contracts} occurrences={occurrences} onSelect={openTile} />
+
+        {inbox.length > 0 && (
+          <View style={{ gap: 10 }}>
+            <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700' }}>
+              Received by email
+            </Text>
+            <View style={{ gap: 10 }}>
+              {inbox.map((item) => (
+                <Pressable
+                  key={item.id}
+                  onPress={() => router.push(`/add?inbox=${item.id}`)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                    borderRadius: RADIUS,
+                    padding: 14,
+                  }}
+                >
+                  <Ionicons name="mail-unread-outline" size={20} color={theme.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+                      {inboxItemTitle(item)}
+                    </Text>
+                    <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }} numberOfLines={1}>
+                      {item.from_address ?? 'Tap to have Contry read it'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert('Dismiss this document?', 'The file will be deleted.', [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Dismiss', style: 'destructive', onPress: () => dismissInbox.mutate(item) },
+                      ])
+                    }
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Dismiss document"
+                  >
+                    <Ionicons name="close-circle" size={20} color={theme.mutedForeground} />
+                  </Pressable>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        )}
 
         {comingUp.length > 0 && (
           <View style={{ gap: 10 }}>

@@ -3,6 +3,7 @@ import * as live from '@/api/contracts';
 import * as documentsApi from '@/api/documents';
 import * as profileApi from '@/api/profile';
 import * as usage from '@/api/usage';
+import * as inboxApi from '@/api/inbox';
 import { demo } from '@/lib/demo';
 import { shareRemoteFile } from '@/lib/share';
 import {
@@ -11,6 +12,7 @@ import {
 } from './types';
 import { ContractDocument } from './documents';
 import { ContractAnalysis } from './analysis';
+import { InboxItem } from './inbox';
 
 // One entry point the screens use; dispatches to the live Supabase repository
 // or the in-memory demo store depending on whether a backend is configured.
@@ -117,6 +119,22 @@ export function getDocumentUrl(path: string): Promise<string> {
 
 export function shareDocument(doc: ContractDocument): Promise<void> {
   return getDocumentUrl(doc.storage_path).then((url) => shareRemoteFile(url, doc.kind, doc.id));
+}
+
+export function getIngestAddress(): Promise<string> {
+  return isConfigured ? inboxApi.getIngestAddress() : demo.ingestAddress();
+}
+
+export function listInbox(): Promise<InboxItem[]> {
+  return isConfigured ? inboxApi.listInbox() : demo.listInbox();
+}
+
+export function getInboxItem(id: string): Promise<InboxItem> {
+  return isConfigured ? inboxApi.getInboxItem(id) : demo.getInboxItem(id);
+}
+
+export function removeInboxItem(item: InboxItem, deleteObject: boolean): Promise<void> {
+  return isConfigured ? inboxApi.removeInboxItem(item, deleteObject) : demo.removeInboxItem(item, deleteObject);
 }
 
 export function updateProfile(patch: profileApi.ProfilePatch): Promise<void> {

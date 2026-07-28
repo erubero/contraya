@@ -7,14 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as StoreReview from 'expo-store-review';
 import { Linking } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { deleteAccount } from '@/api/account';
 import { isConfigured } from '@/api/supabase';
 import {
   remindersEnabled, setRemindersEnabled, disableAndClear, requestPermission, rebuildAll,
 } from '@/lib/notifications';
-import { listAllDates, uploadAvatar, getAvatarUrl } from '@/data/repo';
+import { listAllDates, uploadAvatar, getAvatarUrl, getIngestAddress } from '@/data/repo';
 import { downscaleAvatar } from '@/lib/downscale';
 import { demo } from '@/lib/demo';
 import { APP_VERSION, SUPPORT_EMAIL, HELP_URL, TERMS_URL, PRIVACY_URL, SHARE_MESSAGE } from '@/lib/appMeta';
@@ -36,6 +36,11 @@ export default function Settings() {
   const { isPro, refresh: refreshPro } = usePurchases();
 
   const [reminders, setReminders] = useState(true);
+  const { data: ingestAddress } = useQuery({
+    queryKey: ['ingest-address'],
+    queryFn: getIngestAddress,
+    staleTime: Infinity,
+  });
   const [name, setName] = useState(displayName ?? '');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -279,6 +284,52 @@ export default function Settings() {
           )}
         </View>
       )}
+
+      {/* Email in */}
+      <View>
+        <SectionTitle theme={theme}>Email a contract in</SectionTitle>
+        <View style={cardStyle(theme)}>
+          <Text style={{ color: theme.mutedForeground, fontSize: 13, lineHeight: 19 }}>
+            Forward a contract to your private address and it lands on your dashboard, ready for
+            Contry to read. PDF attachments up to 10 MB.
+          </Text>
+          {ingestAddress ? (
+            <>
+              <Text
+                selectable
+                style={{
+                  color: theme.foreground,
+                  fontSize: 14,
+                  fontWeight: '600',
+                  marginTop: 10,
+                  padding: 10,
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  borderWidth: 1,
+                  borderRadius: RADIUS - 4,
+                }}
+              >
+                {ingestAddress}
+              </Text>
+              <Pressable
+                onPress={() => Share.share({ message: ingestAddress }).catch(() => {})}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}
+              >
+                <Ionicons name="share-outline" size={16} color={theme.primary} />
+                <Text style={{ color: theme.primary, fontWeight: '600', fontSize: 14 }}>Share address</Text>
+              </Pressable>
+              <Text style={{ color: theme.mutedForeground, fontSize: 12, marginTop: 10 }}>
+                Anyone with this address can put documents in your inbox, so treat it like a key.
+                Reading a contract still counts toward your plan only when you choose to read it.
+              </Text>
+            </>
+          ) : (
+            <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 10 }}>
+              Your address is being set up.
+            </Text>
+          )}
+        </View>
+      </View>
 
       {/* Notifications */}
       <View>

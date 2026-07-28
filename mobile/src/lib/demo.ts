@@ -7,6 +7,7 @@ import {
 } from '@/data/types';
 import { ContractDocument } from '@/data/documents';
 import { ContractAnalysis } from '@/data/analysis';
+import { InboxItem, ingestAddress } from '@/data/inbox';
 import { AnalysisCounts } from '@/api/usage';
 import { DateWithContract } from '@/api/contracts';
 
@@ -129,7 +130,20 @@ function seed(): { contracts: Contract[]; dates: ContractDate[]; obligations: Co
   return { contracts: [lease, wedding], dates, obligations, riskFlags };
 }
 
+function seedInbox(): InboxItem[] {
+  return [{
+    id: 'demo-inbox-1',
+    storage_path: 'demo/inbox-ironworks.pdf',
+    kind: 'pdf',
+    original_filename: 'IronWorks membership agreement.pdf',
+    from_address: 'memberships@ironworksfit.com',
+    subject: 'Your membership agreement',
+    received_at: new Date().toISOString(),
+  }];
+}
+
 let db = seed();
+let inbox: InboxItem[] = seedInbox();
 const files: Record<string, string> = {};
 let documents: ContractDocument[] = [];
 let profile: { displayName: string | null; avatarUri: string | null } = {
@@ -147,6 +161,7 @@ const bundleOf = (c: Contract): ContractBundle => ({
 export const demo = {
   reset() {
     db = seed();
+    inbox = seedInbox();
     documents = [];
     profile = { displayName: null, avatarUri: null };
   },
@@ -279,6 +294,21 @@ export const demo = {
   },
   async avatarUrl(): Promise<string> {
     return profile.avatarUri ?? '';
+  },
+  async ingestAddress(): Promise<string> {
+    return ingestAddress('deadbeefdeadbeefdeadbeefdeadbeef');
+  },
+  async listInbox(): Promise<InboxItem[]> {
+    return [...inbox];
+  },
+  async getInboxItem(id: string): Promise<InboxItem> {
+    const item = inbox.find((i) => i.id === id);
+    if (!item) throw new Error('Not found');
+    return item;
+  },
+  async removeInboxItem(item: InboxItem, deleteObject: boolean): Promise<void> {
+    inbox = inbox.filter((i) => i.id !== item.id);
+    if (deleteObject) delete files[item.storage_path];
   },
   async analyze(): Promise<ContractAnalysis> {
     await new Promise((r) => setTimeout(r, 2500));

@@ -81,6 +81,25 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
 - **Landing** (repo root): one-page pre-launch Contraya page + adapted
   Privacy/Terms (Terms now carries a "Not Legal Advice" section), builds
   clean. Web dashboard, guides, service worker all deleted — landing only.
+- **Email-in ingestion (2026-07-28):** every user gets a secret forwarding
+  address `c-<32 hex>@usecontraya.com` (minted server-side by the
+  `get_or_create_email_token` RPC; the token IS the credential — senders are
+  spoofable and stored as metadata only). Chain: Cloudflare **Email Worker**
+  (`email-worker/`, bound as the domain catch-all; hello@ keeps its explicit
+  forward, which takes precedence) parses the message with postal-mime,
+  extracts up to 3 PDF attachments (10MB cap, PDF-only on purpose — inline
+  images in email are signature logos, not contracts), and POSTs each to the
+  **`ingest-email` edge function** (shared INGEST_SECRET, timing-safe), which
+  validates (token lookup, 20/day rolling rate limit + 200-row DB trigger
+  backstop, %PDF magic bytes), stores under the user's folder, inserts an
+  `inbox_items` row, and sends a push ("A contract arrived by email").
+  **Ingestion never calls the model** — spam can cost storage only. In-app:
+  Settings shows the address (share + treat-like-a-key warning), the
+  Dashboard shows a "Received by email" section (tap → `/add?inbox=<id>`
+  which runs the normal quota gate → analysis → review → save, attaching the
+  already-stored PDF; dismiss deletes row + file). Non-PDF or unknown-token
+  mail bounces with a clear SMTP rejection. Migration
+  `20260728000400_email_ingest.sql`. Demo mode seeds one inbox item.
 - **Mascot:** Contry (registry at `mobile/assets/mascot/index.ts`, slots
   search-idle/search-active/search-empty/reading, all null — icon fallbacks
   render until the owner supplies art; NEVER ship placeholder art). Warry's
@@ -123,6 +142,18 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
    Warraya's; follow the same steps).
 9. **Cloudflare:** point usecontraya.com at the worker (auto-deploys on push
    like warraya.com), Email Routing for hello@usecontraya.com.
+10. **Email-in setup:** deploy `ingest-email` (normal JWT mode is OFF — it
+    auths via INGEST_SECRET; deploy with `--no-verify-jwt`) and set
+    `INGEST_SECRET` (long random, owner-held) in Supabase secrets. Deploy the
+    email worker: Cloudflare dashboard → Workers → create from git (this
+    repo, project root `email-worker/`) or `cd email-worker && npm i && npx
+    wrangler deploy`; set worker var `INGEST_URL` =
+    `https://<ref>.supabase.co/functions/v1/ingest-email` and secret
+    `INGEST_SECRET` (same value). Then Email Routing → Routing rules →
+    **Catch-all → Send to Worker → contraya-email-ingest** (hello@'s explicit
+    forward rule stays and takes precedence). Verify: email a PDF to your
+    address from Settings → expect the push + the Dashboard row; email with
+    no attachment → expect a bounce.
 10. **Trademark/handles** (from the plan): USPTO first-pass for "Contraya",
     social handles. Runners-up if a conflict surfaces: Firmaya, Inkaya, Duly.
 
@@ -151,17 +182,21 @@ to 'none'; schema stays).
    caps, 120s upstream timeout with refund.
 2. **Date accuracy** — mandatory review screen is the mitigation; budget one
    tuning loop (effort low → medium) against 5-10 real contracts.
-3. **Orphaned uploads:** the add flow uploads sources BEFORE analysis; if the
+3. **Email-in has no sender verification by design** — the address is the
+   secret. If a user leaks it, anyone can fill their inbox (20/day cap,
+   storage-only cost). Post-MVP option: a "regenerate address" button
+   (delete + re-mint the token row).
+4. **Orphaned uploads:** the add flow uploads sources BEFORE analysis; if the
    user abandons before save, objects stay in storage with no row. Private
    bucket, so no exposure — clean up with a periodic job later, or on next
    session.
-4. **Sonnet intro pricing ends 2026-08-31** — budget at sticker $3/$15.
-5. **Everything is simulator/CI-verified only.** Nothing has run on hardware;
+5. **Sonnet intro pricing ends 2026-08-31** — budget at sticker $3/$15.
+6. **Everything is simulator/CI-verified only.** Nothing has run on hardware;
    the camera multi-shot loop, PDF picker, and notification tap-routing are
    the highest-risk untested paths. The `expo-file-system` pin at exactly
    57.0.0 is inherited from Warraya (57.0.1 crashes at launch — do NOT let
    `expo install --check` "fix" it).
-6. **Two-repo maintenance:** shared-code fixes (uploads, auth, purchases)
+7. **Two-repo maintenance:** shared-code fixes (uploads, auth, purchases)
    must be applied in both repos by hand. Files were copied verbatim where
    possible so diffs stay portable.
 
