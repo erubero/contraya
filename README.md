@@ -27,12 +27,15 @@ Start with `STATUS.md` (current state + setup checklist) and `CLAUDE.md`
 
 ## Working on this locally (Mac)
 
-Clone it next to Warraya in `~/Developer`:
+Claude works in a cloud container and pushes to GitHub; nothing lands on the
+Mac by itself. Clone it next to Warraya to get it locally:
 
-    mkdir -p ~/Developer
-    cd ~/Developer
+    mkdir -p ~/Developer/apps
+    cd ~/Developer/apps
     git clone https://github.com/erubero/contraya.git
     cd contraya
+
+After that, `git pull` in that folder brings down whatever Claude pushed.
 
 Every shell that touches `mobile/` needs Node 22 on the PATH and a UTF-8
 locale, or Metro and Expo misbehave in ways that are hard to diagnose:
