@@ -37,7 +37,11 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 const clean = (v: unknown, max: number): string | null => {
   if (typeof v !== 'string') return null;
-  const t = v.trim();
+  // Strip control chars and bidi/zero-width overrides: these fields (sender,
+  // subject, filename) are attacker-controlled and rendered in the inbox UI,
+  // where a U+202E could visually reorder a filename or a newline could break
+  // the row. Keep it to printable text.
+  const t = v.replace(/[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g, '').trim();
   if (!t) return null;
   return t.length > max ? t.slice(0, max) : t;
 };
@@ -140,16 +144,21 @@ Deno.serve(async (req) => {
         .eq('user_id', userId);
       const tokens = (tokenRows ?? []).map((t) => t.token as string);
       if (tokens.length > 0) {
-        const name = clean(body.filename, 80) ?? 'A contract';
-        const from = clean(body.from_address, 80);
+        // The push body is a fixed string on purpose. The sender address and
+        // filename are attacker-controlled (the sender is spoofable and never
+        // authenticated), so interpolating them into a notification that
+        // carries the app's own title would let anyone who knows a forwarding
+        // address push a convincing spoofed alert ("invoice.pdf arrived from
+        // billing@yourbank.com") to the victim's lock screen. The real sender
+        // is shown, labeled unverified, only inside the app.
         await fetch(EXPO_PUSH_URL, {
           method: 'POST',
           headers: { 'content-type': 'application/json', accept: 'application/json' },
           body: JSON.stringify(
             tokens.map((to) => ({
               to,
-              title: 'A contract arrived by email',
-              body: from ? `${name} arrived from ${from}. Open Contraya to read it.` : `${name} arrived. Open Contraya to read it.`,
+              title: 'A document arrived by email',
+              body: 'Open Contraya to review it.',
               sound: 'default',
               data: { inbox: true },
             }))
