@@ -336,7 +336,7 @@ export default function Landing() {
               </div>
               <p className="text-blue-200 text-sm mb-6">or $49.99 / year, saving 48%.</p>
               <ul className="space-y-3 text-blue-50 text-sm flex-1">
-                {['Contry reads up to 15 contracts a month', 'Ask Contry questions about any contract', 'Forward contracts straight from your email', 'Everything in Free'].map((line) => (
+                {['Contry reads up to 15 contracts a month', 'Ask Contry up to 50 questions a month', 'Forward contracts straight from your email', 'Everything in Free'].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <ScrollText className="w-4 h-4 text-blue-300 flex-shrink-0 mt-0.5" />
                     <span>{line}</span>
