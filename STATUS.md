@@ -170,6 +170,46 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   quote verification via PDF text extraction, chat
   stored-dates-are-authoritative instruction, eval harness with real
   contracts.
+- **Onboarding + "answers and knowledge" redesign (2026-07-28):** studied
+  Docusign/Chime/Monese/Klarna onboarding via Mobbin, then closed nine gaps
+  between what the app already did well and what those apps do better, using
+  only already-installed tools (Reanimated 4, Lottie, plain Views — no new
+  dependency; glows are layered translucent circles, not
+  `expo-linear-gradient`, since this session's sandbox could not install a
+  new native package). No mascot art invented anywhere; every new
+  `ContryFace` usage still falls through to its designed icon fallback.
+  - **Onboarding answers now come back to the user** (previously captured
+    into `user_metadata` and never shown again): `AuthContext` now exposes
+    `onboardingAnswers`; a pure `reflectOnAnswers()` in `onboarding.ts` turns
+    the q1-q3 answers into one of five short reflective lines, rendered by
+    the new `PersonalizedInsight` component on the onboarding 'done' step and
+    (dismissibly, persisted via AsyncStorage) on the dashboard right under
+    `StatsOverview`.
+  - **New 'intro' onboarding step** before q1: "Before you start, three quick
+    questions" framing screen (Monese-inspired), chrome-free, Skip still
+    available.
+  - **NotificationPreview**: a static mock of the actual reminder
+    notification shown on q3, copy sourced exactly from
+    `reminderPlanner.ts`'s `TITLES`/body template, continuing the same
+    lease/9-days story `welcome.tsx`'s mock card already tells.
+  - **The analysis review screen reveal** (`add.tsx`) now stages in
+    (Reanimated `entering` shorthand) instead of appearing flat, wrapped in a
+    new `InsightCard` component with a `GlowBackdrop` halo; the risk-flags
+    tease line became real severity-colored pills showing each flag's actual
+    title, reusing a new `theme/severity.ts` (also now the single source for
+    the contract-detail screen's severity colors). The `reading` mascot slot
+    (defined, unwired since launch) is now wired into the analyzing screen
+    with a breathing-pulse animation on its icon fallback.
+  - **Ask Contry's first answer** in a conversation renders in the same
+    `InsightCard` treatment, with the first sentence bolded
+    (`textFormat.ts`'s `splitLeadIn`); later turns keep the plain bubble.
+  - **welcome.tsx**: `GlowBackdrop` hero wash + halo behind the mock card, a
+    "Nobody reads the fine print. Contry does." tagline under the wordmark,
+    staggered entrance animation (previously none).
+  - The always-render-regardless-of-summary disclaimer guarantee in `add.tsx`
+    and the pinned disclaimer strip in chat are both unchanged (verified
+    byte-identical `DISCLAIMER` strings); no "AI" wording, no em dashes in
+    any new copy.
 - **Whole-app security audit round 2 (2026-07-28):** six parallel adversarial
   audits (mobile client, edge functions, DB/RLS, LLM/prompt-injection, email
   pipeline, deps/landing/hygiene). Fixed the same day:
