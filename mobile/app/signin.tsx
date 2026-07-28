@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Image, Alert,
+  KeyboardAvoidingView, Platform, Image, Alert, Linking,
 } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '@/lib/AuthContext';
+import { TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
 import { MIN_PASSWORD } from '@/lib/limits';
 import { useTheme, RADIUS } from '@/theme/colors';
 import { useThemeScheme } from '@/theme/ThemeContext';
@@ -223,6 +224,17 @@ export default function SignIn() {
               </Text>
             </Pressable>
           )}
+          <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+            By continuing you agree to the{' '}
+            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(TERMS_URL)}>
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

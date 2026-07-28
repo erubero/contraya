@@ -1,8 +1,9 @@
-import { View, Text, Image, Pressable } from 'react-native';
+import { View, Text, Image, Pressable, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { markWelcomeSeen } from '@/lib/onboarding';
+import { TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
 import { useTheme, RADIUS } from '@/theme/colors';
 
 // First-open pitch. Shown once per install; both CTAs mark it seen and
@@ -62,11 +63,11 @@ export default function Welcome() {
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name="shield-checkmark" size={22} color={theme.primary} />
+              <Ionicons name="document-text" size={22} color={theme.primary} />
             </View>
             <View style={{ flex: 1, gap: 6 }}>
               <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }}>
-                Espresso machine
+                Apartment lease
               </Text>
               <View
                 style={{
@@ -78,7 +79,7 @@ export default function Welcome() {
                 }}
               >
                 <Text style={{ color: theme.statusExpiring, fontSize: 12, fontWeight: '600' }}>
-                  Refund window closes in 9 days
+                  Renewal notice due in 9 days
                 </Text>
               </View>
             </View>
@@ -101,6 +102,17 @@ export default function Welcome() {
               <Text style={{ color: theme.primary, fontWeight: '600' }}>Sign in</Text>
             </Text>
           </Pressable>
+          <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+            By continuing you agree to the{' '}
+            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(TERMS_URL)}>
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </View>
     </SafeAreaView>

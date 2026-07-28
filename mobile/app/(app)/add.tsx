@@ -407,24 +407,30 @@ export default function AddContract() {
 
       {(step === 'review' || step === 'manual') && (
         <View style={{ gap: 14 }}>
-          {step === 'review' && analysis?.summary ? (
-            <View
-              style={{
-                backgroundColor: theme.card,
-                borderColor: theme.border,
-                borderWidth: 1,
-                borderRadius: RADIUS,
-                padding: 14,
-                gap: 8,
-              }}
-            >
-              <Text style={{ color: theme.mutedForeground, fontSize: 12, textTransform: 'uppercase', fontWeight: '600' }}>
-                In plain English
-              </Text>
-              <Text style={{ color: theme.foreground, fontSize: 15, lineHeight: 22 }}>{analysis.summary}</Text>
+          {step === 'review' && (
+            <>
+              {analysis?.summary ? (
+                <View
+                  style={{
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                    borderRadius: RADIUS,
+                    padding: 14,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ color: theme.mutedForeground, fontSize: 12, textTransform: 'uppercase', fontWeight: '600' }}>
+                    In plain English
+                  </Text>
+                  <Text style={{ color: theme.foreground, fontSize: 15, lineHeight: 22 }}>{analysis.summary}</Text>
+                </View>
+              ) : null}
+              {/* Must render on every review state, summary or not: everything
+                  below this point is model output. */}
               <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
-            </View>
-          ) : null}
+            </>
+          )}
 
           <Field label="Contract name *" value={title} onChangeText={setTitle} placeholder="e.g. Apartment lease, 12 Palm Ave" />
 
@@ -445,7 +451,7 @@ export default function AddContract() {
           )}
 
           <View style={{ gap: 8 }}>
-            <Label text={step === 'review' ? 'Dates Contry found — check them against your document' : 'Dates to track'} />
+            <Label text={step === 'review' ? 'Dates Contry found. Check them against your document' : 'Dates to track'} />
             {dates.map((d, i) => (
               <View
                 key={i}

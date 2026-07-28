@@ -1,127 +1,134 @@
-# Warraya — App Store listing package (iOS)
+# Contraya — App Store listing package (iOS)
 
 Everything needed to create the App Store Connect record and get to TestFlight.
-Copy fields verbatim. Character limits are noted. No "AI" wording anywhere (the
-receipt scan is described by what it does). English (U.S.) is the primary
-language; a Spanish (Mexico) mirror can be added later.
+Copy fields verbatim. Character limits are noted. No "AI" wording anywhere
+(Contry is described by what it does: it reads the contract and explains it).
+No dashes in the copy. English (U.S.) is the primary language; a Spanish
+mirror can be added later (see section 9).
+
+Lessons inherited from Warraya's submissions are kept: the EULA link inside
+the description is mandatory for auto-renew subscriptions (3.1.2 rejection,
+2026-07-22), and the paid subscription must be described as a paid upgrade,
+not a free feature.
 
 ---
 
 ## 0. Decisions (locked)
 
-- **App name:** Warraya: Warranty Tracker
-- **Support email:** hello@warraya.com (now set in the app; create this mailbox on warraya.com so it can receive mail)
-- **Languages:** English (U.S.) ONLY (owner decision 2026-07-27, at the 2.0.0
-  submission). The Spanish (Mexico) localization must be REMOVED in App Store
-  Connect, not just left unedited: it exists there with pre-fix copy, and a
-  stale es-MX description without the EULA link or the paid-subscription
-  disclosure can re-trigger the 3.1.2/2.3.2 rejections on its own. Section 9
-  below is retained for a future re-launch but must not be pasted.
+- **App name:** Contraya: Contract Reader
+- **Support email:** hello@usecontraya.com (Cloudflare Email Routing must be
+  live before submission so this mailbox receives mail; owner checklist item)
+- **Languages:** English (U.S.) only at launch.
+- **Pricing shown below ($7.99 / $49.99)** matches the landing page and
+  STATUS.md; align the RevenueCat products with it before submission.
 
 ---
 
 ## 1. App Information (set once)
 
-- **Name:** Warraya: Warranty Tracker
-- **Subtitle (30 max):** Track warranties & receipts
-- **Bundle ID:** com.warraya.app  (already set in app.config.ts)
-- **SKU:** warraya-ios-1
+- **Name:** Contraya: Contract Reader
+- **Subtitle (30 max):** Contracts in plain English
+- **Bundle ID:** com.contraya.app  (already set in app.config.ts)
+- **SKU:** contraya-ios-1
 - **Primary language:** English (U.S.)
 - **Primary category:** Productivity
 - **Secondary category:** Utilities
 - **Content rights (third-party content?):** No
-- **Privacy Policy URL:** https://warraya.com/privacy
+- **Privacy Policy URL:** https://usecontraya.com/privacy
 - **User access:** Full Access
 - **License Agreement:** leave as Apple's Standard EULA. Because the app sells
-  auto-renewable subscriptions, guideline 3.1.2 then requires a *functional link*
-  to that EULA inside the App Description itself. That link is the last block of
-  the description below. Removing it gets the build rejected (it did, 2026-07-22).
-  Only switch to a Custom EULA if warraya.com/terms is ever rewritten as a real
-  end-user license, and if you do, paste it into this field rather than linking it.
+  auto-renewable subscriptions, guideline 3.1.2 requires a *functional link*
+  to that EULA inside the App Description itself. That link is the last block
+  of the description below. Removing it gets the build rejected (proven on
+  Warraya, 2026-07-22).
 
 ---
 
-## 2. Version fields (2.0.0)
+## 2. Version fields (1.0.0)
 
 **Promotional text (170 max):**
-Stop paying for repairs your warranty already covers. Warraya saves every receipt and reminds you before coverage ends, so you can file the claim in time.
+Somewhere in that contract is a deadline that will cost you money. Contraya puts it in plain English and reminds you before payments, renewals, and notice dates.
 
-**Keywords (100 max, comma separated; 98 chars. Single words on purpose: Apple
-combines them into phrases (proof+purchase, home+inventory) so spaces only
-waste characters. "warranty", "receipts", and "track" are already in the
-name/subtitle, so they are deliberately not repeated. Term choice is ASO
-judgment, not data: the app has never been live, so revisit once real App
-Store search data exists. Keywords are metadata-only, changeable on any
-submission without a build.):**
-guarantee,proof,purchase,home,inventory,expiry,reminder,appliance,electronics,repair,claim,invoice
+**Keywords (100 max, comma separated, single words on purpose: Apple combines
+them into phrases. "contract" and "reader" already live in the name, so they
+are deliberately not repeated. ASO judgment, not data; revisit once real
+search data exists):**
+lease,agreement,renewal,deadline,reminder,vendor,wedding,freelance,gym,landlord,tenant,clause
 
-**Support URL:** https://warraya.com
-**Marketing URL (optional):** https://warraya.com
-**Copyright:** 2026 Warraya
+**Support URL:** https://usecontraya.com
+**Marketing URL (optional):** https://usecontraya.com
+**Copyright:** 2026 Renovatio, LLC
 
 **Description:**
 
-You already paid for the warranty. Warraya makes sure you actually use it.
+You signed it. Contraya makes sure you know what it says.
 
-Almost everything you buy comes with coverage: a promise of free repair or replacement. But when something breaks, the receipt is gone, the deadline has passed, and you end up paying for something the manufacturer owed you. Warraya keeps every receipt and every warranty in one place, and reminds you before coverage runs out.
+Every lease, phone plan, gym membership, and vendor agreement is full of dates, obligations, and clauses that cost real money when they catch you off guard. Contraya reads the contract, explains it in plain English, and reminds you before every deadline.
 
-SNAP ONCE, SAVE FOREVER
-Take a photo of any paper receipt or upload one from your files. Warraya reads the product, store, price, and purchase date for you and files it in seconds. No typing, no folders.
+IN PLAIN ENGLISH
+Add a contract as a photo or a PDF and Contry reads the whole thing. You get a short summary of what you are agreeing to, what you pay, and what happens if you want out, in words you would use with a friend.
 
-A HEADS UP BEFORE IT IS TOO LATE
-Warraya reminds you 30 days and 7 days before any warranty ends, so you have time to test the product and file a claim while coverage is still active.
+EVERY DATE ON YOUR CALENDAR
+Payment deadlines, notice windows, renewal dates, end dates. Contry pulls each one out of the document, you confirm it, and it lands on your calendar with reminders attached.
 
-EVERY RECEIPT, ONE TAP AWAY
-When something breaks, there is no digging through drawers or scrolling old emails. Ask Warry, your warranty and receipt steward: search by product, brand, store, category, serial number, or the notes you wrote, and the proof is right there.
+RISKY CLAUSES, QUOTED
+Anything that locks you in, charges you extra, or takes away an option gets flagged and quoted word for word, so you can find it in the document and read it yourself.
 
-MORE THAN ONE DOCUMENT PER PRODUCT
-Attach extra photos and PDF files to any warranty: the invoice, the warranty card, the service report. Open them full screen or share them straight from the app when it is time to file a claim.
+ASK CONTRY
+Can I have a cat? What happens if I pay late? Contry answers from your document and quotes the lines the answer came from.
 
-REPAIRS AND SERVICES COUNT TOO
-A repair comes with a labor warranty just like a product does. Save the AC fix, the plumbing job, or the car service, and Warraya watches its coverage the same way.
+FORWARD IT FROM YOUR EMAIL
+Contracts arrive by email. Contraya gives you a private forwarding address, and the PDF lands in the app ready to read.
 
-WHAT PEOPLE KEEP IN WARRAYA
-Phones and laptops, TVs and headphones, kitchen appliances, washers and dryers, furniture, power tools, strollers and car seats, bikes and e-scooters. If it came with a warranty, it belongs here.
+WHAT PEOPLE KEEP IN CONTRAYA
+Apartment leases, phone and internet plans, gym memberships, wedding and event vendors, freelance client contracts, contractors and home repairs, storage units, auto loans. If you signed it, it belongs here.
+
+WHAT CONTRAYA IS NOT
+Contraya describes what your documents say. It is an informational tool, not a law firm, and nothing in the app is legal advice. Every summary says so. For legal advice, talk to a licensed attorney.
 
 PRIVATE BY DESIGN
-Your receipts and product details are stored securely and are never sold or shared. You can delete your account and everything in it at any time.
+Your contracts are stored in private storage only your account can access, encrypted in transit and at rest, and never sold or shared. You can delete your account and everything in it at any time.
 
-Spend one minute today and save hundreds the next time something breaks.
+CONTRAYA PREMIUM SUBSCRIPTION
+Contraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Contraya itself is free to use, and your first 2 contract readings are included. Contraya Premium includes up to 15 contract readings each month, up to 50 Ask Contry questions each month, and email forwarding.
 
-WARRAYA PREMIUM SUBSCRIPTION
-Warraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Warraya itself is free to use, with 5 warranties and 3 receipt scans. Warraya Premium removes both limits: unlimited warranties and unlimited receipt scans.
+Contraya Premium Monthly: $7.99 per month
+Contraya Premium Annual: $49.99 per year
 
-Warraya Premium Monthly: $4.99 per month
-Warraya Premium Annual: $29.99 per year
-
-Both plans begin with a 3 day free trial. Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically at the same price unless you turn off auto renew at least 24 hours before the current period ends, and your account is charged for the renewal within the 24 hours before the period ends. Any unused part of a free trial is forfeited when you buy a subscription. You can manage the subscription and turn off auto renew in your Apple Account settings after purchase.
+Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically at the same price unless you turn off auto renew at least 24 hours before the current period ends, and your account is charged for the renewal within the 24 hours before the period ends. You can manage the subscription and turn off auto renew in your Apple Account settings after purchase.
 
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Privacy Policy: https://warraya.com/privacy
+Privacy Policy: https://usecontraya.com/privacy
 
-**What's New in this version (2.0.0):**
-Warraya 2.0 introduces Warry, your warranty and receipt steward. Search everything you own by product, brand, store, category, serial number, or notes. Save warranties for repairs and services, attach photos and PDF documents to any warranty and share them from the app, set a profile picture with the new crop tool, and get around faster with the redesigned navigation bar.
+**What's New in this version (1.0.0):**
+Say hello to Contraya. Add a contract as a photo, a PDF, or a forwarded email, get it explained in plain English, and let Contry remind you before every payment, renewal, and notice deadline.
 
 ---
 
 ## 3. App Privacy (App Store Connect → App Privacy)
 
-No third-party analytics, tracking, or advertising SDKs are in the app, and
-expiry reminders are local (no push tokens leave the device). Declare:
+Contraya differs from Warraya here in three ways: push tokens ARE stored
+server side (the daily reminder cron), forwarded email metadata is stored
+(the email-in feature), and uploaded documents are processed by a third-party
+document-processing service provider to produce the summaries. Declare:
 
 **Data collected and linked to the user (all for App Functionality, none for tracking):**
 - Contact Info → Email Address — account creation and sign-in
-- Contact Info → Name — the optional display name in the profile
-- User Content → Photos or Videos — receipt and avatar images
-- User Content → Other User Content — warranty and product details the user enters
+- Contact Info → Emails or Text Messages — ONLY messages the user forwards to
+  their own Contraya address (sender, subject, and PDF attachments are stored;
+  the message body is not)
+- User Content → Photos or Videos — contract page photos and the avatar
+- User Content → Other User Content — contract records, uploaded PDFs, chat
+  questions
 - Identifiers → User ID — account identity
-
-Do NOT select "Emails or Text Messages" — Warraya never reads the user's emails
-or texts. The receipt scan is a photo the user takes.
+- Identifiers → Device ID — the push notification token, stored to deliver
+  reminders
 
 **For every item above:** Used for App Functionality = Yes; Linked to identity = Yes; Used for Tracking = No.
 **Data used to track you:** None.
-**Data shared with third parties:** None.
+**Data shared with third parties:** None for marketing or tracking. Documents
+are processed by a service provider on our behalf to produce summaries (this
+is App Functionality, not tracking; say so in review notes if asked).
 
 (If crash reporting or analytics is added later, update this section.)
 
@@ -129,7 +136,9 @@ or texts. The receipt scan is a photo the user takes.
 
 ## 4. Age rating
 
-Answer every content question **None / No**. Result: **4+**.
+Answer every content question **None / No**. Result: **4+**. (Contract
+summaries are informational content about the user's own documents; nothing
+in the questionnaire covers them.)
 
 ## 5. Export compliance
 
@@ -139,7 +148,29 @@ questions. No documents required.
 
 ---
 
-## 6. TestFlight
+## 6. App Review notes (paste into the Review Notes field)
+
+> Contraya reads contract documents the user uploads and produces plain
+> English descriptions of what those documents say: a summary, key dates,
+> obligations, and clauses worth attention, each quoted from the document.
+> These are informational descriptions of the user's own documents, not
+> legal advice. A disclaimer ("This explains what the contract says. It is
+> not legal advice.") is shown on every analysis screen, in the chat, and in
+> a long form page in Settings. The chat also declines to answer questions
+> that ask for legal conclusions (for example "can I sue?") and refers the
+> user to a licensed attorney.
+>
+> To test: create an account with any email and password (no confirmation
+> email, you are signed in right away). Add a contract using the attached
+> sample PDF, review the dates it found, and save. A sample contract PDF is
+> attached to this submission for that purpose.
+
+Attach a sample contract PDF (a fictional 2-3 page lease works) to the
+review notes. Do not attach a real contract.
+
+---
+
+## 7. TestFlight
 
 **Internal testing (up to 100 of your own team): no review needed.** You only
 need the app record + an uploaded build. This is the fastest path.
@@ -147,116 +178,38 @@ need the app record + an uploaded build. This is the fastest path.
 **External testing (public / email links, up to 10,000): needs Beta App Review.**
 Fill these:
 
-- **Beta App Description:** Warraya keeps your receipts and warranties in one place and reminds you before coverage expires.
+- **Beta App Description:** Contraya reads your contracts, explains them in plain English, and reminds you before payments, renewals, and notice deadlines.
 - **What to Test:**
   1. Create an account with your email and a password (no confirmation email, you are signed in right away).
-  2. Add a warranty manually, then add one by taking a photo of a receipt.
-  3. Confirm the details read from the receipt are correct.
-  4. Open a warranty, check the coverage bar, edit and delete.
-  5. Confirm you receive an expiry reminder notification.
-  6. In Settings, set your name, photo, and theme.
-- **Feedback email:** hello@warraya.com
-- **Marketing URL:** https://warraya.com
+  2. Add a contract by uploading a PDF, then one by taking photos of pages.
+  3. Review the summary and the dates Contry found; fix one date and save.
+  4. Open the contract, check the dates list, the highlights, and the documents.
+  5. Ask Contry a question about the contract (Premium path).
+  6. Confirm you receive a date reminder notification.
+  7. In Settings, find your email forwarding address and forward a PDF to it.
+- **Feedback email:** hello@usecontraya.com
+- **Marketing URL:** https://usecontraya.com
 - **Beta App Review contact:** your name, phone, email.
-
-> Sign-in is email + password and Supabase `mailer_autoconfirm` is on, so signing
-> up returns a session immediately with no confirmation email. A reviewer can
-> create their own account unaided, which is why no demo account is required.
-> (This replaced the old emailed 6-digit code flow, which a reviewer could not
-> have completed.)
-
----
-
-## 7. Screenshots (you create the images; captions to overlay)
-
-Not required for internal TestFlight. Required before public submission.
-Minimum: the 6.9-inch iPhone set (1320 x 2868 portrait). 3 to 6 images
-recommended, up to 10. Suggested shots and captions:
-
-1. Vault list with a few warranties and status badges — "Every warranty in one place."
-2. Receipt scan screen — "Snap a receipt. Filed in seconds."
-3. Expiring state or reminder — "We warn you before coverage ends."
-4. Warranty detail with the coverage bar — "Proof of purchase, always with you."
-5. Money angle — "Claim what you already paid for."
 
 ---
 
 ## 8. Order of operations to reach TestFlight
 
-1. Build the iOS production binary (registers the bundle ID and certificates):
-   `eas build --profile production --platform ios`
-2. Create the app record in App Store Connect using Section 1 above.
-3. Upload the build: `eas submit --profile production --platform ios`
-   (this can also create the app record for you if it does not exist yet).
-4. In App Store Connect → TestFlight, wait for the build to finish processing,
-   confirm export compliance if asked, then add internal testers.
+Builds go through Xcode, never `eas build` / `eas submit` (repo rule):
+
+1. `npx expo prebuild --platform ios` (Claude runs this; regenerates `ios/`).
+2. Owner opens `mobile/ios/Contraya.xcworkspace`, Team: Renovatio, LLC.
+3. Create the app record in App Store Connect using Section 1 above.
+4. In Xcode: Product → Archive, then Distribute App → App Store Connect.
+5. In App Store Connect → TestFlight, wait for processing, confirm export
+   compliance if asked, then add internal testers.
 
 ---
 
-## 9. Spanish (Mexico) — es-MX mirror (RETIRED 2026-07-27, DO NOT PASTE)
+## 9. Spanish (es-MX) — later
 
-Owner decision at the 2.0.0 submission: the listing is English only. The es-MX
-localization was removed from App Store Connect. This section is kept current
-(it was updated for 2.0.0 alongside the English) so a future Spanish re-launch
-is one paste away, but nothing below goes into ASC today.
-Same rules: the scan is described by what it does, no dashes.
-
-**Name (30 max):** Warraya: Control de Garantías
-**Subtitle (30 max):** Controla garantías y recibos
-
-**Promotional text (170 max):**
-Deja de pagar reparaciones que tu garantía ya cubre. Warraya guarda cada recibo y te avisa antes de que termine la cobertura, para que reclames a tiempo.
-
-**Keywords (100 max; 91 chars. "garantías" and "recibos" live in the es name/subtitle, so they are not repeated):**
-comprobante,factura,recordatorio,vencimiento,electrodomestico,reparacion,reclamo,inventario
-
-**Description:**
-
-Ya pagaste por la garantía. Warraya se asegura de que de verdad la aproveches.
-
-Casi todo lo que compras incluye una garantía: la promesa de una reparación o un reemplazo sin costo. Pero cuando algo se descompone, el recibo ya no aparece, la fecha límite pasó, y terminas pagando por algo que el fabricante te debía. Warraya guarda cada recibo y cada garantía en un solo lugar, y te avisa antes de que termine la cobertura.
-
-TÓMALE UNA FOTO Y LISTO
-Toma una foto de cualquier recibo en papel o sube uno desde tus archivos. Warraya lee el producto, la tienda, el precio y la fecha de compra por ti y lo guarda en segundos. Sin escribir, sin carpetas.
-
-UN AVISO ANTES DE QUE SEA TARDE
-Warraya te avisa 30 y 7 días antes de que termine cada garantía, para que tengas tiempo de probar el producto y hacer tu reclamo mientras la cobertura sigue activa.
-
-CADA RECIBO, A UN TOQUE
-Cuando algo se descompone, no tienes que buscar en cajones ni entre correos viejos. Pídeselo a Warry, tu mayordomo de garantías y recibos: busca por producto, marca, tienda, categoría, número de serie o las notas que escribiste, y ahí está el comprobante.
-
-MÁS DE UN DOCUMENTO POR PRODUCTO
-Adjunta más fotos y archivos PDF a cualquier garantía: la factura, la póliza, el reporte de servicio. Ábrelos en pantalla completa o compártelos directo desde la app cuando toque reclamar.
-
-LAS REPARACIONES Y SERVICIOS TAMBIÉN CUENTAN
-Una reparación tiene garantía de mano de obra igual que un producto. Guarda la reparación del aire acondicionado, la plomería o el servicio del auto, y Warraya vigila su cobertura de la misma forma.
-
-QUÉ GUARDA LA GENTE EN WARRAYA
-Teléfonos y laptops, televisores y audífonos, electrodomésticos de cocina, lavadoras y secadoras, muebles, herramientas eléctricas, carriolas y sillas para auto, bicicletas y scooters. Si vino con garantía, aquí va.
-
-PRIVADO POR DISEÑO
-Tus recibos y los detalles de tus productos se guardan de forma segura y nunca se venden ni se comparten. Puedes borrar tu cuenta y todo lo que contiene cuando quieras.
-
-Dedica un minuto hoy y ahórrate cientos la próxima vez que algo se descomponga.
-
-SUSCRIPCIÓN WARRAYA PREMIUM
-Warraya Premium es una suscripción opcional de renovación automática: una mejora de pago, no una función gratuita. Warraya en sí es gratis, con 5 garantías y 3 escaneos de recibo. Warraya Premium quita los dos límites: garantías ilimitadas y escaneos de recibo ilimitados.
-
-Warraya Premium Mensual: $4.99 USD al mes
-Warraya Premium Anual: $29.99 USD al año
-
-Los dos planes empiezan con 3 días de prueba gratis. El cargo se hace a tu cuenta de Apple al confirmar la compra. La suscripción se renueva automáticamente al mismo precio, a menos que desactives la renovación automática por lo menos 24 horas antes de que termine el periodo, y el cargo de la renovación se hace dentro de las 24 horas antes de que termine. Si compras una suscripción, se pierde la parte de la prueba gratis que no hayas usado. Puedes administrar la suscripción y desactivar la renovación automática en los ajustes de tu cuenta de Apple después de comprar.
-
-Términos de uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Aviso de privacidad: https://warraya.com/privacy
-
-**What's New (2.0.0):**
-Warraya 2.0 presenta a Warry, tu mayordomo de garantías y recibos. Busca todo lo que tienes por producto, marca, tienda, categoría, número de serie o notas. Guarda garantías de reparaciones y servicios, adjunta fotos y archivos PDF a cualquier garantía y compártelos desde la app, ponte una foto de perfil con la nueva herramienta de recorte, y muévete más rápido con la barra de navegación rediseñada.
-
-**What to Test (es-MX):**
-1. Crea una cuenta con tu correo y una contraseña (no llega correo de confirmación, entras de inmediato).
-2. Agrega una garantía a mano y luego otra tomando una foto del recibo.
-3. Confirma que los datos leídos del recibo sean correctos.
-4. Abre una garantía, revisa la barra de cobertura, edítala y bórrala.
-5. Confirma que recibes la notificación de vencimiento.
-6. En Ajustes, pon tu nombre, foto y tema.
+English only at launch (mirrors the Warraya 2026-07-27 decision; a stale or
+partial localization can re-trigger 3.1.2/2.3.2 rejections on its own). When
+a Spanish launch is wanted, write the es-MX mirror fresh from the English
+above, keeping the same rules: Contry described by what it does, no "AI"
+wording, no dashes, subscription block with the EULA link.
