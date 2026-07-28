@@ -357,10 +357,12 @@ export const demo = {
         {
           label: 'Membership payment', date: iso(addDays(now, 20)),
           date_type: 'payment', recurrence: 'monthly', note: 'Charged the 15th of each month',
+          verified: 'confirmed',
         },
         {
           label: 'Cancellation notice deadline', date: iso(addMonths(now, 11)),
           date_type: 'termination_notice', recurrence: 'none', note: '30 days before renewal',
+          verified: 'confirmed',
         },
       ],
       obligations: [

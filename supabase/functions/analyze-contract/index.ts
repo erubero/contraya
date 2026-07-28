@@ -40,6 +40,36 @@ const MODEL_TIMEOUT_MS = 120_000;
 
 const nullable = (t: string) => ({ type: [t, 'null'] });
 
+// Date verification pass: a second turn of the SAME conversation re-locates
+// every extracted date in the document. The first turn is cached (see
+// cache_control below), so this costs ~10% of a re-read. It only runs when
+// there is wall-clock room left; verification failing must never fail the
+// analysis (dates degrade to 'unchecked' and the review screen stays honest).
+const VERIFY_TIME_BUDGET_MS = 90_000; // skip verify if analysis used more
+const VERIFY_TIMEOUT_MS = 45_000;
+const VERIFY_MAX_TOKENS = 1000;
+
+const VERIFY_SCHEMA = {
+  type: 'object',
+  properties: {
+    checks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          index: { type: 'integer' },
+          verdict: { type: 'string', enum: ['confirmed', 'corrected', 'not_found'] },
+          corrected_date: { ...nullable('string'), description: 'YYYY-MM-DD, only with verdict corrected.' },
+        },
+        required: ['index', 'verdict', 'corrected_date'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['checks'],
+  additionalProperties: false,
+};
+
 const ANALYSIS_SCHEMA = {
   type: 'object',
   properties: {
@@ -168,6 +198,36 @@ function userInstruction(today: string): string {
   return `Today's date is ${today}. Read this contract and fill the schema. It may be a lease, a service or vendor agreement, a phone or internet plan, a subscription, a wedding or event contract, an insurance policy, an employment or freelance agreement, or something else. If several documents are mixed together, describe the main agreement.`;
 }
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function verifyInstruction(dates: { label?: unknown; date?: unknown }[]): string {
+  const list = dates.map((d, i) => `${i}: "${d.label}" = ${d.date}`).join('\n');
+  return `Re-check the key dates you extracted against the document, by index:\n${list}\n\nFor each index: verdict "confirmed" when the date, or the rule that produces it, appears in the document; "corrected" with corrected_date (YYYY-MM-DD) when a careful second read gives a different date; "not_found" when you cannot re-locate it in the document. Never invent; when unsure, use "not_found".`;
+}
+
+// Merges verification verdicts onto the extracted dates. Malformed checks and
+// out-of-range indexes are ignored; a "corrected" without a usable date means
+// the date could not be pinned down, which is exactly what not_found conveys.
+function applyVerification(dates: Record<string, unknown>[], raw: unknown): void {
+  const checks = (raw as { checks?: unknown } | null)?.checks;
+  if (!Array.isArray(checks)) return;
+  for (const c of checks) {
+    if (typeof c !== 'object' || c === null) continue;
+    const { index, verdict, corrected_date } = c as Record<string, unknown>;
+    if (typeof index !== 'number' || !Number.isInteger(index) || index < 0 || index >= dates.length) continue;
+    if (verdict === 'corrected') {
+      if (typeof corrected_date === 'string' && ISO_DATE_RE.test(corrected_date)) {
+        dates[index].date = corrected_date;
+        dates[index].verified = 'corrected';
+      } else {
+        dates[index].verified = 'not_found';
+      }
+    } else if (verdict === 'confirmed' || verdict === 'not_found') {
+      dates[index].verified = verdict;
+    }
+  }
+}
+
 type Payload = { paths: unknown; kind: unknown };
 
 Deno.serve(async (req) => {
@@ -180,6 +240,7 @@ Deno.serve(async (req) => {
 
   // Set once a quota slot has been consumed, so the catch can give it back.
   let refund: (() => Promise<void>) | null = null;
+  const startedAt = Date.now();
 
   try {
     const authHeader = req.headers.get('Authorization') ?? '';
@@ -293,7 +354,14 @@ Deno.serve(async (req) => {
             type: 'image',
             source: { type: 'base64', media_type: 'image/jpeg', data: encodeBase64(f) },
           }));
-    contentBlocks.push({ type: 'text', text: userInstruction(new Date().toISOString().slice(0, 10)) });
+    // cache_control on the last block of the first turn makes the whole
+    // prefix (system + documents + instruction) reusable, which is what makes
+    // the verification turn below cost ~10% instead of a full re-read.
+    contentBlocks.push({
+      type: 'text',
+      text: userInstruction(new Date().toISOString().slice(0, 10)),
+      cache_control: { type: 'ephemeral' },
+    });
 
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -342,6 +410,57 @@ Deno.serve(async (req) => {
     if (analysis.is_contract === false) {
       await refund();
       return Response.json({ error: "This doesn't look like a contract" }, { status: 422, headers: corsHeaders });
+    }
+
+    // Verification pass. Every date starts unchecked; the second turn
+    // upgrades verdicts. Best-effort by design: any failure here still
+    // returns the analysis (the review screen treats unchecked as neutral),
+    // and the quota slot already consumed covers both calls.
+    const keyDates: Record<string, unknown>[] = Array.isArray(analysis.key_dates) ? analysis.key_dates : [];
+    for (const d of keyDates) d.verified = 'unchecked';
+
+    if (keyDates.length > 0 && Date.now() - startedAt < VERIFY_TIME_BUDGET_MS) {
+      try {
+        const verifyResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+            'anthropic-version': '2023-06-01',
+          },
+          signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: VERIFY_MAX_TOKENS,
+            system: SYSTEM_PROMPT,
+            // Same conversation, one more turn: identical prefix hits the
+            // cache written by the analysis call above.
+            messages: [
+              { role: 'user', content: contentBlocks },
+              { role: 'assistant', content: textBlock.text },
+              { role: 'user', content: verifyInstruction(keyDates as { label?: unknown; date?: unknown }[]) },
+            ],
+            output_config: {
+              effort: 'low',
+              format: { type: 'json_schema', schema: VERIFY_SCHEMA },
+            },
+          }),
+        });
+        if (verifyResponse.ok) {
+          const verifyMessage = await verifyResponse.json();
+          // cache_read_input_tokens > 0 here is the proof the cache layout
+          // works; if it reads 0, investigate before trusting the cost model.
+          console.log('verify usage', JSON.stringify({ user: user.id, usage: verifyMessage.usage }));
+          const vText = verifyMessage.content?.find((b: { type: string }) => b.type === 'text');
+          if (verifyMessage.stop_reason !== 'refusal' && vText) {
+            applyVerification(keyDates, JSON.parse(vText.text));
+          }
+        } else {
+          console.error('verify request failed', verifyResponse.status, await verifyResponse.text());
+        }
+      } catch (e) {
+        console.error('verify skipped', e);
+      }
     }
 
     return Response.json({ analysis }, { headers: corsHeaders });

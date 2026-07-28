@@ -74,6 +74,16 @@ describe('parseAnalysis', () => {
     expect(parseAnalysis({}).party_other_contact).toBeNull();
   });
 
+  it('decodes the verification verdict, defaulting to unchecked', () => {
+    const dates = (verified?: unknown) =>
+      parseAnalysis({ key_dates: [{ label: 'X', date: '2026-08-01', date_type: 'payment', verified }] }).key_dates;
+    expect(dates('confirmed')[0].verified).toBe('confirmed');
+    expect(dates('corrected')[0].verified).toBe('corrected');
+    expect(dates('not_found')[0].verified).toBe('not_found');
+    expect(dates('definitely')[0].verified).toBe('unchecked');
+    expect(dates(undefined)[0].verified).toBe('unchecked');
+  });
+
   it('truncates oversized strings instead of dropping them', () => {
     const out = parseAnalysis({ summary: 'x'.repeat(10000) });
     expect(out.summary).toHaveLength(8000);

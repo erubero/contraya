@@ -26,7 +26,7 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **99 tests across 14 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Mobile app compiles and tests green:** tsc strict clean, **100 tests across 14 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
@@ -118,6 +118,26 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
   ContractCard. Deferred to roadmap by owner: .docx support, expo-calendar
   sync, Face ID lock. **Copy rule added: never claim end-to-end encryption**
   (incompatible with server-side analysis; say encrypted in transit/at rest).
+- **v1.2 date verification pass (2026-07-28):** owner flagged hallucination
+  as the top product risk (correct: a wrong renewal/notice date is the exact
+  harm the app exists to prevent). `analyze-contract` now sets
+  `cache_control` on the analysis call's first turn and, when there is wall
+  clock left (<90s used), runs a SECOND turn of the same conversation asking
+  the model to re-locate every extracted date in the document. Verdicts merge
+  onto `key_dates[].verified`: confirmed / corrected (date replaced with the
+  second read's value) / not_found; any verify failure degrades every date to
+  'unchecked' and never fails the analysis (one quota slot covers both
+  calls). The review screen shows an amber "check it" line under corrected /
+  not_found dates, and editing a flagged date clears the flag (the human did
+  the check). Cost: ~10% extra thanks to the cached prefix — **on the first
+  live run, confirm the 'verify usage' log line shows
+  cache_read_input_tokens > 0**; if it reads 0, the format switch is busting
+  the cache and the fallback is plain-text JSON output for the verify turn.
+  Remaining hallucination roadmap (owner-deferred): deterministic review
+  validators (impossible windows, notice-after-end, duplicates), risk-flag
+  quote verification via PDF text extraction, chat
+  stored-dates-are-authoritative instruction, eval harness with real
+  contracts.
 - **Mascot:** Contry (registry at `mobile/assets/mascot/index.ts`, slots
   search-idle/search-active/search-empty/reading, all null — icon fallbacks
   render until the owner supplies art; NEVER ship placeholder art). Warry's

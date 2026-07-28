@@ -10,12 +10,19 @@ import {
 // the trust boundary: every enum is checked, every string coerced, every
 // array bounded, and anything malformed is dropped rather than thrown.
 
+// How the server's verification pass judged an extracted date. 'unchecked'
+// means the pass did not run (or a user typed the date themselves) — the
+// review screen treats it as neutral, and flags the other non-confirmed kinds.
+export type DateVerification = 'confirmed' | 'corrected' | 'not_found' | 'unchecked';
+export const DATE_VERIFICATIONS: readonly DateVerification[] = ['confirmed', 'corrected', 'not_found', 'unchecked'];
+
 export type AnalyzedDate = {
   label: string;
   date: string; // yyyy-MM-dd
   date_type: DateType;
   recurrence: Recurrence;
   note: string | null;
+  verified: DateVerification;
 };
 
 export type AnalyzedObligation = {
@@ -88,6 +95,7 @@ function decodeDate(v: unknown): AnalyzedDate | null {
     date_type,
     recurrence: oneOf<Recurrence>(o.recurrence, RECURRENCES) ?? 'none',
     note: str(o.note, 200),
+    verified: oneOf<DateVerification>(o.verified, DATE_VERIFICATIONS) ?? 'unchecked',
   };
 }
 

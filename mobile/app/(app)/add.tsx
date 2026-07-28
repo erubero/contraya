@@ -479,7 +479,11 @@ export default function AddContract() {
                     <DateField
                       label=""
                       value={d.date}
-                      onChange={(v) => setDates(dates.map((x, j) => (j === i ? { ...x, date: v } : x)))}
+                      onChange={(v) =>
+                        // Editing a flagged date resolves the flag: the human
+                        // just did the check the marker asked for.
+                        setDates(dates.map((x, j) => (j === i ? { ...x, date: v, verified: 'unchecked' } : x)))
+                      }
                     />
                   </View>
                   <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
@@ -487,13 +491,24 @@ export default function AddContract() {
                     {d.recurrence !== 'none' ? ` · repeats ${d.recurrence}` : ''}
                   </Text>
                 </View>
+                {(d.verified === 'not_found' || d.verified === 'corrected') && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="alert-circle" size={14} color={theme.statusExpiring} />
+                    <Text style={{ flex: 1, color: theme.statusExpiring, fontSize: 12, fontWeight: '600' }}>
+                      {d.verified === 'not_found'
+                        ? "Contry couldn't re-find this date in the document. Check it."
+                        : 'Contry corrected this date on a second read. Check it.'}
+                    </Text>
+                  </View>
+                )}
               </View>
             ))}
             <Pressable
               onPress={() =>
                 setDates([
                   ...dates,
-                  { label: '', date: '', date_type: 'custom', recurrence: 'none', note: null },
+                  // User-typed rows are their own authority; no verification marker.
+                  { label: '', date: '', date_type: 'custom', recurrence: 'none', note: null, verified: 'unchecked' },
                 ])
               }
               style={{
