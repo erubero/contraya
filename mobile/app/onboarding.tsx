@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LottieView from 'lottie-react-native';
 import {
@@ -9,20 +11,29 @@ import {
 import { requestPermission } from '@/lib/notifications';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ProgressBar from '@/components/ProgressBar';
+import PersonalizedInsight from '@/components/PersonalizedInsight';
+import NotificationPreview from '@/components/NotificationPreview';
 
-type Step = 'q1' | 'q2' | 'q3' | 'done';
+type Step = 'intro' | 'q1' | 'q2' | 'q3' | 'done';
 
-const STEP_PROGRESS: Record<Step, number> = { q1: 0.25, q2: 0.5, q3: 0.75, done: 1 };
+const STEP_PROGRESS: Record<Step, number> = { intro: 0, q1: 0.25, q2: 0.5, q3: 0.75, done: 1 };
 
 // Post-signup questionnaire. Creating the account was 25%; each answer adds
 // 25 more. Answers are engagement-grade data stored in user_metadata.
 export default function Onboarding() {
   const theme = useTheme();
   const router = useRouter();
-  const [step, setStep] = useState<Step>('q1');
+  const [step, setStep] = useState<Step>('intro');
   const [selected, setSelected] = useState<string | null>(null);
   const answers = useRef<OnboardingAnswers>({});
   const completed = useRef(false);
+
+  // Icon pop-in on the intro screen only.
+  const introIconScale = useSharedValue(0.8);
+  useEffect(() => {
+    if (step === 'intro') introIconScale.value = withSequence(withTiming(0.8, { duration: 0 }), withSpring(1));
+  }, [step, introIconScale]);
+  const introIconStyle = useAnimatedStyle(() => ({ transform: [{ scale: introIconScale.value }] }));
 
   // Resume flag: if the app dies mid-flow, the next launch comes back here.
   useEffect(() => {
@@ -61,24 +72,70 @@ export default function Onboarding() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
       <View style={{ flex: 1, padding: 24 }}>
-        <View style={{ gap: 10, marginBottom: 28 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: theme.mutedForeground, fontSize: 13, fontWeight: '600' }}>
-              Let's set up your vault
-            </Text>
-            {step !== 'done' && (
+        {step === 'intro' && (
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
               <Pressable onPress={skip} hitSlop={10}>
                 <Text style={{ color: theme.mutedForeground, fontSize: 13 }}>Skip</Text>
               </Pressable>
+            </View>
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, paddingHorizontal: 8 }}>
+              <Animated.View
+                style={[
+                  {
+                    width: 72,
+                    height: 72,
+                    borderRadius: 24,
+                    backgroundColor: theme.accent,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                  introIconStyle,
+                ]}
+              >
+                <Ionicons name="sparkles-outline" size={36} color={theme.primary} />
+              </Animated.View>
+              <Animated.View entering={FadeInDown.delay(120).duration(350)} style={{ gap: 8, alignItems: 'center' }}>
+                <Text style={{ color: theme.foreground, fontSize: 22, fontWeight: '800', textAlign: 'center' }}>
+                  Before you start, three quick questions
+                </Text>
+                <Text style={{ color: theme.mutedForeground, fontSize: 15, lineHeight: 22, textAlign: 'center' }}>
+                  It won't take more than a minute. Nothing here is graded. Contry just wants to
+                  know what it's dealing with.
+                </Text>
+              </Animated.View>
+            </View>
+            <Animated.View entering={FadeIn.delay(300).duration(300)}>
+              <Pressable
+                onPress={() => setStep('q1')}
+                style={{ backgroundColor: theme.primary, borderRadius: RADIUS, padding: 16, alignItems: 'center' }}
+              >
+                <Text style={{ color: theme.primaryForeground, fontSize: 16, fontWeight: '700' }}>Let's go</Text>
+              </Pressable>
+            </Animated.View>
+          </View>
+        )}
+
+        {step !== 'intro' && (
+          <View style={{ gap: 10, marginBottom: 28 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: theme.mutedForeground, fontSize: 13, fontWeight: '600' }}>
+                Let's set up your vault
+              </Text>
+              {step !== 'done' && (
+                <Pressable onPress={skip} hitSlop={10}>
+                  <Text style={{ color: theme.mutedForeground, fontSize: 13 }}>Skip</Text>
+                </Pressable>
+              )}
+            </View>
+            <ProgressBar value={STEP_PROGRESS[step]} />
+            {step === 'q1' && (
+              <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600' }}>
+                Account created. You're already 25% of the way there.
+              </Text>
             )}
           </View>
-          <ProgressBar value={STEP_PROGRESS[step]} />
-          {step === 'q1' && (
-            <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600' }}>
-              Account created. You're already 25% of the way there.
-            </Text>
-          )}
-        </View>
+        )}
 
         {step === 'q1' && (
           <Question
@@ -118,6 +175,7 @@ export default function Onboarding() {
           <Question
             title="Want a heads up before a payment, renewal, or deadline?"
             subtitle="A reminder while there is still time to act. That is the whole point of Contraya."
+            extra={<NotificationPreview />}
             options={[
               { key: 'yes', label: 'Yes, remind me' },
               { key: 'later', label: 'Maybe later' },
@@ -144,6 +202,9 @@ export default function Onboarding() {
               style={{ width: 180, height: 180 }}
             />
             <Text style={{ color: theme.foreground, fontSize: 26, fontWeight: '800' }}>You're all set</Text>
+            <View style={{ alignSelf: 'stretch' }}>
+              <PersonalizedInsight answers={answers.current} />
+            </View>
             <Text style={{ color: theme.mutedForeground, fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
               You're ready. Add your first contract and Contraya starts watching the dates for
               you.
@@ -169,12 +230,14 @@ export default function Onboarding() {
 function Question({
   title,
   subtitle,
+  extra,
   options,
   selected,
   onSelect,
 }: {
   title: string;
   subtitle: string;
+  extra?: React.ReactNode;
   options: { key: string; label: string }[];
   selected: string | null;
   onSelect: (key: string) => void;
@@ -186,6 +249,7 @@ function Question({
         <Text style={{ color: theme.foreground, fontSize: 24, fontWeight: '800', lineHeight: 30 }}>{title}</Text>
         <Text style={{ color: theme.mutedForeground, fontSize: 15, lineHeight: 22 }}>{subtitle}</Text>
       </View>
+      {extra}
       <View style={{ gap: 12 }}>
         {options.map((o) => {
           const active = selected === o.key;
