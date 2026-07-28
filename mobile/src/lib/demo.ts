@@ -307,6 +307,11 @@ export const demo = {
     await new Promise((r) => setTimeout(r, 1200));
     const c = db.contracts.find((x) => x.id === contractId);
     const q = question.toLowerCase();
+    // Legal-conclusion questions never get a yes or a no, in demo mode too:
+    // this is the behavior App Review sees.
+    if (/\b(sue|sued|court|lawsuit|evict|eviction|illegal|legal|enforceable|win|charges)\b/.test(q)) {
+      return 'Whether anyone can sue, evict, or win a dispute is a question for a licensed attorney, not for this contract. What the contract does say about the situation: payments, deadlines, and penalties are listed on the contract screen, in its own words. It does not contain a dispute or arbitration clause beyond that.';
+    }
     if (c?.contract_type === 'lease') {
       if (q.includes('renew')) {
         return 'The lease renews by itself for another 12 months unless written notice reaches the landlord at least 60 days before the end date. The contract says: "This lease shall automatically renew for successive twelve month terms unless Tenant provides written notice no fewer than sixty days prior to expiration."';

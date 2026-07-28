@@ -133,6 +133,16 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
   live run, confirm the 'verify usage' log line shows
   cache_read_input_tokens > 0**; if it reads 0, the format switch is busting
   the cache and the fallback is plain-text JSON output for the verify turn.
+  **Chat legal-conclusion hardening (same day, owner example: "can I sue
+  the tenant?"):** the chat system prompt now carries an explicit no-yes-no-no
+  rule for sue/evict/win/enforceable/legal questions (attorney-referral
+  sentence + what the contract itself says, quoted), an anti-sycophancy rule
+  ("you are on the document's side"; the asker's hopes never change the
+  answer), and a worked wrong-vs-right example of exactly the sue question —
+  worked examples are what make prompts hold against this trap. Demo mode
+  mirrors the behavior so App Review sees it. Include a "can I sue them?"
+  probe in the live chat smoke test and confirm the answer contains no
+  yes/no and ends at the attorney referral + quoted clauses.
   Remaining hallucination roadmap (owner-deferred): deterministic review
   validators (impossible windows, notice-after-end, duplicates), risk-flag
   quote verification via PDF text extraction, chat
