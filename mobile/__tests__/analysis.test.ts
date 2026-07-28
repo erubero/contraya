@@ -88,4 +88,21 @@ describe('parseAnalysis', () => {
     const out = parseAnalysis({ summary: 'x'.repeat(10000) });
     expect(out.summary).toHaveLength(8000);
   });
+
+  it('strips control and bidi-override chars from strings', () => {
+    const out = parseAnalysis({
+      summary: 'shall\u202Erenew\u200B',
+      party_other: 'A\u2066cme LLC',
+    });
+    expect(out.summary).toBe('shallrenew');
+    expect(out.party_other).toBe('Acme LLC');
+  });
+
+  it('drops dates outside the plausible year window', () => {
+    const dates = (date: string) =>
+      parseAnalysis({ key_dates: [{ label: 'X', date, date_type: 'payment' }] }).key_dates;
+    expect(dates('0001-01-01')).toHaveLength(0);
+    expect(dates('9999-12-31')).toHaveLength(0);
+    expect(dates('2026-08-01')).toHaveLength(1);
+  });
 });

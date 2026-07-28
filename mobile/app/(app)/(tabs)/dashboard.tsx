@@ -165,7 +165,9 @@ export default function Dashboard() {
                       {inboxItemTitle(item)}
                     </Text>
                     <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }} numberOfLines={1}>
-                      {item.from_address ?? 'Tap to have Contry read it'}
+                      {/* Sender is unauthenticated (email is spoofable), so it is
+                          labeled, never presented as a verified identity. */}
+                      {item.from_address ? `Unverified sender: ${item.from_address}` : 'Tap to have Contry read it'}
                     </Text>
                   </View>
                   <Pressable

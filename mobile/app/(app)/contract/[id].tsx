@@ -186,7 +186,15 @@ export default function ContractDetail() {
             <Pressable
               onPress={() => {
                 const c = contract.party_other_contact ?? '';
-                const url = c.includes('@') ? `mailto:${c}` : /^[+()\d][\d\s().-]{6,}$/.test(c) ? `tel:${c.replace(/[^+\d]/g, '')}` : null;
+                // Validate as a bare email before mailto: the value is model
+                // output from an attacker-plantable document, and mailto honors
+                // ?cc/bcc/body, so an unvalidated string could pre-fill a hidden
+                // recipient. A plain-email check drops anything with extras.
+                const url = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)
+                  ? `mailto:${c}`
+                  : /^[+()\d][\d\s().-]{6,}$/.test(c)
+                    ? `tel:${c.replace(/[^+\d]/g, '')}`
+                    : null;
                 if (url) Linking.openURL(url).catch(() => {});
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: RADIUS, padding: 14 }}

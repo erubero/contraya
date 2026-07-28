@@ -60,9 +60,14 @@ export const MAX_RISK_FLAGS = 20;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// Model output is displayed text. Strip control chars and bidi/zero-width
+// overrides so a crafted document can't smuggle a U+202E into a quoted clause
+// and visually reorder what the user reads.
+const CONTROL_CHARS = /[\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g;
+
 function str(v: unknown, max: number): string | null {
   if (typeof v !== 'string') return null;
-  const t = v.trim();
+  const t = v.replace(CONTROL_CHARS, '').trim();
   if (!t) return null;
   return t.length > max ? t.slice(0, max) : t;
 }
@@ -79,7 +84,12 @@ function oneOf<T extends string>(v: unknown, allowed: readonly T[]): T | null {
 function isoDate(v: unknown): string | null {
   if (typeof v !== 'string' || !DATE_RE.test(v)) return null;
   const parsed = new Date(`${v}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : v;
+  if (Number.isNaN(parsed.getTime())) return null;
+  // Plausibility window: contracts reference dates a few years back through
+  // decades out. This blocks a crafted year 0001/9999 from scheduling an
+  // absurd reminder even if it is a syntactically valid date.
+  const year = Number(v.slice(0, 4));
+  return year >= 2000 && year <= 2100 ? v : null;
 }
 
 function decodeDate(v: unknown): AnalyzedDate | null {
