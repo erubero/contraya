@@ -194,10 +194,20 @@ create policy "insert own obligations" on public.contract_obligations
     )
   );
 
+-- with check re-proves parent ownership, matching the INSERT policy. The
+-- grant is column-scoped to completed_at so contract_id can't move today, but
+-- keeping the policies identical means widening the grant later can't silently
+-- open a cross-user re-parenting hole.
 create policy "update own obligations" on public.contract_obligations
   for update to authenticated
   using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
+  with check (
+    user_id = (select auth.uid())
+    and exists (
+      select 1 from public.contracts c
+      where c.id = contract_id and c.user_id = (select auth.uid())
+    )
+  );
 
 create policy "delete own obligations" on public.contract_obligations
   for delete to authenticated
@@ -278,6 +288,30 @@ create trigger contract_obligations_cap before insert on public.contract_obligat
 create trigger contract_risk_flags_cap before insert on public.contract_risk_flags
   for each row execute function public.enforce_child_cap();
 
+-- The per-contract cap trigger is BEFORE INSERT only. contract_dates is the one
+-- child table with a full UPDATE grant, so without this a client could keep
+-- re-parenting an owned row onto a different owned contract (INSERT-cap never
+-- re-fires) and grow date rows without bound, which would also swell the
+-- all-users scan in send-date-reminders. contract_id and user_id are never
+-- edited (only the date fields are), so freeze them: this closes the cap
+-- bypass and the intra-user re-parenting the RLS with-check does not cover.
+create or replace function public.freeze_date_parent()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.contract_id is distinct from old.contract_id
+     or new.user_id is distinct from old.user_id then
+    raise exception 'contract_id and user_id are immutable';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger contract_dates_freeze_parent before update on public.contract_dates
+  for each row execute function public.freeze_date_parent();
+
 -- 6. contract_documents ------------------------------------------------------
 -- The contract file itself (PDF or page photos, page_number ordering) plus
 -- anything else the user attaches. Immutable like Warraya's documents.
@@ -339,6 +373,11 @@ on conflict (id) do update
   set public = false,
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
+
+-- RLS on storage.objects is on by default on managed Supabase, but the whole
+-- privacy of these private buckets rests on it, so assert it explicitly rather
+-- than assume the platform default (idempotent).
+alter table storage.objects enable row level security;
 
 -- Object paths are {user_id}/{uuid}.{ext}; the first folder segment must match
 -- the caller's uid.
