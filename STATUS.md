@@ -26,8 +26,8 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **87 tests across
-  12 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Mobile app compiles and tests green:** tsc strict clean, **92 tests across
+  13 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
