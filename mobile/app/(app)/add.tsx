@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image,
 } from 'react-native';
+import Animated, {
+  FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming,
+} from 'react-native-reanimated';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -22,9 +25,12 @@ import {
   ContractInsert, ContractDateInsert, DEFAULT_WINDOWS, DATE_TYPE_LABELS,
 } from '@/data/types';
 import { useTheme, RADIUS } from '@/theme/colors';
-import LottieLoader from '@/components/LottieLoader';
+import { severityColor } from '@/theme/severity';
 import SuccessCheck from '@/components/SuccessCheck';
 import DateField from '@/components/DateField';
+import ContryFace from '@/components/ContryFace';
+import InsightCard from '@/components/InsightCard';
+import GlowBackdrop from '@/components/GlowBackdrop';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
 import { FREE_ANALYSIS_LIFETIME_LIMIT, PRO_MONTHLY_ANALYSES } from '@/lib/limits';
@@ -78,6 +84,22 @@ export default function AddContract() {
     const t = setInterval(() => setStageIndex((i) => (i + 1) % STAGES.length), 6000);
     return () => clearInterval(t);
   }, [step]);
+
+  // A slow breathing scale on the "Contry is reading" face so a static icon
+  // (the icon-fallback for the still-unwired 'reading' mascot slot) doesn't
+  // read as hung during the up-to-90s analysis wait.
+  const readingScale = useSharedValue(1);
+  useEffect(() => {
+    if (step !== 'analyzing') return;
+    readingScale.value = withRepeat(
+      withSequence(withTiming(1.06, { duration: 1400 }), withTiming(1, { duration: 1400 })),
+      -1,
+      true
+    );
+  }, [step, readingScale]);
+  const readingPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: readingScale.value }],
+  }));
 
   // Opened from the email inbox: the PDF is already in storage, so skip the
   // source picker and go straight to quota gate -> analysis -> review.
@@ -349,12 +371,17 @@ export default function AddContract() {
   if (step === 'analyzing') {
     return (
       <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
-        <LottieLoader size={140} />
+        <Animated.View style={readingPulseStyle}>
+          <ContryFace slot="reading" size={140} fallbackIcon="reader-outline" color={theme.primary} />
+        </Animated.View>
         <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
           {STAGES[stageIndex]}
         </Text>
         <Text style={{ color: theme.mutedForeground, textAlign: 'center' }}>
           Long contracts can take a minute or two.
+        </Text>
+        <Text style={{ color: theme.mutedForeground, fontSize: 13, textAlign: 'center' }}>
+          Encrypted in transit and at rest. Only you can see what's here.
         </Text>
       </View>
     );
@@ -409,48 +436,57 @@ export default function AddContract() {
         <View style={{ gap: 14 }}>
           {step === 'review' && (
             <>
+              <Animated.View entering={FadeIn.duration(250)}>
+                <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '700' }}>
+                  Contry finished reading. Here's what it found.
+                </Text>
+              </Animated.View>
+              {/* The disclaimer must render on every review state, summary or
+                  not: everything below this point is model output. When a
+                  summary exists it lives inside the InsightCard's footer;
+                  otherwise the bare line below still carries it. */}
               {analysis?.summary ? (
-                <View
-                  style={{
-                    backgroundColor: theme.card,
-                    borderColor: theme.border,
-                    borderWidth: 1,
-                    borderRadius: RADIUS,
-                    padding: 14,
-                    gap: 8,
-                  }}
-                >
-                  <Text style={{ color: theme.mutedForeground, fontSize: 12, textTransform: 'uppercase', fontWeight: '600' }}>
-                    In plain English
-                  </Text>
-                  <Text style={{ color: theme.foreground, fontSize: 15, lineHeight: 22 }}>{analysis.summary}</Text>
-                </View>
-              ) : null}
-              {/* Must render on every review state, summary or not: everything
-                  below this point is model output. */}
-              <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
+                <Animated.View entering={FadeInDown.delay(120).duration(350)} style={{ position: 'relative' }}>
+                  <GlowBackdrop size={240} style={{ position: 'absolute', top: -50, left: '50%', marginLeft: -120 }} />
+                  <InsightCard label="In plain English" icon="checkmark-circle" footer={DISCLAIMER}>
+                    {analysis.summary}
+                  </InsightCard>
+                </Animated.View>
+              ) : (
+                <Animated.View entering={FadeInDown.delay(120).duration(350)}>
+                  <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
+                </Animated.View>
+              )}
             </>
           )}
 
-          <Field label="Contract name *" value={title} onChangeText={setTitle} placeholder="e.g. Apartment lease, 12 Palm Ave" />
+          <Animated.View
+            entering={step === 'review' ? FadeInDown.delay(260).duration(350) : undefined}
+            style={{ gap: 14 }}
+          >
+            <Field label="Contract name *" value={title} onChangeText={setTitle} placeholder="e.g. Apartment lease, 12 Palm Ave" />
 
-          <Label text="Type" />
-          <Chips
-            options={CONTRACT_TYPES.map((t) => ({ value: t, label: CONTRACT_TYPE_LABELS[t] }))}
-            selected={type}
-            onSelect={(v) => setType(v as ContractType)}
-          />
+            <Label text="Type" />
+            <Chips
+              options={CONTRACT_TYPES.map((t) => ({ value: t, label: CONTRACT_TYPE_LABELS[t] }))}
+              selected={type}
+              onSelect={(v) => setType(v as ContractType)}
+            />
 
-          <Field label="Other party" value={partyOther} onChangeText={setPartyOther} placeholder="e.g. Palm Grove Properties LLC" />
+            <Field label="Other party" value={partyOther} onChangeText={setPartyOther} placeholder="e.g. Palm Grove Properties LLC" />
 
-          {step === 'manual' && (
-            <>
-              <DateField label="Start date" value={effectiveDate} onChange={setEffectiveDate} />
-              <DateField label="End date" value={endDate} onChange={setEndDate} />
-            </>
-          )}
+            {step === 'manual' && (
+              <>
+                <DateField label="Start date" value={effectiveDate} onChange={setEffectiveDate} />
+                <DateField label="End date" value={endDate} onChange={setEndDate} />
+              </>
+            )}
+          </Animated.View>
 
-          <View style={{ gap: 8 }}>
+          <Animated.View
+            entering={step === 'review' ? FadeInDown.delay(380).duration(350) : undefined}
+            style={{ gap: 8 }}
+          >
             <Label text={step === 'review' ? 'Dates Contry found. Check them against your document' : 'Dates to track'} />
             {dates.map((d, i) => (
               <View
@@ -532,16 +568,41 @@ export default function AddContract() {
               <Ionicons name="add" size={18} color={theme.primary} />
               <Text style={{ color: theme.primary, fontWeight: '600' }}>Add a date</Text>
             </Pressable>
-          </View>
+          </Animated.View>
 
-          {step === 'review' && (analysis?.risk_flags.length ?? 0) > 0 && (
-            <Text style={{ color: theme.mutedForeground, fontSize: 13 }}>
-              Contry also found {analysis!.risk_flags.length}{' '}
-              {analysis!.risk_flags.length === 1 ? 'thing' : 'things'} worth a close look and{' '}
-              {analysis!.obligations.length} to-{analysis!.obligations.length === 1 ? 'do' : 'dos'}.
-              They save with the contract.
-            </Text>
-          )}
+          {step === 'review' &&
+            ((analysis?.risk_flags.length ?? 0) > 0 || (analysis?.obligations.length ?? 0) > 0) && (
+              <Animated.View entering={FadeInDown.delay(500).duration(350)} style={{ gap: 8 }}>
+                {analysis!.risk_flags.length > 0 && (
+                  <>
+                    <Text style={{ color: theme.foreground, fontSize: 14, fontWeight: '600' }}>
+                      Contry also found {analysis!.risk_flags.length}{' '}
+                      {analysis!.risk_flags.length === 1 ? 'thing' : 'things'} worth a close look
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {analysis!.risk_flags.map((r, i) => {
+                        const c = severityColor(theme)[r.severity];
+                        return (
+                          <View
+                            key={i}
+                            style={{ backgroundColor: c.bg, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}
+                          >
+                            <Text style={{ color: c.fg, fontSize: 11, fontWeight: '700' }} numberOfLines={1}>
+                              {r.title}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+                {analysis!.obligations.length > 0 && (
+                  <Text style={{ color: theme.mutedForeground, fontSize: 13 }}>
+                    Plus {analysis!.obligations.length} to-{analysis!.obligations.length === 1 ? 'do' : 'dos'}. Everything saves with the contract.
+                  </Text>
+                )}
+              </Animated.View>
+            )}
 
           <Field label="Notes" value={notes} onChangeText={setNotes} placeholder="Anything else worth remembering" multiline />
 
