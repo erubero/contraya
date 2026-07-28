@@ -24,6 +24,20 @@ says. It is not legal advice."
 contract lifecycle (payments, renewals, notice windows) lives on the calendar
 with reminders. That is Warraya's proven DNA pointed at contracts.
 
+**Separate-app decision is FINAL (owner confirmed 2026-07-28):** Contraya
+stays its own app/repo/brand, not a Warraya feature or rebrand. Reasons on
+record: token economics don't fit under Warraya's $4.99 sub (an analysis
+costs 15-30x a receipt scan), "warranty tracker" and "contract reader" are
+different App Store search intents, contract analysis is the legally
+sensitive surface and must not put Warraya releases at risk, and Warraya's
+tab bar has no room for a parallel contracts universe. Mitigation for the
+zero-install cold start: cross-promote from Warraya at launch (see launch
+checklist). Fallback if Contraya finds no audience: fold it into Warraya as
+a premium add-on later — that door stays open in this direction only.
+Harvey AI was evaluated and ruled out as a backend: enterprise-only, no
+public API, built for lawyers doing legal work (wrong fit for
+describe-never-advise). claude-sonnet-5 via the Claude API stays.
+
 ## What is DONE (in this repo, verified)
 
 - **Mobile app compiles and tests green:** tsc strict clean, **100 tests across 14 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
@@ -224,6 +238,10 @@ rows + storage.
 
 ## Post-launch roadmap (owner-approved order, from the v1.1 brief review)
 
+0. At launch: cross-promote from Warraya — "New from us: Contraya" row in
+   Warraya's Settings + swap this landing's early-access mailto CTA for the
+   App Store badge (change lives in the Warraya repo + this repo's
+   `src/pages/Landing.jsx`).
 1. .docx support (add flow + email-in; edge fn extracts text server-side)
 2. Device calendar sync — expo-calendar, premium toggle (native dep, prebuild)
 3. Biometric app lock — expo-local-authentication (native dep)
