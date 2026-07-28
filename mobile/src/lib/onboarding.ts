@@ -93,3 +93,63 @@ export async function backfillOnboardingComplete(): Promise<void> {
     await supabase.auth.updateUser({ data: { onboarding_complete: true } });
   } catch {}
 }
+
+// Turns the questionnaire answers into a short line that shows the user we
+// heard them (shown on the onboarding 'done' step and on the dashboard).
+// Priority order picks the most specific, most emotionally relevant answer
+// rather than trying to synthesize all three at once. A low-signal
+// combination (e.g. 'sometimes'/'no'/'later') falls through to null on
+// purpose: no line beats a generic-sounding forced one.
+export function reflectOnAnswers(
+  answers: OnboardingAnswers | null | undefined
+): { headline: string; body: string } | null {
+  if (!answers) return null;
+  const { forgets, missed_claim, reminders } = answers;
+  if (missed_claim === 'yes') {
+    return {
+      headline: 'You told us it happened before.',
+      body: 'A fee, a renewal, a deadline that snuck past. That is exactly what Contry watches for now, on every contract you add.',
+    };
+  }
+  if (missed_claim === 'unsure') {
+    return {
+      headline: 'You said you were never sure.',
+      body: 'Now you do not have to guess. Contry reads what you upload and tells you, plainly, what is actually in it.',
+    };
+  }
+  if (forgets === 'rarely') {
+    return {
+      headline: 'You said you do not always get to the fine print.',
+      body: 'Contry reads it so you do not have to. You still get the plain-English version, every time.',
+    };
+  }
+  if (forgets === 'always' && missed_claim === 'no') {
+    return {
+      headline: 'You said you read everything already.',
+      body: 'Good. Contry backs you up on the dates, so being careful once is enough.',
+    };
+  }
+  if (reminders === 'yes') {
+    return {
+      headline: 'You asked for a heads up.',
+      body: 'That is the whole point. Contry reminds you while there is still time to act, not after.',
+    };
+  }
+  return null;
+}
+
+export const INSIGHT_DISMISSED_KEY = 'contraya.personalizedInsightDismissed';
+
+export async function getPersonalizedInsightDismissed(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(INSIGHT_DISMISSED_KEY)) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export async function dismissPersonalizedInsight(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(INSIGHT_DISMISSED_KEY, 'true');
+  } catch {}
+}

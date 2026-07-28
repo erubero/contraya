@@ -8,6 +8,7 @@ import {
   needsOnboarding as computeNeedsOnboarding,
   getOnboardingPending,
   backfillOnboardingComplete,
+  OnboardingAnswers,
 } from '@/lib/onboarding';
 import type { ProfilePatch } from '@/api/profile';
 
@@ -19,6 +20,7 @@ type AuthValue = {
   userId: string | null;
   displayName: string | null;
   avatarPath: string | null;
+  onboardingAnswers: OnboardingAnswers | null;
   needsOnboarding: boolean;
   isDemo: boolean;
   signUp: (email: string, password: string) => Promise<void>;
@@ -41,6 +43,10 @@ function metaOf(session: { user: { user_metadata?: Record<string, unknown> } } |
     displayName: typeof meta.display_name === 'string' ? meta.display_name : null,
     avatarPath: typeof meta.avatar_path === 'string' ? meta.avatar_path : null,
     onboardingComplete: meta.onboarding_complete === true,
+    onboardingAnswers:
+      typeof meta.onboarding_answers === 'object' && meta.onboarding_answers !== null
+        ? (meta.onboarding_answers as OnboardingAnswers)
+        : null,
   };
 }
 
@@ -50,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [onboardingAnswers, setOnboardingAnswers] = useState<OnboardingAnswers | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [localPending, setLocalPending] = useState<boolean | null>(null);
@@ -69,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const meta = metaOf(session);
       setDisplayName(meta.displayName);
       setAvatarPath(meta.avatarPath);
+      setOnboardingAnswers(meta.onboardingAnswers);
       setOnboardingComplete(meta.onboardingComplete);
       setStatus(session ? 'signedIn' : 'signedOut');
     };
@@ -105,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId,
       displayName,
       avatarPath,
+      onboardingAnswers,
       needsOnboarding,
       isDemo: !isConfigured,
       signUp: async (addr, password) => {
@@ -208,11 +217,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserId(null);
         setDisplayName(null);
         setAvatarPath(null);
+        setOnboardingAnswers(null);
         setOnboardingComplete(false);
         setCreatedAt(null);
       },
     }),
-    [status, email, userId, displayName, avatarPath, needsOnboarding, localPending]
+    [status, email, userId, displayName, avatarPath, onboardingAnswers, needsOnboarding, localPending]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
