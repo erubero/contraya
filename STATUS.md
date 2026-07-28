@@ -102,6 +102,24 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   hero CTA, in the features closer, in the FAQ, and in the footer. Adapted
   Privacy/Terms (Terms carries a "Not Legal Advice" section), builds clean.
   Web dashboard, guides, service worker all deleted — landing only.
+  **Dependency prune (2026-07-28):** the dashboard was deleted but its deps
+  and components were not. Removed 15 dead files (all 12 shadcn
+  `src/components/ui/*`, `JsonLd.jsx`, `PageNotFound.jsx`, `lib/utils.js`)
+  plus `components.json`, and 16 unused runtime dependencies (all six
+  `@radix-ui/*`, `@supabase/supabase-js`, `@tanstack/react-query`,
+  `class-variance-authority`, `clsx`, `date-fns`, `framer-motion`,
+  `lottie-react`, `sonner`, `tailwind-merge`, `vaul`). Each was verified
+  unreferenced by every surviving file before removal. Runtime deps went
+  21 → 5 (react, react-dom, react-router-dom, lucide-react,
+  tailwindcss-animate); bundled CSS dropped 52.8 kB → 38.4 kB. CSP tightened
+  to match: `img-src`/`connect-src` no longer whitelist `*.supabase.co`,
+  since the landing makes no network calls at all.
+  **Known, deliberate:** `react-router-dom` 6.30.4 carries two moderate
+  advisories (open-redirect→XSS, SSR `deserializeErrors`) whose fix requires
+  the v7 major. Neither is reachable here — static SPA, no SSR, three fixed
+  routes, no user input feeding the router — so the major upgrade was left
+  as a separate decision rather than folded into a cleanup pass. `postcss`
+  was patched. Remaining dev-only advisories all come through `wrangler`.
 - **Email-in ingestion (2026-07-28):** every user gets a secret forwarding
   address `c-<32 hex>@usecontraya.com` (minted server-side by the
   `get_or_create_email_token` RPC; the token IS the credential — senders are

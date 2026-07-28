@@ -30,21 +30,14 @@ yarn-error.*
 
 # macOS
 .DS_Store
-*.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
-
 # Generated native projects (recreated by expo prebuild)
 /ios
 /android
-
-# Local env
-.env
