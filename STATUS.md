@@ -77,7 +77,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   newlines, 120s upstream timeout → refund + 504. **Security-critical check:
   every storage path must start with `${user.id}/`** (the function downloads
   with the service role, which bypasses storage RLS). Server ceiling
-  ANALYSIS_CEILING=40/user/month, fail-closed 503. Token usage logged per
+  ANALYSIS_CEILING=20/user/month (tightened 2026-07-28), fail-closed 503. Token usage logged per
   call — watch cost from day one.
 - **Migrations** written (NOT pushed): `20260728000000_init` (5 tables +
   documents bucket + per-user 200-contract cap + per-contract 100-child-row
@@ -130,7 +130,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   `cache_control` on the notes block, so follow-up questions cost ~10% —
   verify `cache_read_input_tokens > 0` in the logs on question 2).
   `chat_usage` migration `20260728000500` (atomic consume/refund,
-  CHAT_CEILING=300/mo server, PRO_MONTHLY_CHATS=50 client). Screen
+  CHAT_CEILING=60/mo server (tightened 2026-07-28), PRO_MONTHLY_CHATS=50 client). Screen
   `/chat/[id]`: pinned disclaimer, suggestion chips, session-only transcript
   (persistence = roadmap), paywall on open for non-premium. Entry button on
   the contract detail. Demo mode answers canned lease questions offline.
@@ -170,6 +170,37 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   quote verification via PDF text extraction, chat
   stored-dates-are-authoritative instruction, eval harness with real
   contracts.
+- **Launch-readiness audit + fixes (2026-07-28):** three-way audit (legal
+  pages/landing, in-app disclaimer surfaces, backend security) ran and every
+  found gap was fixed the same day:
+  - **Terms** now carries Subscriptions and Billing (auto-renew via Apple ID,
+    3.1.2 language), Governing Law (**Puerto Rico** — owner confirmed
+    Renovatio, LLC is registered there), age/capacity, indemnification,
+    severability, and hello@usecontraya.com contact. **Privacy** now
+    discloses email forwarding (sender/subject/attachments stored, body not),
+    the third-party document-processing provider, push tokens + Sign in with
+    Apple data, and at-rest encryption. Both docs: deletion unified to
+    "promptly, residual copies within 30 days" and **hardcoded LAST_UPDATED
+    constants (bump by hand on every text change — never `new Date()`)**.
+  - **App:** review-screen disclaimer no longer gated on a non-null summary
+    (renders on every review state); welcome + signin carry "By continuing
+    you agree to the Terms of Service and Privacy Policy" links; welcome's
+    example card de-Warrayafied (lease/renewal, not espresso/refund);
+    STORE_LISTING.md rewritten for Contraya (was wholesale Warraya) incl.
+    the App Review notes block and App Privacy declarations.
+  - **Backend:** contract_dates UPDATE policy re-proves parent ownership
+    (was re-parentable onto a foreign contract UUID); ceilings tightened
+    ANALYSIS 40→20, CHAT 300→60 (paid limits are client-side only, so the
+    ceilings are the real cost gate); chat appends a RULES_REMINDER to the
+    final user turn (forged client history can no longer bury the
+    no-legal-conclusions rules); reminder-email HTML escapes label/title;
+    delete-account POST-only; ingest-email rejects (not truncates) over-long
+    tokens; model-output JSON.parse isolated so document-derived text can't
+    reach error logs; `supabase/config.toml` codifies verify_jwt per
+    function. Accepted risks (documented, not fixed): register_push_token
+    takeover-by-design, ingest daily-limit TOCTOU (trigger backstops), PDF
+    page-count bypass (byte cap + Anthropic's 100-page limit backstop),
+    unverified sender rendered in inbox UI.
 - **Mascot:** Contry (registry at `mobile/assets/mascot/index.ts`, slots
   search-idle/search-active/search-empty/reading, all null — icon fallbacks
   render until the owner supplies art; NEVER ship placeholder art). Warry's
@@ -187,7 +218,13 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 3. **Deploy functions** (Claude can do this once the project exists):
    `analyze-contract`, `chat-contract`, `delete-account` (normal),
    `send-date-reminders` (`--no-verify-jwt`, see its SETUP.md),
-   `ingest-email` (`--no-verify-jwt`). Probe all: 401 unauthed.
+   `ingest-email` (`--no-verify-jwt`). The JWT posture is codified in
+   `supabase/config.toml`, so a plain `supabase functions deploy` gets it
+   right. Probe all: 401 unauthed.
+3b. **Attorney review of Terms + Privacy before launch.** Both documents
+   were generated and audited in-repo, but nobody licensed has read them.
+   Cheap flat-fee review is enough; when the text changes, bump the
+   hardcoded LAST_UPDATED constants in both page files.
 4. **Edge smoke test BEFORE any UI polish** (go/no-go from the plan): curl
    `analyze-contract` with a real signed-in JWT + a real lease PDF path —
    verify 401 unauthed / 400 foreign path / 429 at ceiling / 422 on a cat
@@ -242,6 +279,10 @@ rows + storage.
    Warraya's Settings + swap this landing's early-access mailto CTA for the
    App Store badge (change lives in the Warraya repo + this repo's
    `src/pages/Landing.jsx`).
+0b. Server-side RevenueCat receipt validation in analyze-contract +
+   chat-contract (paid limits are client-side only today; the tightened
+   server ceilings 20/60 are the interim cost gate). Raise the ceilings
+   back once entitlement is checked server-side.
 1. .docx support (add flow + email-in; edge fn extracts text server-side)
 2. Device calendar sync — expo-calendar, premium toggle (native dep, prebuild)
 3. Biometric app lock — expo-local-authentication (native dep)
