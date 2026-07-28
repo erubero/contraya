@@ -37,7 +37,17 @@ export default {
       return;
     }
 
-    const parsed = await PostalMime.parse(message.raw);
+    // Parsing runs on hostile, possibly malformed MIME. A thrown parse rejects
+    // the email() promise, which Cloudflare treats as a transient failure and
+    // the sender's MTA retries; reject cleanly instead so one crafted message
+    // can't drive retry amplification.
+    let parsed;
+    try {
+      parsed = await PostalMime.parse(message.raw);
+    } catch {
+      message.setReject('Could not read this email');
+      return;
+    }
     const pdfs = (parsed.attachments ?? []).filter(isPdf).slice(0, MAX_ATTACHMENTS);
     if (pdfs.length === 0) {
       message.setReject('No contract found. Attach the contract as a PDF and send again.');
