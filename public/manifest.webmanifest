@@ -1,0 +1,27 @@
+{
+  "name": "Warraya",
+  "short_name": "Warraya",
+  "description": "Keep every warranty and receipt in one place, and get a heads up before coverage runs out.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8faff",
+  "theme_color": "#0a1440",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

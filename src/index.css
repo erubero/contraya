@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', sans-serif;
+    /* Warraya brand: deep navy + blue, matching the landing page */
+    --background: 220 100% 99%;          /* #f8faff */
+    --foreground: 222 47% 11%;           /* slate-900 */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 217 91% 60%;              /* #3b82f6 blue-500 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 100% 93%;           /* #dbeafe blue-100 */
+    --secondary-foreground: 224 71% 20%; /* deep navy text */
+    --muted: 214 60% 96%;
+    --muted-foreground: 215 16% 47%;     /* slate-500 */
+    --accent: 214 100% 93%;              /* #dbeafe */
+    --accent-foreground: 224 76% 33%;    /* blue-800 */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 60% 91%;               /* soft blue border */
+    --input: 214 60% 91%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 224 76% 48%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 0 72% 51%;
+    --radius: 0.75rem;
+    --sidebar-background: 220 100% 99%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 214 100% 93%;
+    --sidebar-accent-foreground: 224 76% 33%;
+    --sidebar-border: 214 60% 91%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  .dark {
+    --background: 224 71% 8%;            /* #0a1440 deep navy */
+    --foreground: 213 100% 96%;
+    --card: 223 60% 13%;                 /* #0f2060 */
+    --card-foreground: 213 100% 96%;
+    --popover: 223 60% 13%;
+    --popover-foreground: 213 100% 96%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 223 50% 18%;
+    --secondary-foreground: 213 100% 96%;
+    --muted: 223 50% 18%;
+    --muted-foreground: 215 25% 65%;
+    --accent: 223 60% 22%;
+    --accent-foreground: 213 100% 90%;
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 223 50% 22%;
+    --input: 223 50% 22%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 224 76% 60%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 0 72% 51%;
+    --sidebar-background: 224 71% 8%;
+    --sidebar-foreground: 213 100% 96%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 223 60% 22%;
+    --sidebar-accent-foreground: 213 100% 90%;
+    --sidebar-border: 223 50% 22%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-inter;
+    overscroll-behavior-y: none;
+  }
+}

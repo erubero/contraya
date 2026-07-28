@@ -1,0 +1,139 @@
+import {
+  ContractType, CONTRACT_TYPES,
+  DateType, DATE_TYPES,
+  Recurrence, RECURRENCES,
+  Severity, SEVERITIES,
+} from './types';
+
+// What the analyze-contract edge function returns, after tolerant decoding.
+// The model's structured output should already conform, but this decoder is
+// the trust boundary: every enum is checked, every string coerced, every
+// array bounded, and anything malformed is dropped rather than thrown.
+
+export type AnalyzedDate = {
+  label: string;
+  date: string; // yyyy-MM-dd
+  date_type: DateType;
+  recurrence: Recurrence;
+  note: string | null;
+};
+
+export type AnalyzedObligation = {
+  who: string;
+  description: string;
+  due_note: string | null;
+};
+
+export type AnalyzedRiskFlag = {
+  severity: Severity;
+  title: string;
+  quote: string | null;
+  why_it_matters: string;
+};
+
+export type ContractAnalysis = {
+  title: string | null;
+  contract_type: ContractType;
+  party_you: string | null;
+  party_other: string | null;
+  summary: string | null;
+  payment_terms: string | null;
+  key_dates: AnalyzedDate[];
+  obligations: AnalyzedObligation[];
+  risk_flags: AnalyzedRiskFlag[];
+};
+
+// Caps mirror what the detail screen can sensibly render; the DB CHECKs are
+// the hard stop. Anything beyond is silently dropped.
+export const MAX_DATES = 20;
+export const MAX_OBLIGATIONS = 30;
+export const MAX_RISK_FLAGS = 20;
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function str(v: unknown, max: number): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+function oneOf<T extends string>(v: unknown, allowed: readonly T[]): T | null {
+  return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : null;
+}
+
+function isoDate(v: unknown): string | null {
+  if (typeof v !== 'string' || !DATE_RE.test(v)) return null;
+  const parsed = new Date(`${v}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : v;
+}
+
+function decodeDate(v: unknown): AnalyzedDate | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const label = str(o.label, 200);
+  const date = isoDate(o.date);
+  const date_type = oneOf<DateType>(o.date_type, DATE_TYPES) ?? 'custom';
+  if (!label || !date) return null;
+  return {
+    label,
+    date,
+    date_type,
+    recurrence: oneOf<Recurrence>(o.recurrence, RECURRENCES) ?? 'none',
+    note: str(o.note, 200),
+  };
+}
+
+function decodeObligation(v: unknown): AnalyzedObligation | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const description = str(o.description, 1000);
+  if (!description) return null;
+  return {
+    who: str(o.who, 200) ?? 'You',
+    description,
+    due_note: str(o.due_note, 200),
+  };
+}
+
+function decodeRiskFlag(v: unknown): AnalyzedRiskFlag | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const title = str(o.title, 200);
+  const why = str(o.why_it_matters, 1000);
+  if (!title || !why) return null;
+  return {
+    severity: oneOf<Severity>(o.severity, SEVERITIES) ?? 'low',
+    title,
+    quote: str(o.quote, 1000),
+    why_it_matters: why,
+  };
+}
+
+function decodeArray<T>(v: unknown, decode: (item: unknown) => T | null, max: number): T[] {
+  if (!Array.isArray(v)) return [];
+  const out: T[] = [];
+  for (const item of v) {
+    const d = decode(item);
+    if (d) out.push(d);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+// Never throws on shape problems: a malformed field degrades to null/[] and
+// the review screen lets the user fill the gap.
+export function parseAnalysis(raw: unknown): ContractAnalysis {
+  const o = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+  return {
+    title: str(o.title, 200),
+    contract_type: oneOf<ContractType>(o.contract_type, CONTRACT_TYPES) ?? 'other',
+    party_you: str(o.party_you, 200),
+    party_other: str(o.party_other, 200),
+    summary: str(o.summary, 8000),
+    payment_terms: str(o.payment_terms, 2000),
+    key_dates: decodeArray(o.key_dates, decodeDate, MAX_DATES),
+    obligations: decodeArray(o.obligations, decodeObligation, MAX_OBLIGATIONS),
+    risk_flags: decodeArray(o.risk_flags, decodeRiskFlag, MAX_RISK_FLAGS),
+  };
+}

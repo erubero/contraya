@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /add
+Disallow: /warranty/
+Disallow: /login
+
+Sitemap: https://warraya.com/sitemap.xml
