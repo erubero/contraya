@@ -170,6 +170,56 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   quote verification via PDF text extraction, chat
   stored-dates-are-authoritative instruction, eval harness with real
   contracts.
+- **Whole-app security audit round 2 (2026-07-28):** six parallel adversarial
+  audits (mobile client, edge functions, DB/RLS, LLM/prompt-injection, email
+  pipeline, deps/landing/hygiene). Fixed the same day:
+  - **HIGH — denial-of-wallet:** analyze/chat refunded the cost-ceiling
+    counter on `is_contract:false` / refusal / parse-fail, all AFTER the model
+    billed for the read, so anyone could loop large non-contract PDFs for
+    unbounded Anthropic spend. Now `refund` is nulled the instant a 2xx comes
+    back; only pre-billing failures (upstream non-2xx, pre-response timeout)
+    refund. Tradeoff: a genuine non-contract upload now costs a slot (the read
+    was paid for); error copy says so. A separate non-refundable "attempt"
+    counter (to spare honest mistakes without reopening the hole) is on the
+    roadmap alongside server-side receipt validation.
+  - **MEDIUM — DB re-parenting → cron DoS:** the child-cap trigger is BEFORE
+    INSERT only, so a client could re-parent owned `contract_dates` rows
+    between owned contracts and grow rows without bound (swelling the
+    all-users scan in send-date-reminders). Added a BEFORE UPDATE trigger
+    freezing `contract_id`/`user_id`. Also pinned `alter table storage.objects
+    enable row level security` explicitly, and gave `contract_obligations`
+    UPDATE the same parent-ownership `with check` for parity.
+  - **MEDIUM — email push phishing:** the ingest push interpolated the
+    spoofable sender + filename into a notification carrying the app's title
+    ("invoice.pdf arrived from billing@yourbank.com"). Push body is now a
+    fixed string; `clean()` strips control/bidi chars; the inbox row labels
+    the sender "Unverified sender:".
+  - **MEDIUM — LLM hardening:** analyze + chat system prompts now state that
+    document text is content to describe, never instructions to follow; chat
+    additionally tells the model that prior assistant turns are client-supplied
+    and may be fabricated (the durable fix, server-persisted transcripts, stays
+    roadmap). The client decoder strips control/bidi chars and clamps dates to
+    a 2000-2100 window; the server verify pass clamps corrected dates the same
+    way so a crafted 0001/9999 can't schedule an absurd reminder.
+  - **LOW batch:** `party_other_contact` validated as a bare email before
+    `mailto:` (no hidden bcc/body pre-fill); UUID regex tightened in
+    chat-contract; email-worker `PostalMime.parse` wrapped so malformed mail
+    bounces instead of driving MTA retries; committed a `package-lock.json`
+    for email-worker (postal-mime parses hostile MIME — was unpinned);
+    `*.keystore`/`*.pem` added to mobile gitignore.
+  - **Accepted / documented, not fixed:** RevenueCat fail-open (cost only,
+    bounded by the server ceiling; note the free wall is inert until a
+    RevenueCat offering is live); signup email-enumeration via "already
+    registered" (LOW, standard UX tradeoff); ingest daily-limit TOCTOU (200-row
+    trigger is the hard stop); PDF polyglots (same risk as any uploaded PDF);
+    npm audit advisories (all dev/build tooling, none runtime-reachable — left
+    for a deliberate maintenance bump, not `--force`d). **Verified sound:**
+    no committed secrets across full git history, strong landing CSP, RLS on
+    every table, atomic fail-closed quotas, correct IDOR/path-traversal gating,
+    no SSRF/ReDoS, complete delete-account cascade.
+  - **Deferred to owner machine (see checklist):** move the Supabase session
+    from plaintext AsyncStorage to expo-secure-store — a native module the
+    agent proxy can't install here, and it needs prebuild.
 - **Launch-readiness audit + fixes (2026-07-28):** three-way audit (legal
   pages/landing, in-app disclaimer surfaces, backend security) ran and every
   found gap was fixed the same day:
@@ -225,6 +275,42 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    were generated and audited in-repo, but nobody licensed has read them.
    Cheap flat-fee review is enough; when the text changes, bump the
    hardcoded LAST_UPDATED constants in both page files.
+3c. **Session storage to Keychain (security audit round 2, needs your Mac +
+   network + prebuild).** Today `mobile/src/api/supabase.ts` persists the
+   Supabase session (incl. refresh token) in plaintext AsyncStorage; a
+   jailbroken device or unencrypted backup yields a durable takeover token.
+   Fix (pre-launch, so no session-migration concern): `npx expo install
+   expo-secure-store`, add a chunked Keychain adapter (SecureStore values are
+   ~2KB-capped on some Android, the session JSON exceeds that), set it as the
+   auth `storage`, then prebuild. Sketch:
+   ```ts
+   // mobile/src/api/secureStorage.ts
+   import * as SecureStore from 'expo-secure-store';
+   const CHUNK = 1800;
+   export const SecureStorage = {
+     async getItem(k: string) {
+       const meta = await SecureStore.getItemAsync(`${k}.n`);
+       if (meta === null) return SecureStore.getItemAsync(k);
+       let out = ''; const n = Number(meta);
+       for (let i = 0; i < n; i++) out += (await SecureStore.getItemAsync(`${k}.${i}`)) ?? '';
+       return out;
+     },
+     async setItem(k: string, v: string) {
+       const prev = Number((await SecureStore.getItemAsync(`${k}.n`)) ?? '0');
+       const n = Math.ceil(v.length / CHUNK);
+       for (let i = 0; i < n; i++) await SecureStore.setItemAsync(`${k}.${i}`, v.slice(i*CHUNK,(i+1)*CHUNK));
+       for (let i = n; i < prev; i++) await SecureStore.deleteItemAsync(`${k}.${i}`); // drop stale chunks
+       await SecureStore.setItemAsync(`${k}.n`, String(n));
+     },
+     async removeItem(k: string) {
+       const n = Number((await SecureStore.getItemAsync(`${k}.n`)) ?? '0');
+       for (let i = 0; i < n; i++) await SecureStore.deleteItemAsync(`${k}.${i}`);
+       await SecureStore.deleteItemAsync(`${k}.n`); await SecureStore.deleteItemAsync(k);
+     },
+   };
+   ```
+   Then in `supabase.ts` set `auth: { storage: SecureStorage, ... }`. Verify
+   sign-in/refresh/sign-out on a device after prebuild.
 4. **Edge smoke test BEFORE any UI polish** (go/no-go from the plan): curl
    `analyze-contract` with a real signed-in JWT + a real lease PDF path —
    verify 401 unauthed / 400 foreign path / 429 at ceiling / 422 on a cat
