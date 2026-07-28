@@ -64,6 +64,16 @@ describe('parseAnalysis', () => {
     expect(out.key_dates).toHaveLength(MAX_DATES);
   });
 
+  it('decodes total_value and contact, rejecting junk', () => {
+    expect(parseAnalysis({ total_value: 8500 }).total_value).toBe(8500);
+    expect(parseAnalysis({ total_value: 49.999 }).total_value).toBe(50);
+    expect(parseAnalysis({ total_value: -5 }).total_value).toBeNull();
+    expect(parseAnalysis({ total_value: '8500' }).total_value).toBeNull();
+    expect(parseAnalysis({ total_value: Infinity }).total_value).toBeNull();
+    expect(parseAnalysis({ party_other_contact: ' events@casadelmar.com ' }).party_other_contact).toBe('events@casadelmar.com');
+    expect(parseAnalysis({}).party_other_contact).toBeNull();
+  });
+
   it('truncates oversized strings instead of dropping them', () => {
     const out = parseAnalysis({ summary: 'x'.repeat(10000) });
     expect(out.summary).toHaveLength(8000);

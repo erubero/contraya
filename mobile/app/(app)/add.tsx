@@ -238,6 +238,8 @@ export default function AddContract() {
         party_other: partyOther.trim() || null,
         summary: analysis?.summary ?? null,
         payment_terms: analysis?.payment_terms ?? null,
+        total_value: analysis?.total_value ?? null,
+        party_other_contact: analysis?.party_other_contact ?? null,
         effective_date: effectiveDate || null,
         end_date: endDate || null,
         status: 'active',

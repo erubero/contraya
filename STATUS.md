@@ -26,8 +26,7 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **92 tests across
-  13 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Mobile app compiles and tests green:** tsc strict clean, **99 tests across 14 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
@@ -100,6 +99,25 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
   already-stored PDF; dismiss deletes row + file). Non-PDF or unknown-token
   mail bounces with a clear SMTP rejection. Migration
   `20260728000400_email_ingest.sql`. Demo mode seeds one inbox item.
+- **v1.1 "Contract Assistant" deltas (2026-07-28):** owner supplied a product
+  brief; gap analysis showed ~80% already built. Added: **Ask Contry** —
+  per-contract Q&A, premium-only. `chat-contract` edge fn (analyze-contract
+  skeleton; ownership proven by fetching the contract with the USER-JWT
+  client so foreign ids 404 before any spend; per-call layout puts system +
+  document + stored-analysis notes as a byte-stable cached prefix with
+  `cache_control` on the notes block, so follow-up questions cost ~10% —
+  verify `cache_read_input_tokens > 0` in the logs on question 2).
+  `chat_usage` migration `20260728000500` (atomic consume/refund,
+  CHAT_CEILING=300/mo server, PRO_MONTHLY_CHATS=50 client). Screen
+  `/chat/[id]`: pinned disclaimer, suggestion chips, session-only transcript
+  (persistence = roadmap), paywall on open for non-premium. Entry button on
+  the contract detail. Demo mode answers canned lease questions offline.
+  Also added (migration `20260728000600`): `total_value` +
+  `party_other_contact` extraction (schema + prompt + decoder + detail rows,
+  contact row taps to mailto/tel) and the derived "ends soon" badge on
+  ContractCard. Deferred to roadmap by owner: .docx support, expo-calendar
+  sync, Face ID lock. **Copy rule added: never claim end-to-end encryption**
+  (incompatible with server-side analysis; say encrypted in transit/at rest).
 - **Mascot:** Contry (registry at `mobile/assets/mascot/index.ts`, slots
   search-idle/search-active/search-empty/reading, all null — icon fallbacks
   render until the owner supplies art; NEVER ship placeholder art). Warry's
@@ -115,8 +133,9 @@ with reminders. That is Warraya's proven DNA pointed at contracts.
    Warraya), `CRON_SECRET` (owner-held), `RESEND_API_KEY` (later; email
    channel soft-skips without it).
 3. **Deploy functions** (Claude can do this once the project exists):
-   `analyze-contract`, `delete-account` (normal), `send-date-reminders`
-   (`--no-verify-jwt`, see its SETUP.md). Probe all three: 401 unauthed.
+   `analyze-contract`, `chat-contract`, `delete-account` (normal),
+   `send-date-reminders` (`--no-verify-jwt`, see its SETUP.md),
+   `ingest-email` (`--no-verify-jwt`). Probe all: 401 unauthed.
 4. **Edge smoke test BEFORE any UI polish** (go/no-go from the plan): curl
    `analyze-contract` with a real signed-in JWT + a real lease PDF path —
    verify 401 unauthed / 400 foreign path / 429 at ceiling / 422 on a cat
@@ -164,6 +183,14 @@ date in review → save → pending local notifications visible → cron dry-run
 curl with a date seeded ~2 weeks out → push arrives → tap routes to the
 contract → sandbox purchase past the 2-analysis wall → account deletion wipes
 rows + storage.
+
+## Post-launch roadmap (owner-approved order, from the v1.1 brief review)
+
+1. .docx support (add flow + email-in; edge fn extracts text server-side)
+2. Device calendar sync — expo-calendar, premium toggle (native dep, prebuild)
+3. Biometric app lock — expo-local-authentication (native dep)
+4. Chat transcript persistence; regenerate email-in address; storage orphan
+   cleanup; Android.
 
 ## NOT in MVP (agreed cuts — do not scope-creep)
 

@@ -73,6 +73,16 @@ const ANALYSIS_SCHEMA = {
       ...nullable('string'),
       description: 'One or two sentences describing what is paid, how much, and when.',
     },
+    total_value: {
+      ...nullable('number'),
+      description:
+        'The total amount of money the contract states it involves (e.g. total contract price, annual rent stated as a total). Only when the document states a total; never compute or invent one. Null otherwise.',
+    },
+    party_other_contact: {
+      ...nullable('string'),
+      description:
+        "The other party's contact details exactly as written in the document (email, phone, or address), or null.",
+    },
     key_dates: {
       type: 'array',
       description: 'Every concrete date the contract creates: payments, renewals, notice deadlines, start and end.',
@@ -132,7 +142,8 @@ const ANALYSIS_SCHEMA = {
   },
   required: [
     'is_contract', 'title', 'contract_type', 'party_you', 'party_other',
-    'summary', 'payment_terms', 'key_dates', 'obligations', 'risk_flags',
+    'summary', 'payment_terms', 'total_value', 'party_other_contact',
+    'key_dates', 'obligations', 'risk_flags',
   ],
   additionalProperties: false,
 };

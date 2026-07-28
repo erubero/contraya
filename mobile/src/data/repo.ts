@@ -4,6 +4,7 @@ import * as documentsApi from '@/api/documents';
 import * as profileApi from '@/api/profile';
 import * as usage from '@/api/usage';
 import * as inboxApi from '@/api/inbox';
+import * as chatApi from '@/api/chat';
 import { demo } from '@/lib/demo';
 import { shareRemoteFile } from '@/lib/share';
 import {
@@ -13,6 +14,7 @@ import {
 import { ContractDocument } from './documents';
 import { ContractAnalysis } from './analysis';
 import { InboxItem } from './inbox';
+import { ChatTurn } from './chat';
 
 // One entry point the screens use; dispatches to the live Supabase repository
 // or the in-memory demo store depending on whether a backend is configured.
@@ -119,6 +121,18 @@ export function getDocumentUrl(path: string): Promise<string> {
 
 export function shareDocument(doc: ContractDocument): Promise<void> {
   return getDocumentUrl(doc.storage_path).then((url) => shareRemoteFile(url, doc.kind, doc.id));
+}
+
+export function askContract(
+  contractId: string,
+  question: string,
+  history: ChatTurn[]
+): Promise<string> {
+  return isConfigured ? chatApi.askContract(contractId, question, history) : demo.ask(contractId, question, history);
+}
+
+export function getChatCount(): Promise<number> {
+  return isConfigured ? usage.getChatCount() : demo.chatCount();
 }
 
 export function getIngestAddress(): Promise<string> {

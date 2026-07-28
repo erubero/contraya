@@ -38,6 +38,8 @@ export type ContractAnalysis = {
   party_other: string | null;
   summary: string | null;
   payment_terms: string | null;
+  total_value: number | null;
+  party_other_contact: string | null;
   key_dates: AnalyzedDate[];
   obligations: AnalyzedObligation[];
   risk_flags: AnalyzedRiskFlag[];
@@ -56,6 +58,11 @@ function str(v: unknown, max: number): string | null {
   const t = v.trim();
   if (!t) return null;
   return t.length > max ? t.slice(0, max) : t;
+}
+
+function money(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1_000_000_000) return null;
+  return Math.round(v * 100) / 100;
 }
 
 function oneOf<T extends string>(v: unknown, allowed: readonly T[]): T | null {
@@ -132,6 +139,8 @@ export function parseAnalysis(raw: unknown): ContractAnalysis {
     party_other: str(o.party_other, 200),
     summary: str(o.summary, 8000),
     payment_terms: str(o.payment_terms, 2000),
+    total_value: money(o.total_value),
+    party_other_contact: str(o.party_other_contact, 300),
     key_dates: decodeArray(o.key_dates, decodeDate, MAX_DATES),
     obligations: decodeArray(o.obligations, decodeObligation, MAX_OBLIGATIONS),
     risk_flags: decodeArray(o.risk_flags, decodeRiskFlag, MAX_RISK_FLAGS),

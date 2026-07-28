@@ -8,6 +8,7 @@ import {
 import { ContractDocument } from '@/data/documents';
 import { ContractAnalysis } from '@/data/analysis';
 import { InboxItem, ingestAddress } from '@/data/inbox';
+import { ChatTurn } from '@/data/chat';
 import { AnalysisCounts } from '@/api/usage';
 import { DateWithContract } from '@/api/contracts';
 
@@ -32,6 +33,8 @@ function seed(): { contracts: Contract[]; dates: ContractDate[]; obligations: Co
       'unless you give written notice at least 60 days before the end date. The deposit is $1,850, ' +
       'returned within 30 days of move-out minus any repair costs beyond normal wear.',
     payment_terms: '$1,850 due the 1st of each month. $75 late fee after the 5th.',
+    total_value: 22200,
+    party_other_contact: 'leasing@palmgroveproperties.com',
     effective_date: iso(addMonths(now, -3)),
     end_date: iso(addMonths(now, 9)),
     status: 'active',
@@ -50,6 +53,8 @@ function seed(): { contracts: Contract[]; dates: ContractDate[]; obligations: Co
       'the vendor staff (6 people) and confirm the final guest count 14 days before. Cancelling ' +
       'within 90 days of the event forfeits the deposit.',
     payment_terms: '$2,500 deposit at signing; $6,000 balance due 30 days before the event.',
+    total_value: 8500,
+    party_other_contact: 'events@casadelmar.com',
     effective_date: iso(addMonths(now, -1)),
     end_date: iso(addDays(now, 75)),
     status: 'active',
@@ -295,6 +300,29 @@ export const demo = {
   async avatarUrl(): Promise<string> {
     return profile.avatarUri ?? '';
   },
+  async chatCount(): Promise<number> {
+    return 0;
+  },
+  async ask(contractId: string, question: string, _history: ChatTurn[]): Promise<string> {
+    await new Promise((r) => setTimeout(r, 1200));
+    const c = db.contracts.find((x) => x.id === contractId);
+    const q = question.toLowerCase();
+    if (c?.contract_type === 'lease') {
+      if (q.includes('renew')) {
+        return 'The lease renews by itself for another 12 months unless written notice reaches the landlord at least 60 days before the end date. The contract says: "This lease shall automatically renew for successive twelve month terms unless Tenant provides written notice no fewer than sixty days prior to expiration."';
+      }
+      if (q.includes('cancel')) {
+        return 'The contract sets a notice window rather than a cancellation fee: written notice at least 60 days before the end date stops the renewal. It does not describe a way to end the lease earlier than the end date.';
+      }
+      if (q.includes('late') || q.includes('payment')) {
+        return 'Rent is $1,850, due the 1st of each month. The contract says rent received after the 5th adds a $75 late charge for that month.';
+      }
+      if (q.includes('agree') || q.includes('do')) {
+        return 'The contract has you paying $1,850 by the 1st each month and giving written notice 60 days before the end date if you do not want another year. The deposit comes back within 30 days of move-out, minus repair costs beyond normal wear.';
+      }
+    }
+    return 'The contract does not answer that directly. The closest thing it covers is described in the summary on the contract screen.';
+  },
   async ingestAddress(): Promise<string> {
     return ingestAddress('deadbeefdeadbeefdeadbeefdeadbeef');
   },
@@ -323,6 +351,8 @@ export const demo = {
         'The membership renews by itself each year unless you cancel in writing 30 days ' +
         'before the renewal date. Freezing the membership costs $10 a month.',
       payment_terms: '$49 charged the 15th of each month.',
+      total_value: null,
+      party_other_contact: 'members@ironworksfit.com',
       key_dates: [
         {
           label: 'Membership payment', date: iso(addDays(now, 20)),

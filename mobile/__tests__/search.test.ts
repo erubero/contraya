@@ -5,6 +5,7 @@ function c(partial: Partial<Contract>): Contract {
   return {
     id: 'x', title: 'C', contract_type: 'other',
     party_you: null, party_other: null, summary: null, payment_terms: null,
+    total_value: null, party_other_contact: null,
     effective_date: null, end_date: null, status: 'active', notes: null,
     created_at: '2026-01-01T00:00:00Z',
     ...partial,

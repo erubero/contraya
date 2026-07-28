@@ -64,6 +64,8 @@ export type Contract = {
   party_other: string | null;
   summary: string | null;
   payment_terms: string | null;
+  total_value: number | null;
+  party_other_contact: string | null;
   effective_date: string | null;
   end_date: string | null;
   status: ContractStatus;

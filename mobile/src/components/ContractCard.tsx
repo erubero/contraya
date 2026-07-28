@@ -1,6 +1,6 @@
 import { Pressable, View, Text } from 'react-native';
 import { Contract, ContractDate, CONTRACT_TYPE_LABELS } from '@/data/types';
-import { nextDate } from '@/data/status';
+import { nextDate, daysUntil } from '@/data/status';
 import { useTheme, RADIUS } from '@/theme/colors';
 import TypeIcon from './TypeIcon';
 import StatusBadge from './StatusBadge';
@@ -16,6 +16,14 @@ export default function ContractCard({
 }) {
   const theme = useTheme();
   const next = nextDate(dates);
+  // The brief's Expiring state, derived: active, ends within 30 days, and the
+  // urgency isn't already conveyed by a near-term date badge.
+  const endingSoon =
+    contract.status === 'active' &&
+    contract.end_date != null &&
+    daysUntil(contract.end_date) >= 0 &&
+    daysUntil(contract.end_date) <= 30 &&
+    (!next || daysUntil(next.due_date) > 30);
   const subtitle = [
     CONTRACT_TYPE_LABELS[contract.contract_type],
     next ? next.label : contract.party_other ?? undefined,
@@ -46,7 +54,11 @@ export default function ContractCard({
           {subtitle}
         </Text>
       </View>
-      {next ? <StatusBadge date={next.due_date} /> : null}
+      {endingSoon && contract.end_date ? (
+        <StatusBadge date={contract.end_date} />
+      ) : next ? (
+        <StatusBadge date={next.due_date} />
+      ) : null}
     </Pressable>
   );
 }

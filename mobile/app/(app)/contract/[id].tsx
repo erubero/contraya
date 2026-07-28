@@ -9,6 +9,7 @@ import {
 import { CONTRACT_TYPE_LABELS, DATE_TYPE_LABELS, Severity } from '@/data/types';
 import { rebuildAll } from '@/lib/notifications';
 import { useAuth } from '@/lib/AuthContext';
+import { Linking } from 'react-native';
 import { useTheme, RADIUS } from '@/theme/colors';
 import TypeIcon from '@/components/TypeIcon';
 import StatusBadge from '@/components/StatusBadge';
@@ -147,6 +148,58 @@ export default function ContractDetail() {
             In plain English
           </Text>
           <Text style={{ color: theme.foreground, fontSize: 15, lineHeight: 22 }}>{contract.summary}</Text>
+        </View>
+      )}
+
+      <Pressable
+        onPress={() => router.push(`/chat/${contract.id}`)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: theme.primary,
+          borderRadius: RADIUS,
+          padding: 14,
+        }}
+      >
+        <Ionicons name="chatbubble-ellipses-outline" size={20} color={theme.primaryForeground} />
+        <Text style={{ color: theme.primaryForeground, fontSize: 15, fontWeight: '600' }}>
+          Ask Contry about this contract
+        </Text>
+      </Pressable>
+
+      {(contract.total_value != null || contract.party_other_contact) && (
+        <View style={{ gap: 10 }}>
+          {contract.total_value != null && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: RADIUS, padding: 14 }}>
+              <Ionicons name="pricetag-outline" size={20} color={theme.mutedForeground} />
+              <View>
+                <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Contract value</Text>
+                <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '500' }}>
+                  {`$${contract.total_value.toLocaleString('en-US', { maximumFractionDigits: 2 })}`}
+                </Text>
+              </View>
+            </View>
+          )}
+          {contract.party_other_contact && (
+            <Pressable
+              onPress={() => {
+                const c = contract.party_other_contact ?? '';
+                const url = c.includes('@') ? `mailto:${c}` : /^[+()\d][\d\s().-]{6,}$/.test(c) ? `tel:${c.replace(/[^+\d]/g, '')}` : null;
+                if (url) Linking.openURL(url).catch(() => {});
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: RADIUS, padding: 14 }}
+            >
+              <Ionicons name="call-outline" size={20} color={theme.mutedForeground} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>Contact</Text>
+                <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '500' }} numberOfLines={2}>
+                  {contract.party_other_contact}
+                </Text>
+              </View>
+            </Pressable>
+          )}
         </View>
       )}
 

@@ -20,3 +20,15 @@ export async function getAnalysisCounts(): Promise<AnalysisCounts> {
   const month = rows.find((r) => r.period === currentPeriod())?.count ?? 0;
   return { lifetime, month };
 }
+
+// Ask Contry questions spent this month. Fails open (0) like the analysis
+// counter so a read hiccup never blocks a question.
+export async function getChatCount(): Promise<number> {
+  const { data, error } = await supabase
+    .from('chat_usage')
+    .select('count')
+    .eq('period', currentPeriod())
+    .maybeSingle();
+  if (error) return 0;
+  return (data as { count?: number } | null)?.count ?? 0;
+}

@@ -7,6 +7,10 @@
 // see RevenueCat entitlement.
 export const FREE_ANALYSIS_LIFETIME_LIMIT = 2;
 export const PRO_MONTHLY_ANALYSES = 15;
+// Ask Contry questions per month on premium (chat is premium-only). Each
+// question is a cached model call (~$0.02-0.05); the chat-contract edge
+// function backstops with its own 300/month ceiling.
+export const PRO_MONTHLY_CHATS = 50;
 
 // Keep in sync with Supabase Auth's minimum password length (dashboard
 // setting; 6 is its default). Owner call: keep it low — the audience skews
