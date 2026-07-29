@@ -134,7 +134,7 @@ export default function ResetPassword() {
 
         {phase === 'verifying' && (
           <View style={{ alignItems: 'center', gap: 12 }}>
-            <ActivityIndicator color={theme.primary} />
+            <ActivityIndicator color={theme.brandText} />
             <Text style={{ color: theme.mutedForeground }}>Checking your reset link…</Text>
           </View>
         )}

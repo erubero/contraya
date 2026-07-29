@@ -218,7 +218,7 @@ export default function Settings() {
               <Image source={{ uri: avatarUrl }} style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: theme.accent }} />
             ) : (
               <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: theme.accent, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: theme.primary, fontSize: 26, fontWeight: '700' }}>{initial}</Text>
+                <Text style={{ color: theme.brandText, fontSize: 26, fontWeight: '700' }}>{initial}</Text>
               </View>
             )}
             <View style={{ position: 'absolute', right: -2, bottom: -2, backgroundColor: theme.primary, borderRadius: 12, padding: 4, borderWidth: 2, borderColor: theme.card }}>
@@ -315,8 +315,8 @@ export default function Settings() {
                 onPress={() => Share.share({ message: ingestAddress }).catch(() => {})}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}
               >
-                <Ionicons name="share-outline" size={16} color={theme.primary} />
-                <Text style={{ color: theme.primary, fontWeight: '600', fontSize: 14 }}>Share address</Text>
+                <Ionicons name="share-outline" size={16} color={theme.brandText} />
+                <Text style={{ color: theme.brandText, fontWeight: '600', fontSize: 14 }}>Share address</Text>
               </Pressable>
               <Text style={{ color: theme.mutedForeground, fontSize: 12, marginTop: 10 }}>
                 Anyone with this address can put documents in your inbox, so treat it like a key.
@@ -448,7 +448,7 @@ function LinkRow({
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, backgroundColor: pressed ? theme.accent : 'transparent' })}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Ionicons name={icon} size={20} color={theme.primary} />
+        <Ionicons name={icon} size={20} color={theme.brandText} />
         <Text style={{ color: theme.foreground, fontSize: 15 }}>{label}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={theme.mutedForeground} />

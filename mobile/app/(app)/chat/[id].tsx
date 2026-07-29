@@ -123,7 +123,7 @@ export default function ContractChat() {
 
         {turns.length === 0 && !busy && (
           <View style={{ alignItems: 'center', gap: 14, paddingVertical: 24 }}>
-            <ContryFace slot="search-idle" size={56} fallbackIcon="chatbubble-ellipses-outline" color={theme.primary} />
+            <ContryFace slot="search-idle" size={56} fallbackIcon="chatbubble-ellipses-outline" color={theme.brandText} />
             <Text style={{ color: theme.foreground, fontSize: 16, fontWeight: '600', textAlign: 'center' }}>
               Ask Contry about this contract
             </Text>
@@ -140,7 +140,7 @@ export default function ContractChat() {
                     padding: 12,
                   }}
                 >
-                  <Text style={{ color: theme.primary, fontWeight: '600', fontSize: 14 }}>{q}</Text>
+                  <Text style={{ color: theme.brandText, fontWeight: '600', fontSize: 14 }}>{q}</Text>
                 </Pressable>
               ))}
             </View>
@@ -221,7 +221,7 @@ export default function ContractChat() {
               padding: 12,
             }}
           >
-            <ActivityIndicator size="small" color={theme.primary} />
+            <ActivityIndicator size="small" color={theme.brandText} />
             <Text style={{ color: theme.mutedForeground, fontSize: 14 }}>Contry is checking the contract</Text>
           </View>
         )}

@@ -155,7 +155,7 @@ export default function DocumentsSection({
                   alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8,
                 }}
               >
-                <Ionicons name="document-text-outline" size={30} color={theme.primary} />
+                <Ionicons name="document-text-outline" size={30} color={theme.brandText} />
                 <Text numberOfLines={2} style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center' }}>
                   {doc.label ?? 'PDF'}
                 </Text>
@@ -176,10 +176,10 @@ export default function DocumentsSection({
           }}
         >
           {busy ? (
-            <ActivityIndicator color={theme.primary} />
+            <ActivityIndicator color={theme.brandText} />
           ) : (
             <>
-              <Ionicons name="add" size={26} color={theme.primary} />
+              <Ionicons name="add" size={26} color={theme.brandText} />
               <Text style={{ color: theme.mutedForeground, fontSize: 11 }}>Add</Text>
             </>
           )}

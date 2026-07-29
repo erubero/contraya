@@ -17,7 +17,7 @@ export default function GlowBackdrop({
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
-  const base = color ?? theme.primary;
+  const base = color ?? theme.brand;
   const rings = [
     { scale: 1, alpha: 0.05 },
     { scale: 0.7, alpha: 0.09 },

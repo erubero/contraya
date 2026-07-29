@@ -99,7 +99,7 @@ export default function TabBar({ state, descriptors, navigation }: TabBarProps) 
     const label = options.title ?? route.name;
     const focused = state.index === routeIndex;
     const [outline, filled] = ICONS[route.name] ?? ['ellipse-outline', 'ellipse'];
-    const color = focused ? theme.primary : theme.mutedForeground;
+    const color = focused ? theme.brandText : theme.mutedForeground;
 
     const onPress = () => {
       const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -181,10 +181,13 @@ export default function TabBar({ state, descriptors, navigation }: TabBarProps) 
                     width: FAB_SIZE,
                     height: FAB_SIZE,
                     borderRadius: FAB_SIZE / 2,
-                    backgroundColor: theme.primary,
+                    // The add button is the app's primary action and the one
+                    // place lime earns a full fill: dark ink on lime reads at
+                    // 11.5:1, and it makes the FAB unmissable.
+                    backgroundColor: theme.brand,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: theme.primary,
+                    shadowColor: theme.brand,
                     shadowOpacity: 0.4,
                     shadowRadius: 10,
                     shadowOffset: { width: 0, height: 4 },
@@ -192,7 +195,7 @@ export default function TabBar({ state, descriptors, navigation }: TabBarProps) 
                     opacity: pressed ? 0.85 : 1,
                   })}
                 >
-                  <Ionicons name="add" size={30} color="#FFFFFF" />
+                  <Ionicons name="add" size={30} color={theme.brandForeground} />
                 </Pressable>
               </Animated.View>
             </View>
@@ -214,7 +217,7 @@ export default function TabBar({ state, descriptors, navigation }: TabBarProps) 
               searchRowStyle,
             ]}
           >
-            <ContryFace slot="search-active" size={24} fallbackIcon="search" color={theme.primary} />
+            <ContryFace slot="search-active" size={24} fallbackIcon="search" color={theme.brandText} />
             <TextInput
               ref={inputRef}
               value={query}

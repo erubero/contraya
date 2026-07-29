@@ -372,7 +372,7 @@ export default function AddContract() {
     return (
       <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 }}>
         <Animated.View style={readingPulseStyle}>
-          <ContryFace slot="reading" size={140} fallbackIcon="reader-outline" color={theme.primary} />
+          <ContryFace slot="reading" size={140} fallbackIcon="reader-outline" color={theme.brandText} />
         </Animated.View>
         <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
           {STAGES[stageIndex]}
@@ -425,7 +425,7 @@ export default function AddContract() {
                 onPress={() => startPages('library')}
               />
               <Pressable onPress={() => setStep('manual')} style={{ alignItems: 'center', padding: 8 }}>
-                <Text style={{ color: theme.primary, fontWeight: '600' }}>Add the details yourself</Text>
+                <Text style={{ color: theme.brandText, fontWeight: '600' }}>Add the details yourself</Text>
               </Pressable>
             </>
           )}
@@ -565,8 +565,8 @@ export default function AddContract() {
                 gap: 6,
               }}
             >
-              <Ionicons name="add" size={18} color={theme.primary} />
-              <Text style={{ color: theme.primary, fontWeight: '600' }}>Add a date</Text>
+              <Ionicons name="add" size={18} color={theme.brandText} />
+              <Text style={{ color: theme.brandText, fontWeight: '600' }}>Add a date</Text>
             </Pressable>
           </Animated.View>
 
@@ -671,7 +671,7 @@ function PageTray({
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="add" size={24} color={theme.primary} />
+            <Ionicons name="add" size={24} color={theme.brandText} />
           </Pressable>
         )}
       </View>
@@ -703,7 +703,7 @@ function SourceCard({ icon, title, subtitle, onPress }: { icon: keyof typeof Ion
         gap: 8,
       }}
     >
-      <Ionicons name={icon} size={30} color={theme.primary} />
+      <Ionicons name={icon} size={30} color={theme.brandText} />
       <Text style={{ color: theme.foreground, fontWeight: '600' }}>{title}</Text>
       <Text style={{ color: theme.mutedForeground, fontSize: 13, textAlign: 'center' }}>{subtitle}</Text>
     </Pressable>

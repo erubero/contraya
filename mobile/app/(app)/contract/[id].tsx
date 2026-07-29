@@ -361,8 +361,8 @@ export default function ContractDetail() {
           disabled={setStatus.isPending}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: RADIUS, padding: 14 }}
         >
-          <Ionicons name="archive-outline" size={20} color={theme.primary} />
-          <Text style={{ color: theme.primary, fontSize: 15, fontWeight: '600' }}>Mark as ended</Text>
+          <Ionicons name="archive-outline" size={20} color={theme.brandText} />
+          <Text style={{ color: theme.brandText, fontSize: 15, fontWeight: '600' }}>Mark as ended</Text>
         </Pressable>
       ) : (
         <Pressable
@@ -370,8 +370,8 @@ export default function ContractDetail() {
           disabled={setStatus.isPending}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: RADIUS, padding: 14 }}
         >
-          <Ionicons name="refresh-outline" size={20} color={theme.primary} />
-          <Text style={{ color: theme.primary, fontSize: 15, fontWeight: '600' }}>Mark as active again</Text>
+          <Ionicons name="refresh-outline" size={20} color={theme.brandText} />
+          <Text style={{ color: theme.brandText, fontSize: 15, fontWeight: '600' }}>Mark as active again</Text>
         </Pressable>
       )}
     </ScrollView>

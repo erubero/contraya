@@ -33,7 +33,7 @@ export default function InsightCard({
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        {icon && <Ionicons name={icon} size={14} color={theme.primary} />}
+        {icon && <Ionicons name={icon} size={14} color={theme.brandText} />}
         <Text style={{ color: theme.mutedForeground, fontSize: 12, textTransform: 'uppercase', fontWeight: '600' }}>
           {label}
         </Text>

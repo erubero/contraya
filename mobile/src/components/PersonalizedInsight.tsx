@@ -43,7 +43,7 @@ export default function PersonalizedInsight({
           justifyContent: 'center',
         }}
       >
-        <Ionicons name="sparkles-outline" size={17} color={theme.primary} />
+        <Ionicons name="sparkles-outline" size={17} color={theme.brandText} />
       </View>
       <View style={{ flex: 1, gap: 4 }}>
         <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '700' }}>{insight.headline}</Text>

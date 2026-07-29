@@ -33,7 +33,7 @@ export default function SearchButton() {
         justifyContent: 'center',
       }}
     >
-      <ContryFace slot="search-idle" size={22} fallbackIcon="search" color={theme.primary} />
+      <ContryFace slot="search-idle" size={22} fallbackIcon="search" color={theme.brandText} />
     </Pressable>
   );
 }

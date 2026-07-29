@@ -326,6 +326,33 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     takeover-by-design, ingest daily-limit TOCTOU (trigger backstops), PDF
     page-count bypass (byte cap + Anthropic's 100-page limit backstop),
     unverified sender rendered in inbox UI.
+- **Palette: navy + lime, not blue (2026-07-28).** Contraya was using
+  Warraya's exact primary `#3B82F6` in both modes; with the shared icon the
+  two apps were visually the same product. Lime is now the brand accent and
+  deep navy carries structure. Lime was chosen by measurement, not vibes, and
+  the split matters: bright lime `#A3E635` is **1.5:1 under white text** and
+  **11.5:1 under dark ink**, so there are three tokens with distinct jobs, in
+  `mobile/src/theme/colors.ts` and mirrored in `src/index.css`:
+  `primary` (navy `#0F2060` light / `#1A3A8F` dark, for filled buttons, white
+  labels at 15:1 and 10:1), `brand` (`#A3E635`, fills and glows ONLY, paired
+  with `brandForeground` ink), and `brandText` (`#4D7C0F` in light mode at
+  4.99:1 on white, the bright lime in dark mode at 12:1 — for links, active
+  tabs, accent icons). **Never put white text on `brand`; never use `brand`
+  as text on a light surface.** Lime earns a full fill in exactly three
+  places: the add FAB (dark ink on lime), the progress fill, and the
+  GlowBackdrop wash. Status colors are deliberately untouched — green means on
+  track, amber soon, red overdue, and those meanings outrank the brand color
+  in an app about deadlines. All four bundled Lotties were recoloured (two
+  held the old brand blue, two held a different indigo ramp `#2e31ff`/
+  `#575aff`/`#1517d0`/`#180ad0` that would have clashed); the guard test still
+  passes. Also fixed a real leak: `app.config.ts` set the **Android
+  notification tint** to Warraya blue, visible on every reminder.
+  **Residual to eyeball on device:** in dark mode the lime accent and the
+  mint "on track" badge (`#34D399`) sit close in tone (1.27 apart). Status
+  badges are pills with their own tinted backgrounds and text labels, so
+  context should carry it, but this is the one thing worth a real look.
+  The recoloured loader animations are owner-supplied art that was hue-mapped
+  programmatically, so those deserve a glance too.
 - **Mascot:** Contry (registry at `mobile/assets/mascot/index.ts`, slots
   search-idle/search-active/search-empty/reading, all null — icon fallbacks
   render until the owner supplies art; NEVER ship placeholder art). Warry's

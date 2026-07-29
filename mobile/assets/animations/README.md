@@ -43,5 +43,7 @@ listed in the table above. Either way, run `npm test` afterwards: the
   file under about 200 KB.
 - Any canvas size or aspect works (rendering is `contain`, non-square
   letterboxes); 30fps and 1 to 2.5 seconds feel right for the slots above.
-- Primary brand blue is `#3B82F6` = `[0.231, 0.510, 0.965]` in Lottie color space
+- Brand lime is `#A3E635` = `[0.639, 0.902, 0.208]` in Lottie color space. Deep
+  navy `#0F2060` = `[0.059, 0.125, 0.376]` is the structural counterpart. Do not
+  use the old brand blue `#3B82F6`; that is Warraya's.
 - Static `require` means new files also need a one-line code change in their consumer

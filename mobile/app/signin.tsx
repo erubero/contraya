@@ -218,7 +218,7 @@ export default function SignIn() {
             >
               <Text style={{ color: theme.mutedForeground }}>
                 {mode === 'signUp' ? 'Already have an account? ' : 'New here? '}
-                <Text style={{ color: theme.primary, fontWeight: '600' }}>
+                <Text style={{ color: theme.brandText, fontWeight: '600' }}>
                   {mode === 'signUp' ? 'Sign In' : 'Create Account'}
                 </Text>
               </Text>
@@ -226,11 +226,11 @@ export default function SignIn() {
           )}
           <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
             By continuing you agree to the{' '}
-            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(TERMS_URL)}>
+            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(TERMS_URL)}>
               Terms of Service
             </Text>{' '}
             and{' '}
-            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(PRIVACY_URL)}>
+            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(PRIVACY_URL)}>
               Privacy Policy
             </Text>
             .

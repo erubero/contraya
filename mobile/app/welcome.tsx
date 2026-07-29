@@ -79,7 +79,7 @@ export default function Welcome() {
                   justifyContent: 'center',
                 }}
               >
-                <Ionicons name="document-text" size={22} color={theme.primary} />
+                <Ionicons name="document-text" size={22} color={theme.brandText} />
               </View>
               <View style={{ flex: 1, gap: 6 }}>
                 <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }}>
@@ -116,16 +116,16 @@ export default function Welcome() {
           <Pressable onPress={signIn} style={{ padding: 8, alignItems: 'center' }}>
             <Text style={{ color: theme.mutedForeground, fontSize: 14 }}>
               I already have an account.{' '}
-              <Text style={{ color: theme.primary, fontWeight: '600' }}>Sign in</Text>
+              <Text style={{ color: theme.brandText, fontWeight: '600' }}>Sign in</Text>
             </Text>
           </Pressable>
           <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
             By continuing you agree to the{' '}
-            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(TERMS_URL)}>
+            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(TERMS_URL)}>
               Terms of Service
             </Text>{' '}
             and{' '}
-            <Text style={{ color: theme.primary }} onPress={() => Linking.openURL(PRIVACY_URL)}>
+            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(PRIVACY_URL)}>
               Privacy Policy
             </Text>
             .

@@ -4,7 +4,7 @@
   "description": "Your contracts in plain English, with reminders before payments, renewals, and deadlines.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8faff",
+  "background_color": "#f8fafc",
   "theme_color": "#0a1440",
   "icons": [
     {

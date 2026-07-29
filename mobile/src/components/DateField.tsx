@@ -58,7 +58,7 @@ export default function DateField({
             >
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
                 <Pressable onPress={() => setOpen(false)} style={{ padding: 8 }}>
-                  <Text style={{ color: theme.primary, fontWeight: '600', fontSize: 16 }}>Done</Text>
+                  <Text style={{ color: theme.brandText, fontWeight: '600', fontSize: 16 }}>Done</Text>
                 </Pressable>
               </View>
               <DateTimePicker

@@ -38,7 +38,7 @@ export default function TypeIcon({
         justifyContent: 'center',
       }}
     >
-      <Ionicons name={name} size={glyph} color={theme.primary} />
+      <Ionicons name={name} size={glyph} color={theme.brandText} />
     </View>
   );
 }

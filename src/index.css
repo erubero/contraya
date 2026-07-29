@@ -7,75 +7,81 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
-    /* Contraya brand: deep navy + blue, matching the landing page */
-    --background: 220 100% 99%;          /* #f8faff */
+    /* Contraya brand: deep navy carries structure, lime carries energy.
+       Deliberately NOT Warraya's blue (#3b82f6) — one developer ships both
+       apps and they must not look like the same product.
+       Lime (#A3E635) is a FILL colour: 11.5:1 with dark ink on top, but only
+       1.5:1 under white text, so anything textual on a light surface uses
+       lime-700 (#4D7C0F) instead. Keep that split when adding colours.
+       These tokens are mirrored in mobile/src/theme/colors.ts. */
+    --background: 210 40% 98%;           /* #F8FAFC slate-50 */
     --foreground: 222 47% 11%;           /* slate-900 */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 60%;              /* #3b82f6 blue-500 */
+    --primary: 227 73% 22%;              /* #0F2060 deep navy, white text 15:1 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 100% 93%;           /* #dbeafe blue-100 */
+    --secondary: 80 89% 89%;             /* #ECFCCB lime-100 */
     --secondary-foreground: 224 71% 20%; /* deep navy text */
-    --muted: 214 60% 96%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;     /* slate-500 */
-    --accent: 214 100% 93%;              /* #dbeafe */
-    --accent-foreground: 224 76% 33%;    /* blue-800 */
+    --accent: 80 89% 89%;                /* #ECFCCB lime-100 */
+    --accent-foreground: 86 78% 27%;     /* #4D7C0F lime-700, readable on light */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 60% 91%;               /* soft blue border */
-    --input: 214 60% 91%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
+    --border: 214 32% 91%;               /* #E2E8F0 neutral slate */
+    --input: 214 32% 91%;
+    --ring: 83 78% 55%;                  /* #A3E635 brand lime */
+    --chart-1: 83 78% 55%;               /* lime */
     --chart-2: 160 60% 45%;
-    --chart-3: 224 76% 48%;
+    --chart-3: 227 73% 35%;
     --chart-4: 280 65% 60%;
     --chart-5: 0 72% 51%;
     --radius: 0.75rem;
-    --sidebar-background: 220 100% 99%;
+    --sidebar-background: 210 40% 98%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 227 73% 22%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 214 100% 93%;
-    --sidebar-accent-foreground: 224 76% 33%;
-    --sidebar-border: 214 60% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 80 89% 89%;
+    --sidebar-accent-foreground: 86 78% 27%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 83 78% 55%;
   }
 
   .dark {
-    --background: 224 71% 8%;            /* #0a1440 deep navy */
+    --background: 224 71% 8%;            /* #0A1128 deep navy */
     --foreground: 213 100% 96%;
-    --card: 223 60% 13%;                 /* #0f2060 */
+    --card: 225 57% 15%;                 /* #111C3D */
     --card-foreground: 213 100% 96%;
-    --popover: 223 60% 13%;
+    --popover: 225 57% 15%;
     --popover-foreground: 213 100% 96%;
-    --primary: 217 91% 60%;
+    --primary: 224 69% 33%;              /* #1A3A8F lifted navy, separates on dark */
     --primary-foreground: 0 0% 100%;
-    --secondary: 223 50% 18%;
+    --secondary: 225 41% 18%;
     --secondary-foreground: 213 100% 96%;
-    --muted: 223 50% 18%;
+    --muted: 225 41% 18%;
     --muted-foreground: 215 25% 65%;
-    --accent: 223 60% 22%;
-    --accent-foreground: 213 100% 90%;
+    --accent: 225 41% 18%;               /* #1B2440 */
+    --accent-foreground: 83 78% 55%;     /* lime reads 12:1 on dark, safe as text */
     --destructive: 0 62.8% 40%;
     --destructive-foreground: 0 0% 98%;
     --border: 223 50% 22%;
     --input: 223 50% 22%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
+    --ring: 83 78% 55%;
+    --chart-1: 83 78% 55%;
     --chart-2: 160 60% 45%;
-    --chart-3: 224 76% 60%;
+    --chart-3: 224 69% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 0 72% 51%;
     --sidebar-background: 224 71% 8%;
     --sidebar-foreground: 213 100% 96%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 224 69% 33%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 223 60% 22%;
-    --sidebar-accent-foreground: 213 100% 90%;
+    --sidebar-accent: 225 41% 18%;
+    --sidebar-accent-foreground: 83 78% 55%;
     --sidebar-border: 223 50% 22%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 83 78% 55%;
   }
 }
 

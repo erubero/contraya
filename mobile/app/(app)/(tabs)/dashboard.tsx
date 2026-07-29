@@ -133,7 +133,7 @@ export default function Dashboard() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ color: theme.primary, fontSize: 18, fontWeight: '700' }}>{initial}</Text>
+                  <Text style={{ color: theme.brandText, fontSize: 18, fontWeight: '700' }}>{initial}</Text>
                 </View>
               )}
             </Pressable>
@@ -176,7 +176,7 @@ export default function Dashboard() {
                     padding: 14,
                   }}
                 >
-                  <Ionicons name="mail-unread-outline" size={20} color={theme.primary} />
+                  <Ionicons name="mail-unread-outline" size={20} color={theme.brandText} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
                       {inboxItemTitle(item)}
@@ -211,7 +211,7 @@ export default function Dashboard() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700' }}>Coming up</Text>
               <Text
-                style={{ color: theme.primary, fontSize: 13, fontWeight: '600' }}
+                style={{ color: theme.brandText, fontSize: 13, fontWeight: '600' }}
                 onPress={() => router.push('/calendar')}
               >
                 View calendar
@@ -233,7 +233,7 @@ export default function Dashboard() {
                     padding: 14,
                   }}
                 >
-                  <Ionicons name="calendar-outline" size={20} color={theme.primary} />
+                  <Ionicons name="calendar-outline" size={20} color={theme.brandText} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
                       {o.label}

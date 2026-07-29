@@ -93,7 +93,7 @@ export default function Onboarding() {
                   introIconStyle,
                 ]}
               >
-                <Ionicons name="sparkles-outline" size={36} color={theme.primary} />
+                <Ionicons name="sparkles-outline" size={36} color={theme.brandText} />
               </Animated.View>
               <Animated.View entering={FadeInDown.delay(120).duration(350)} style={{ gap: 8, alignItems: 'center' }}>
                 <Text style={{ color: theme.foreground, fontSize: 22, fontWeight: '800', textAlign: 'center' }}>
@@ -130,7 +130,7 @@ export default function Onboarding() {
             </View>
             <ProgressBar value={STEP_PROGRESS[step]} />
             {step === 'q1' && (
-              <Text style={{ color: theme.primary, fontSize: 13, fontWeight: '600' }}>
+              <Text style={{ color: theme.brandText, fontSize: 13, fontWeight: '600' }}>
                 Account created. You're already 25% of the way there.
               </Text>
             )}

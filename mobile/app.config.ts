@@ -56,7 +56,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-notifications',
       {
-        color: '#3b82f6',
+        // Android tints the notification icon with this. Brand lime.
+        color: '#a3e635',
       },
     ],
     './plugins/withCleanXcodeBuild',
