@@ -374,10 +374,15 @@ on conflict (id) do update
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
--- RLS on storage.objects is on by default on managed Supabase, but the whole
--- privacy of these private buckets rests on it, so assert it explicitly rather
--- than assume the platform default (idempotent).
-alter table storage.objects enable row level security;
+-- NOTE on storage.objects RLS: it is ON by default on managed Supabase and the
+-- privacy of these private buckets depends on that. We deliberately do NOT
+-- `alter table storage.objects enable row level security` here: that table is
+-- owned by supabase_storage_admin, the migration role does not own it, and the
+-- statement fails with a permission error that aborts the whole migration
+-- (hit for real on the first db push, 2026-07-28). Creating policies on it is
+-- allowed; toggling RLS on it is not. If you ever need to verify the
+-- assumption, check it as a query rather than asserting it as DDL:
+--   select relrowsecurity from pg_class where oid = 'storage.objects'::regclass;
 
 -- Object paths are {user_id}/{uuid}.{ext}; the first folder segment must match
 -- the caller's uid.
