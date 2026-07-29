@@ -361,9 +361,15 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 
 ## Owner setup checklist (nothing works live until these)
 
-1. **Supabase project** (new, separate from Warraya): create it, then
-   `supabase link` + `supabase db push` (owner has the password). After push,
-   verify anon probes bounce 42501 on every table.
+1. **Supabase project** — **CREATED** (2026-07-28). Project ref
+   **`tzqjnbcbrcfltnjutels`**, name `contraya`, region Canada (Central), so
+   the API URL is `https://tzqjnbcbrcfltnjutels.supabase.co`. (Not a secret:
+   it ships in the app bundle. Warraya's is `kwcxchyhssmqqrzmlzux` — never
+   push Contraya migrations to that one.) Still to run, from the Mac:
+   `supabase link --project-ref tzqjnbcbrcfltnjutels`, then
+   `supabase db push` (owner has the database password), then
+   `supabase functions deploy`. After push, verify anon probes bounce 42501
+   on every table.
 2. **Secrets:** `ANTHROPIC_API_KEY` **DONE** (2026-07-28, owner set it as a
    Supabase edge secret; it is a new key so Contraya's token spend tracks
    separately from Warraya's). Still to set: `CRON_SECRET` (owner-held,
