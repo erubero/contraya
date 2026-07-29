@@ -367,9 +367,16 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    it ships in the app bundle. Warraya's is `kwcxchyhssmqqrzmlzux` — never
    push Contraya migrations to that one.) Still to run, from the Mac:
    `supabase link --project-ref tzqjnbcbrcfltnjutels`, then
-   `supabase db push` (owner has the database password), then
-   `supabase functions deploy`. After push, verify anon probes bounce 42501
-   on every table.
+   **`supabase db push` DONE (2026-07-28)** — all seven migrations applied
+   clean on the first successful run, so the schema, RLS, triggers, quota
+   RPCs and both storage buckets are live. Still to run:
+   `supabase functions deploy`. Then verify anon probes bounce 42501 on
+   every table.
+   Gotcha burned on the first attempt: an `alter table storage.objects
+   enable row level security` in init.sql aborted the whole migration.
+   That table is owned by supabase_storage_admin and the migration role
+   cannot ALTER it. Creating policies on it is fine; toggling its RLS is
+   not. Do not add that statement back.
 2. **Secrets:** `ANTHROPIC_API_KEY` **DONE** (2026-07-28, owner set it as a
    Supabase edge secret; it is a new key so Contraya's token spend tracks
    separately from Warraya's). Still to set: `CRON_SECRET` (owner-held,
