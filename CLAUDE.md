@@ -4,7 +4,7 @@
 
 - The product is the **Expo/React Native app in `mobile/`** (iOS + Android). The web app at the repo root is the marketing landing only (no web dashboard, ever).
 - Contraya is Warraya's sibling (same owner, same stack, same conventions). When in doubt about a pattern, the Warraya repo is the reference implementation.
-- **Builds go through Xcode, never `eas build`/`eas submit`:** Claude runs `npx expo prebuild --platform ios`, owner opens `mobile/ios/Contraya.xcworkspace` (Team: Renovatio, LLC), Runs or Archives. Never hand-edit `ios/` — prebuild regenerates it from `app.config.ts`.
+- **Builds go through Xcode, never the terminal:** Claude runs `npx expo prebuild --platform ios` (that is the ONLY build-adjacent command Claude suggests), owner opens `mobile/ios/Contraya.xcworkspace` (Team: Renovatio, LLC), Runs or Archives. Metro runs separately via `npx expo start`. **Never suggest `eas build`, `eas submit`, `expo run:ios`, `expo run:android`, or any `xcodebuild` invocation** — `expo run:*` compiles through the terminal and bypasses this workflow just as much as EAS does. Never hand-edit `ios/` — prebuild regenerates it from `app.config.ts`.
 - Shell env for `mobile/` work on the owner's Mac: `export PATH="/opt/homebrew/opt/node@22/bin:$PATH"` and `export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8`. Never `npm dedupe`.
 - Checks: `cd mobile && npm run typecheck && npm test`. Landing: `npm run build` at repo root.
 - Supabase: owner runs `supabase db push` (has the password); Claude writes migrations + can deploy edge functions. Explicit GRANTs in every migration (default privileges are unreliable under db push).
