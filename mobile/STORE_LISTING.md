@@ -4,12 +4,39 @@ Everything needed to create the App Store Connect record and get to TestFlight.
 Copy fields verbatim. Character limits are noted. No "AI" wording anywhere
 (Contry is described by what it does: it reads the contract and explains it).
 No dashes in the copy. English (U.S.) is the primary language; a Spanish
-mirror can be added later (see section 9).
+mirror can be added later (see section 10).
 
 Lessons inherited from Warraya's submissions are kept: the EULA link inside
 the description is mandatory for auto-renew subscriptions (3.1.2 rejection,
 2026-07-22), and the paid subscription must be described as a paid upgrade,
 not a free feature.
+
+---
+
+## Before any of this can be submitted (hard prerequisites, in order)
+
+The text below is finished and paste-ready. These are the things that block
+actually submitting, roughly in the order they bite:
+
+1. **The landing must be deployed.** App Store Connect requires a working
+   **Privacy Policy URL** and Apple does check it. `usecontraya.com/privacy`
+   and `usecontraya.com` are both used in this listing, and the site has never
+   been deployed (STATUS.md checklist item 9). A 404 there is a rejection.
+   This is the first domino: deploy the landing, then point the domain.
+2. **The app icon.** ASC wants a 1024x1024 opaque icon, and the one in the
+   tree is still Warraya's shield mark. See `brand/README.md`.
+3. **Screenshots** (section 7). Cannot be captured until the app runs, and
+   the palette just changed to lime, so any earlier captures are stale.
+4. **The price must be real.** The description below states $7.99 / $49.99.
+   Once that text ships, the RevenueCat products and the ASC subscription
+   prices have to match it exactly. Decide the number, then configure it.
+5. **Sign in with Apple** needs its own Services ID + key for
+   `com.contraya.app`. Warraya's key does not carry over.
+6. **hello@usecontraya.com must receive mail** (Cloudflare Email Routing) or
+   the support contact is dead on arrival.
+
+Nothing here is code. All six are account-and-dashboard work that only the
+owner can do.
 
 ---
 
@@ -170,7 +197,46 @@ review notes. Do not attach a real contract.
 
 ---
 
-## 7. TestFlight
+## 7. Screenshots (required before public submission)
+
+Not needed for internal TestFlight. Required to submit for review. Minimum is
+the **6.9-inch iPhone set at 1320 x 2868 portrait**; 3 to 6 images is the
+sweet spot, 10 is the cap. Apple scales this set down for smaller devices, so
+one set is enough.
+
+Capture these in **demo mode** (blank `mobile/.env`), which seeds the
+apartment lease and the wedding-vendor contract, so no real contract data
+appears in a public screenshot. Ever.
+
+Shot order matters: most people only see the first two in search results, so
+lead with the payoff, not the empty state.
+
+1. **The reveal** — the review screen right after an analysis: the "Contry
+   finished reading. Here's what it found." line, the plain-English card, and
+   the severity-colored risk pills below it.
+   Caption: *"Every contract, in plain English."*
+2. **The dates** — the review screen's date list, or the contract detail
+   timeline, showing the renewal-notice and payment dates.
+   Caption: *"Every deadline, found and dated."*
+3. **A reminder** — the dashboard with "Coming up" populated, or a
+   notification mock.
+   Caption: *"A heads up while there is still time to act."*
+4. **Ask Contry** — the chat with the labeled answer card and a bolded lead
+   sentence.
+   Caption: *"Ask anything. Answers come from your document."*
+5. **The risky clauses** — the contract detail highlights, severity badges and
+   quoted clause text visible.
+   Caption: *"The fine print, quoted word for word."*
+6. *(optional)* **Calendar** — the month view with dates marked.
+   Caption: *"Everything you signed, on one calendar."*
+
+Copy rules apply to captions exactly as they do in the app: no "AI", no em
+dashes, and nothing that implies advice. Do not put the not-legal-advice
+disclaimer in a caption; it is on the screens themselves, which is the point.
+
+---
+
+## 8. TestFlight
 
 **Internal testing (up to 100 of your own team): no review needed.** You only
 need the app record + an uploaded build. This is the fastest path.
@@ -193,7 +259,7 @@ Fill these:
 
 ---
 
-## 8. Order of operations to reach TestFlight
+## 9. Order of operations to reach TestFlight
 
 Builds go through Xcode, never `eas build` / `eas submit` (repo rule):
 
@@ -206,7 +272,7 @@ Builds go through Xcode, never `eas build` / `eas submit` (repo rule):
 
 ---
 
-## 9. Spanish (es-MX) — later
+## 10. Spanish (es-MX), later
 
 English only at launch (mirrors the Warraya 2026-07-27 decision; a stale or
 partial localization can re-trigger 3.1.2/2.3.2 rejections on its own). When
