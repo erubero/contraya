@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, Image, Pressable, ScrollView, RefreshControl, Alert } from 'react-native';
+import { View, Text, Image, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { listContracts, listAllDates, getAvatarUrl, listInbox, removeInboxItem } from '@/data/repo';
-import { InboxItem, inboxItemTitle } from '@/data/inbox';
+import { listContracts, listAllDates, getAvatarUrl, listInbox } from '@/data/repo';
+import { overdueTasks } from '@/data/tasks';
 import { daysUntil } from '@/data/status';
 import { nextOccurrences } from '@/lib/reminderPlanner';
 import { useAuth } from '@/lib/AuthContext';
@@ -53,15 +53,10 @@ export default function Dashboard() {
     queryKey: ['contract-dates'],
     queryFn: listAllDates,
   });
+  // Kept for the avatar badge count only. The list itself lives on /tasks.
   const { data: inbox = [] } = useQuery({
     queryKey: ['inbox'],
     queryFn: listInbox,
-  });
-  const queryClient = useQueryClient();
-  const dismissInbox = useMutation({
-    mutationFn: (item: InboxItem) => removeInboxItem(item, true),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inbox'] }),
-    onError: () => Alert.alert("Couldn't dismiss", 'Please try again.'),
   });
 
   // Concrete occurrences (recurring rows expanded) so tiles and the "coming
@@ -88,8 +83,18 @@ export default function Dashboard() {
     [occurrences]
   );
 
+  // What is waiting on the user: dates already gone by, plus documents emailed
+  // in and never added. Drives both the Past due tile and the avatar badge, so
+  // the two can never disagree with the /tasks list.
+  const overdue = useMemo(() => overdueTasks(allDates), [allDates]);
+  const taskCount = overdue.length + inbox.length;
+
   const openTile = (tile: TileKey) =>
-    tile === 'contracts' ? router.push('/contracts') : router.push('/calendar');
+    tile === 'contracts'
+      ? router.push('/contracts')
+      : tile === 'overdue'
+        ? router.push('/tasks')
+        : router.push('/calendar');
 
   return (
     <ScrollView
@@ -103,10 +108,18 @@ export default function Dashboard() {
         right={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <SearchButton />
+            {/* The avatar doubles as the task button. A count badge sits on it
+                when something is waiting; with nothing waiting it looks and
+                behaves exactly as it always has. Settings is still one tap away
+                in the tab bar, which is what this used to open. */}
             <Pressable
-              onPress={() => router.push('/settings')}
+              onPress={() => router.push('/tasks')}
               accessibilityRole="button"
-              accessibilityLabel="Open settings"
+              accessibilityLabel={
+                taskCount === 0
+                  ? 'Open tasks. Nothing needs your attention.'
+                  : `Open tasks. ${taskCount} ${taskCount === 1 ? 'item needs' : 'items need'} your attention.`
+              }
             >
               {avatarUrl ? (
                 <Image
@@ -136,13 +149,46 @@ export default function Dashboard() {
                   <Text style={{ color: theme.brandText, fontSize: 18, fontWeight: '700' }}>{initial}</Text>
                 </View>
               )}
+              {/* Same geometry as the camera badge on the Account screen avatar,
+                  so the two read as the same object. The card-colored ring
+                  punches it out of the photo underneath. Red, not lime: lime is
+                  reserved as a full fill for the add button. Capped at 9+ so the
+                  circle can never grow and knock the header out of alignment
+                  with the search button beside it. */}
+              {taskCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -2,
+                    top: -2,
+                    minWidth: 20,
+                    height: 20,
+                    paddingHorizontal: 5,
+                    borderRadius: 10,
+                    backgroundColor: theme.statusExpired,
+                    borderWidth: 2,
+                    borderColor: theme.background,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>
+                    {taskCount > 9 ? '9+' : taskCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           </View>
         }
       />
 
       <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 20 }}>
-        <StatsOverview contracts={contracts} occurrences={occurrences} onSelect={openTile} />
+        <StatsOverview
+          contracts={contracts}
+          occurrences={occurrences}
+          overdueCount={overdue.length}
+          onSelect={openTile}
+        />
 
         {!insightDismissed && (
           <PersonalizedInsight
@@ -155,56 +201,9 @@ export default function Dashboard() {
           />
         )}
 
-        {inbox.length > 0 && (
-          <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700' }}>
-              Received by email
-            </Text>
-            <View style={{ gap: 10 }}>
-              {inbox.map((item) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => router.push(`/add?inbox=${item.id}`)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    backgroundColor: theme.card,
-                    borderColor: theme.border,
-                    borderWidth: 1,
-                    borderRadius: RADIUS,
-                    padding: 14,
-                  }}
-                >
-                  <Ionicons name="mail-unread-outline" size={20} color={theme.brandText} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
-                      {inboxItemTitle(item)}
-                    </Text>
-                    <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }} numberOfLines={1}>
-                      {/* Sender is unauthenticated (email is spoofable), so it is
-                          labeled, never presented as a verified identity. */}
-                      {item.from_address ? `Unverified sender: ${item.from_address}` : 'Tap to have Contry read it'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() =>
-                      Alert.alert('Dismiss this document?', 'The file will be deleted.', [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Dismiss', style: 'destructive', onPress: () => dismissInbox.mutate(item) },
-                      ])
-                    }
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Dismiss document"
-                  >
-                    <Ionicons name="close-circle" size={20} color={theme.mutedForeground} />
-                  </Pressable>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
+        {/* "Received by email" used to render here. It moved to /tasks, which is
+            where everything waiting on the user now lives; the avatar badge is
+            what surfaces it. */}
 
         {comingUp.length > 0 && (
           <View style={{ gap: 10 }}>

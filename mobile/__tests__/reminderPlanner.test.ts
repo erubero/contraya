@@ -1,6 +1,9 @@
-import { addDays, addMonths, format } from 'date-fns';
 import {
-  nextOccurrences, planReminders, planAll, contractIdFromNotificationId, PlannableDate,
+  addDays, addMonths, differenceInCalendarMonths, differenceInCalendarYears, format,
+} from 'date-fns';
+import {
+  nextOccurrences, lastMissedOccurrence, planReminders, planAll,
+  contractIdFromNotificationId, PlannableDate,
 } from '@/lib/reminderPlanner';
 import { ContractDate } from '@/data/types';
 
@@ -125,5 +128,98 @@ describe('notification ids', () => {
   it('rejects foreign ids', () => {
     expect(contractIdFromNotificationId('warranty.x.30d')).toBeNull();
     expect(contractIdFromNotificationId('anything-else')).toBeNull();
+  });
+});
+
+// These exist because the Tasks screen needs past occurrences and the obvious
+// way to give it them (letting nextOccurrences return them) silently starves
+// MAX_OCCURRENCES and stops old rows producing reminders at all. Overdue lookup
+// lives in its own function precisely so these stay green.
+describe('the scheduler never looks backwards', () => {
+  const OLD_DATES = ['2019-01-31', '2020-02-29', '2024-12-31', '2026-07-09'];
+  const RECURRENCES: ContractDate['recurrence'][] = ['none', 'monthly', 'yearly'];
+
+  it('an ancient monthly row still plans a full horizon of reminders', () => {
+    // The starvation regression. A row this old has ~90 past occurrences; if any
+    // of them consumed the cap, this drops to zero and every long-tenured user
+    // silently stops being reminded.
+    const out = planReminders(
+      item({ due_date: '2019-01-15', recurrence: 'monthly', reminder_windows: [7] }),
+      now
+    );
+    expect(out.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('plans no reminder in the past, for any age or recurrence', () => {
+    for (const due_date of OLD_DATES) {
+      for (const recurrence of RECURRENCES) {
+        const out = planReminders(
+          item({ due_date, recurrence, reminder_windows: [90, 30, 7, 1] }),
+          now
+        );
+        for (const r of out) {
+          expect(r.fireDate.getTime()).toBeGreaterThan(now.getTime());
+        }
+      }
+    }
+  });
+
+  it('nextOccurrences never returns a day before today', () => {
+    const today = new Date('2026-07-10T00:00:00').getTime();
+    for (const due of OLD_DATES) {
+      for (const recurrence of RECURRENCES) {
+        for (const occ of nextOccurrences(due, recurrence, now)) {
+          expect(occ.getTime()).toBeGreaterThanOrEqual(today);
+        }
+      }
+    }
+  });
+});
+
+describe('lastMissedOccurrence', () => {
+  it('a non-recurring date yesterday is the miss', () => {
+    const due = iso(addDays(now, -1));
+    expect(iso(lastMissedOccurrence(due, 'none', now)!)).toBe(due);
+  });
+
+  it('today is not yet missed', () => {
+    // Boundary shared with statusKind: a date is overdue the day AFTER it.
+    expect(lastMissedOccurrence(iso(now), 'none', now)).toBeNull();
+    expect(lastMissedOccurrence(iso(now), 'monthly', now)).toBeNull();
+  });
+
+  it('a future date has missed nothing', () => {
+    expect(lastMissedOccurrence(iso(addDays(now, 10)), 'none', now)).toBeNull();
+    expect(lastMissedOccurrence(iso(addDays(now, 10)), 'monthly', now)).toBeNull();
+  });
+
+  it('monthly clamps month-end the same way forwards and backwards', () => {
+    expect(iso(lastMissedOccurrence('2026-01-31', 'monthly', new Date('2026-03-01T00:00:00'))!))
+      .toBe('2026-02-28');
+    // Anchored at the original date, so the series recovers to the 30th/31st
+    // rather than sticking at the 28th.
+    expect(iso(lastMissedOccurrence('2026-01-31', 'monthly', now)!)).toBe('2026-06-30');
+  });
+
+  it('handles a leap-day yearly row', () => {
+    expect(iso(lastMissedOccurrence('2020-02-29', 'yearly', now)!)).toBe('2026-02-28');
+  });
+
+  it('returns null for a malformed date', () => {
+    expect(lastMissedOccurrence('not-a-date', 'monthly', now)).toBeNull();
+  });
+
+  it('sits exactly one step behind the next occurrence', () => {
+    // The drift guard. Expressed as a calendar difference rather than by adding
+    // a month, because clamping means addMonths(missed, 1) is not always the
+    // next occurrence.
+    for (const due of ['2026-01-31', '2019-01-15', '2024-12-31']) {
+      const next = nextOccurrences(due, 'monthly', now)[0];
+      const missed = lastMissedOccurrence(due, 'monthly', now)!;
+      expect(differenceInCalendarMonths(next, missed)).toBe(1);
+    }
+    const nextYear = nextOccurrences('2020-02-29', 'yearly', now)[0];
+    const missedYear = lastMissedOccurrence('2020-02-29', 'yearly', now)!;
+    expect(differenceInCalendarYears(nextYear, missedYear)).toBe(1);
   });
 });

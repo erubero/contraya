@@ -1,4 +1,12 @@
-import { addMonths, addYears, set, startOfDay, subDays } from 'date-fns';
+import {
+  addMonths,
+  addYears,
+  differenceInCalendarMonths,
+  differenceInCalendarYears,
+  set,
+  startOfDay,
+  subDays,
+} from 'date-fns';
 import { ContractDate, DateType } from '@/data/types';
 
 export type PlannedReminder = {
@@ -23,6 +31,17 @@ export const HORIZON_MONTHS = 13;
 // Hard cap per row so a malformed recurrence can never flood the schedule.
 const MAX_OCCURRENCES = 24;
 
+// Shared by nextOccurrences and lastMissedOccurrence so month-end clamping can
+// never drift between the future and the past view of the same series. Every
+// occurrence is stepped from the ORIGINAL date, never re-added to the previous
+// one: that is what makes "due on the 31st" go Jan 31, Feb 28, Mar 31 instead
+// of collapsing to the 28th forever.
+function stepper(recurrence: Exclude<ContractDate['recurrence'], 'none'>) {
+  return recurrence === 'monthly'
+    ? (d: Date, n: number) => addMonths(d, n)
+    : (d: Date, n: number) => addYears(d, n);
+}
+
 // Occurrences of a date row on or after `from`, capped at the horizon. A
 // non-recurring date is its own single occurrence (skipped once past).
 // date-fns addMonths clamps month-end (Jan 31 + 1mo = Feb 28), which is the
@@ -42,9 +61,7 @@ export function nextOccurrences(
     return first >= floor && first <= horizon ? [first] : [];
   }
 
-  const step = recurrence === 'monthly'
-    ? (d: Date, n: number) => addMonths(d, n)
-    : (d: Date, n: number) => addYears(d, n);
+  const step = stepper(recurrence);
 
   const out: Date[] = [];
   for (let i = 0; out.length < MAX_OCCURRENCES; i++) {
@@ -53,6 +70,52 @@ export function nextOccurrences(
     if (occ >= floor) out.push(occ);
   }
   return out;
+}
+
+// The most recent occurrence STRICTLY before today, or null. UI only.
+//
+// Never call this from planReminders or planAll. Notifications must only ever
+// be scheduled forward, and the reason that is guaranteed today is that
+// nextOccurrences floors at `from` and never yields a past date at all. Keeping
+// the past lookup in a separate function preserves that guarantee structurally
+// rather than by argument.
+//
+// Specifically, do NOT be tempted to "simplify" this by making nextOccurrences
+// return past occurrences and filtering at the call sites. MAX_OCCURRENCES caps
+// the array, and it currently counts future occurrences only because the push
+// is gated on `occ >= floor`. Drop that gate and an old monthly row fills all
+// 24 slots with dates from years ago, the loop breaks before reaching a single
+// future one, and that row silently stops producing reminders forever. It would
+// hit the longest-tenured users first and would be close to undetectable.
+//
+// Returns a single Date rather than an array on purpose: one overdue task per
+// row. A monthly rent row twelve months late is one unpaid rent, not twelve
+// tasks, and contract_dates has no completion column so a longer list could
+// never be cleared.
+export function lastMissedOccurrence(
+  dueDate: string,
+  recurrence: ContractDate['recurrence'],
+  now: Date = new Date()
+): Date | null {
+  const first = startOfDay(new Date(`${dueDate}T00:00:00`));
+  if (Number.isNaN(first.getTime())) return null;
+  const today = startOfDay(now);
+  // Nothing has been missed yet. Today itself is never overdue, which matches
+  // statusKind in data/status.ts.
+  if (first >= today) return null;
+
+  if (recurrence === 'none') return first;
+
+  const step = stepper(recurrence);
+  // Jump straight to the occurrence in today's own month/year, then walk back
+  // at most one step. Avoids iterating from the contract's start date.
+  const approx =
+    recurrence === 'monthly'
+      ? differenceInCalendarMonths(today, first)
+      : differenceInCalendarYears(today, first);
+  let i = approx;
+  while (i >= 0 && step(first, i) >= today) i -= 1;
+  return i < 0 ? null : step(first, i);
 }
 
 const TITLES: Record<DateType, string> = {
