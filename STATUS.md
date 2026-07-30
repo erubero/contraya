@@ -91,10 +91,15 @@ deployed functions.
 **Status, same day (owner said go):** items 1, 2, 4 and 5 are **FIXED** in
 this session's follow-up commit — code plus a new regression suite (125
 tests / 17 suites green, typecheck clean, Hermes export verified). Item 3
-is **WIRED code-side** (`extra.eas.projectId` fed by
-`EXPO_PUBLIC_EXPO_PROJECT_ID`, a direct env fallback in pushToken.ts, and a
-dev-mode warning when unset); it activates the moment the owner completes
-new checklist item 13. The five entries below are kept as written for the
+was first wired through Expo's push service, then **REDESIGNED the same day
+on owner direction (no Expo anywhere):** the Expo service is gone from the
+chain entirely. The client now registers the raw APNs device token
+(`getDevicePushTokenAsync`, no project id needed) and the cron signs its own
+ES256 JWTs and POSTs straight to `api.push.apple.com` (sandbox retry for
+Debug-build tokens, dead-token pruning, iOS-only filtering so future FCM
+tokens are never sent to Apple). No expo.dev account, project, or id exists
+anywhere in the app. Activation = checklist item 13 (Apple .p8 + three
+Supabase secrets). The five entries below are kept as written for the
 record.
 
 1. **FIXED — Inbox retry destroys the emailed PDF (data loss).** A failed inbox
@@ -112,7 +117,7 @@ record.
    (`send-date-reminders/index.ts:116`) which nothing reads, and there is no
    `getLastNotificationResponseAsync`, so cold-start taps drop even for
    local reminders. Server-push taps will never deep-link.
-3. **WIRED, owner id pending — Push tokens can never mint.** `app.config.ts` has no
+3. **FIXED BY REDESIGN (direct APNs, no Expo) — Push tokens can never mint.** `app.config.ts` has no
    `extra.eas.projectId`; `pushToken.ts:20-21` silently returns. The daily
    cron has nobody to push to — MovePact's exact open trap. Owner item:
    create the Expo project id, then wire it in. (Once fixed, decide finding
@@ -776,22 +781,34 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     Caveat carried forward: the source is 900x900, under Apple's 1024 minimum,
     so the generator upscales. Fine for flat art, but re-export at 1024+ if the
     design tool is ever opened again. See `brand/README.md`.
-13. **Expo project id (gates push reminders; added 2026-07-30).** The code
-    is fully wired; push tokens start minting the moment the id lands in
-    `mobile/.env`. Steps:
-    1. In a browser: expo.dev, sign in as `erubero1`, Create a project,
-       name it exactly `contraya`. Copy the project ID it shows (a UUID).
-    2. On the Mac, in Terminal (complete paste; swap YOUR_PROJECT_UUID):
+13. **APNs secrets (gate push reminders; reworked 2026-07-30, NO Expo).**
+    Push goes device → Supabase cron → Apple directly. Tokens mint with no
+    setup at all (the app registers the raw APNs device token); these three
+    secrets are only about the cron being able to SEND. Steps:
+    1. In a browser: developer.apple.com → Account → Certificates,
+       Identifiers & Profiles → Keys. If a key with "Apple Push
+       Notifications service (APNs)" enabled already exists and you still
+       have its `.p8` file, reuse it and note its 10-character Key ID.
+       Otherwise: the plus button → name `Renovatio Push` → check Apple
+       Push Notifications service (APNs) → Continue → Register → Download
+       (the file downloads ONCE; keep it in a safe place that is not
+       Desktop/Documents, those folders sync to iCloud) → note the Key ID.
+       One APNs key serves every app on the team, Warraya included.
+    2. On the Mac, in Terminal (swap the path if the .p8 lives elsewhere):
        ```
-       cd ~/Developer/Sppa/contraya/mobile && sed -i '' 's/^EXPO_PUBLIC_EXPO_PROJECT_ID=.*/EXPO_PUBLIC_EXPO_PROJECT_ID=YOUR_PROJECT_UUID/' .env && grep EXPO_PUBLIC_EXPO_PROJECT_ID .env
+       base64 -i ~/Downloads/AuthKey_XXXXXXXXXX.p8 | pbcopy
        ```
-       Success looks like: the line prints back carrying your UUID.
-    3. Token DELIVERY additionally needs the APNs key uploaded once:
-       expo.dev, contraya project, Credentials, iOS, add the Apple Push
-       Key (.p8 from the Apple Developer account). Tokens mint without
-       this, but Expo cannot hand notifications to Apple until it exists.
-    4. Quit and rerun the app from Xcode so the new value gets bundled
-       (no prebuild needed for env changes).
+       Success looks like: no output, and your clipboard now holds one long
+       line of text.
+    3. In a browser: supabase.com/dashboard → project `contraya` → Edge
+       Functions → Secrets → add three secrets:
+       - `APNS_TEAM_ID` = `DYR4YB9FVL`
+       - `APNS_KEY_ID` = the 10-character Key ID from step 1
+       - `APNS_P8_BASE64` = paste from the clipboard
+    4. Nothing else: no rebuild is needed for the secrets, and the client
+       change ships with the next normal Xcode run. Debug builds register
+       sandbox tokens and the sender retries the sandbox host, so testing
+       on your phone works before TestFlight.
     5. **Before going live with push, decide finding 37** (local 9:00 +
        cron push the same morning with no cross-channel dedup).
 

@@ -66,16 +66,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     './plugins/withCleanXcodeBuild',
   ],
-  // Expo project id: NOT for EAS builds (those stay banned; Xcode only). The
-  // push service needs it or getExpoPushTokenAsync silently never mints a
-  // token and the reminder cron has nobody to send to (the trap MovePact
-  // hit). Set EXPO_PUBLIC_EXPO_PROJECT_ID in mobile/.env once the project
-  // exists on expo.dev under the erubero1 account.
-  extra: {
-    eas: {
-      projectId: process.env.EXPO_PUBLIC_EXPO_PROJECT_ID || undefined,
-    },
-  },
+  // No Expo services anywhere (owner rule): builds go through Xcode and push
+  // goes straight to APNs (the reminder cron signs its own ES256 JWTs), so
+  // there is deliberately no EAS/expo.dev project id in this config.
   experiments: {
     typedRoutes: true,
   },

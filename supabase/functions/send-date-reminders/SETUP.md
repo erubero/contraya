@@ -10,6 +10,14 @@ occurrences past the on-device 60-notification cap).
 - `CRON_SECRET` — long random string; only the owner holds it. The function
   compares it timing-safe. Rotating it = set the new value + redeploy + update
   the cron job's Authorization header.
+- `APNS_TEAM_ID` + `APNS_KEY_ID` + `APNS_P8_BASE64` — the push channel
+  (DIRECT APNs; no Expo or any push service in the chain). All three unset =
+  push soft-skips. Team id is `DYR4YB9FVL`; key id is the 10-character id of
+  an Apple Developer key with the APNs capability; the p8 secret is
+  `base64 -i AuthKey_<KEYID>.p8` (raw PEM pasted in also works). One APNs
+  auth key serves every app on the team. Debug builds register SANDBOX
+  device tokens; the sender retries the sandbox host on BadDeviceToken, so
+  dev-phone testing works with no extra config.
 - `RESEND_API_KEY` — OPTIONAL. Unset = email channel soft-skips (the function
   still returns ok). Requires usecontraya.com verified in Resend before setting.
 
