@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { supabase, isConfigured } from '@/api/supabase';
+import { supabase, isConfigured, clearStoredSession } from '@/api/supabase';
 import { updateProfile as repoUpdateProfile } from '@/data/repo';
 import {
   needsOnboarding as computeNeedsOnboarding,
@@ -211,7 +211,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (patch.avatarPath !== undefined) setAvatarPath(patch.avatarPath);
       },
       signOut: async () => {
-        if (isConfigured) await supabase.auth.signOut();
+        if (isConfigured) {
+          // With an expired token and no network, signOut() errors BEFORE
+          // removing the stored session; ignoring that resurrects the
+          // account on the next online launch. Force-clear on any failure.
+          try {
+            const { error } = await supabase.auth.signOut();
+            if (error) await clearStoredSession();
+          } catch {
+            await clearStoredSession();
+          }
+        }
         setStatus('signedOut');
         setEmail(null);
         setUserId(null);

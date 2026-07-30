@@ -53,7 +53,10 @@ export async function setRemindersEnabled(enabled: boolean): Promise<void> {
   }
 }
 
-async function clearAll(): Promise<void> {
+// Cancel every planner-owned scheduled notification (the `contract.`
+// namespace only). Exported for sign-out and account deletion: a device must
+// never keep firing reminders for an account that left it.
+export async function clearAll(): Promise<void> {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled

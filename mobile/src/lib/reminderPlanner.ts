@@ -117,3 +117,20 @@ export function contractIdFromNotificationId(id: string): string | null {
   const m = ID_RE.exec(id);
   return m ? m[1] : null;
 }
+
+// Contract id carried by any reminder notification, local or push. Local
+// notifications encode it in the identifier; the server push cron sends a
+// platform-random identifier and puts the id in `data.contractId`, so the
+// payload wins and the identifier is the fallback.
+const CONTRACT_ID_RE = /^[A-Za-z0-9-]{1,64}$/;
+
+export function contractIdFromResponse(input: {
+  identifier: string;
+  data?: unknown;
+}): string | null {
+  if (input.data && typeof input.data === 'object') {
+    const raw = (input.data as Record<string, unknown>).contractId;
+    if (typeof raw === 'string' && CONTRACT_ID_RE.test(raw)) return raw;
+  }
+  return contractIdFromNotificationId(input.identifier);
+}

@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { deleteAccount } from '@/api/account';
 import { isConfigured } from '@/api/supabase';
 import { uploadAvatar, getAvatarUrl } from '@/data/repo';
+import { clearAll as clearScheduledReminders } from '@/lib/notifications';
 import { downscaleAvatar } from '@/lib/downscale';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
@@ -124,6 +125,9 @@ export default function Account() {
           try {
             if (isConfigured) await deleteAccount();
             if (isDemo) demo.reset();
+            // The row promises "erases every reminder": cancel everything
+            // scheduled on this device before leaving.
+            await clearScheduledReminders().catch(() => {});
             await signOut();
             queryClient.clear();
             router.replace('/signin');

@@ -88,7 +88,16 @@ deployed functions.
 
 ### Fix before real users (the top five)
 
-1. **Inbox retry destroys the emailed PDF (data loss).** A failed inbox
+**Status, same day (owner said go):** items 1, 2, 4 and 5 are **FIXED** in
+this session's follow-up commit — code plus a new regression suite (125
+tests / 17 suites green, typecheck clean, Hermes export verified). Item 3
+is **WIRED code-side** (`extra.eas.projectId` fed by
+`EXPO_PUBLIC_EXPO_PROJECT_ID`, a direct env fallback in pushToken.ts, and a
+dev-mode warning when unset); it activates the moment the owner completes
+new checklist item 13. The five entries below are kept as written for the
+record.
+
+1. **FIXED — Inbox retry destroys the emailed PDF (data loss).** A failed inbox
    analysis leaves `inboxItem` set (`add.tsx:106-136`); the save branch
    checks `inboxItem` FIRST (`add.tsx:308-331`), so a fresh source then
    saves under the email's title (photos: only page 1 attached), and
@@ -97,24 +106,24 @@ deployed functions.
    emailed contract is gone while the alert says "add it again". Fix: clear
    `inboxItem` when its analysis fails, and never let the inbox branch
    shadow a freshly picked source.
-2. **Notification taps only work warm + local.** The single response
+2. **FIXED — Notification taps only work warm + local.** The single response
    listener (`(app)/_layout.tsx:38-44`) parses local-notification ids only;
    the cron's pushes carry `data.contractId`
    (`send-date-reminders/index.ts:116`) which nothing reads, and there is no
    `getLastNotificationResponseAsync`, so cold-start taps drop even for
    local reminders. Server-push taps will never deep-link.
-3. **Push tokens can never mint.** `app.config.ts` has no
+3. **WIRED, owner id pending — Push tokens can never mint.** `app.config.ts` has no
    `extra.eas.projectId`; `pushToken.ts:20-21` silently returns. The daily
    cron has nobody to push to — MovePact's exact open trap. Owner item:
    create the Expo project id, then wire it in. (Once fixed, decide finding
    37 first or users get double reminders.)
-4. **Sign-out can silently not sign out.** `AuthContext.tsx:213-214`
+4. **FIXED (sign-out half) — Sign-out can silently not sign out.** `AuthContext.tsx:213-214`
    ignores `signOut()`'s error; with an expired access token while offline,
    auth-js returns an error BEFORE removing the stored session, the UI
    shows signed-out, and the next online launch silently signs back in.
    Bad on a handed-over phone. Cousin: offline cold boot with an expired
    token shows the sign-in screen to a genuinely signed-in user.
-5. **Account deletion and sign-out leave scheduled reminders alive.**
+5. **FIXED — Account deletion and sign-out leave scheduled reminders alive.**
    `account.tsx:117-135` and `settings.tsx:43-48` never call
    `clearAll`/`disableAndClear` — after deletion, up to 60 reminders keep
    firing with contract titles, deep-linking into a signed-out app, while
@@ -767,6 +776,24 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     Caveat carried forward: the source is 900x900, under Apple's 1024 minimum,
     so the generator upscales. Fine for flat art, but re-export at 1024+ if the
     design tool is ever opened again. See `brand/README.md`.
+13. **Expo project id (gates push reminders; added 2026-07-30).** The code
+    is fully wired; push tokens start minting the moment the id lands in
+    `mobile/.env`. Steps:
+    1. In a browser: expo.dev, sign in as `erubero1`, Create a project,
+       name it exactly `contraya`. Copy the project ID it shows (a UUID).
+    2. On the Mac, in Terminal (complete paste; swap YOUR_PROJECT_UUID):
+       ```
+       cd ~/Developer/Sppa/contraya/mobile && sed -i '' 's/^EXPO_PUBLIC_EXPO_PROJECT_ID=.*/EXPO_PUBLIC_EXPO_PROJECT_ID=YOUR_PROJECT_UUID/' .env && grep EXPO_PUBLIC_EXPO_PROJECT_ID .env
+       ```
+       Success looks like: the line prints back carrying your UUID.
+    3. Token DELIVERY additionally needs the APNs key uploaded once:
+       expo.dev, contraya project, Credentials, iOS, add the Apple Push
+       Key (.p8 from the Apple Developer account). Tokens mint without
+       this, but Expo cannot hand notifications to Apple until it exists.
+    4. Quit and rerun the app from Xcode so the new value gets bundled
+       (no prebuild needed for env changes).
+    5. **Before going live with push, decide finding 37** (local 9:00 +
+       cron push the same morning with no cross-channel dedup).
 
 ## Xcode pre-flight (audited 2026-07-29, `npx expo-doctor`)
 

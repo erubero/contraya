@@ -122,6 +122,12 @@ export default function AddContract() {
         if (!cancelled) applyAnalysis(a);
       } catch {
         if (cancelled) return;
+        // Reset the inbox state COMPLETELY or a later save with a fresh
+        // source would still take the inbox branch: attaching under the
+        // email's title and consuming the inbox row whose file was never
+        // attached — destroying the user's only copy of an emailed PDF.
+        setInboxItem(null);
+        setSourcePaths([]);
         Alert.alert(
           "Contry couldn't read this document",
           'You can still add the details yourself. The email stays in your inbox.'
@@ -305,7 +311,9 @@ export default function AddContract() {
       // Attach the analyzed source files; a failed attach must never cost the
       // user their saved contract (they can re-attach from the detail screen).
       let attachFailed = false;
-      if (inboxItem && sourcePaths[0]) {
+      // The inbox branch only applies while the sources ARE the inbox file;
+      // a freshly picked source must always take the branches below.
+      if (inboxItem && sourcePaths[0] === inboxItem.storage_path) {
         await attachDocument(
           bundle.contract.id,
           sourcePaths[0],

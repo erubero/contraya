@@ -7,8 +7,26 @@ import { useAuth } from '@/lib/AuthContext';
 import { listAllDates } from '@/data/repo';
 import { rebuildAll } from '@/lib/notifications';
 import { syncPushToken } from '@/lib/pushToken';
-import { contractIdFromNotificationId } from '@/lib/reminderPlanner';
+import { contractIdFromResponse } from '@/lib/reminderPlanner';
 import { useTheme } from '@/theme/colors';
+
+// A tap can reach us twice (cold-start read + live listener); route it once.
+let lastHandledTap: string | null = null;
+
+function routeNotificationTap(
+  response: Notifications.NotificationResponse,
+  push: (path: `/contract/${string}`) => void
+) {
+  const key = `${response.notification.date}.${response.notification.request.identifier}`;
+  if (key === lastHandledTap) return;
+  const id = contractIdFromResponse({
+    identifier: response.notification.request.identifier,
+    data: response.notification.request.content.data,
+  });
+  if (!id) return;
+  lastHandledTap = key;
+  push(`/contract/${id}`);
+}
 
 export default function AppLayout() {
   const { status } = useAuth();
@@ -34,12 +52,19 @@ export default function AppLayout() {
     return () => sub.remove();
   }, [status]);
 
-  // Tapping a reminder opens that contract.
+  // Tapping a reminder opens that contract. The listener covers taps while
+  // the app is alive; the cold-start read covers taps that LAUNCHED the app
+  // (the listener mounts too late for those). Both go through the same
+  // dedupe so a tap never routes twice.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const id = contractIdFromNotificationId(response.notification.request.identifier);
-      if (id) router.push(`/contract/${id}`);
+      routeNotificationTap(response, (path) => router.push(path));
     });
+    Notifications.getLastNotificationResponseAsync()
+      .then((response) => {
+        if (response) routeNotificationTap(response, (path) => router.push(path));
+      })
+      .catch(() => {});
     return () => sub.remove();
   }, [router]);
 

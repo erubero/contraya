@@ -17,8 +17,19 @@ export async function syncPushToken(): Promise<void> {
     const { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted') return;
 
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-    if (!projectId) return;
+    // The env read is the belt to the config's braces: Metro inlines it at
+    // bundle time even if the manifest copy of extra{} is somehow stale.
+    const projectId =
+      Constants.expoConfig?.extra?.eas?.projectId ??
+      process.env.EXPO_PUBLIC_EXPO_PROJECT_ID;
+    if (!projectId) {
+      if (__DEV__) {
+        console.warn(
+          'Push tokens disabled: EXPO_PUBLIC_EXPO_PROJECT_ID is not set, so the reminder cron cannot reach this device.'
+        );
+      }
+      return;
+    }
 
     const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
     if (!token) return;

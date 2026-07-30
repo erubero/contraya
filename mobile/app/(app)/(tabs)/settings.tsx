@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
+import { clearAll as clearScheduledReminders } from '@/lib/notifications';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -41,6 +42,9 @@ export default function Settings() {
   }, [avatarPath]);
 
   const onSignOut = async () => {
+    // The device must not keep firing this account's reminders after it
+    // leaves; the next sign-in rebuilds them from that account's data.
+    await clearScheduledReminders().catch(() => {});
     if (isDemo) demo.reset();
     await signOut();
     queryClient.clear();
