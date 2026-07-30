@@ -1,4 +1,4 @@
-import { splitLeadIn } from '@/lib/textFormat';
+import { splitLeadIn, describeWindows } from '@/lib/textFormat';
 
 describe('splitLeadIn', () => {
   it('splits the first sentence from the rest', () => {
@@ -20,5 +20,31 @@ describe('splitLeadIn', () => {
     const long = 'x'.repeat(200) + '. tail';
     const { lead } = splitLeadIn(long);
     expect(lead.length).toBeLessThanOrEqual(161);
+  });
+});
+
+describe('describeWindows', () => {
+  it('renders the real payment default', () => {
+    expect(describeWindows([7, 1])).toBe('7 days and 1 day before');
+  });
+
+  it('renders the real renewal / notice default', () => {
+    expect(describeWindows([60, 30, 7])).toBe('60 days, 30 days and 7 days before');
+  });
+
+  it('sorts furthest-out first regardless of input order', () => {
+    expect(describeWindows([7, 60, 30])).toBe('60 days, 30 days and 7 days before');
+  });
+
+  it('singularises one day', () => {
+    expect(describeWindows([1])).toBe('1 day before');
+  });
+
+  it('handles a single multi-day window', () => {
+    expect(describeWindows([30])).toBe('30 days before');
+  });
+
+  it('does not crash on an empty set', () => {
+    expect(describeWindows([])).toBe('No reminders');
   });
 });

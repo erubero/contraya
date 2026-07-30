@@ -10,3 +10,16 @@ export function splitLeadIn(text: string): { lead: string; rest: string } {
   if (text.length <= 160) return { lead: text, rest: '' };
   return { lead: '', rest: text };
 }
+
+// Renders a set of reminder windows (days before a date) as a sentence, for
+// the Notifications screen's "when Contry reminds you" schedule. The screen
+// feeds this straight from DEFAULT_WINDOWS so what a user reads there is
+// always what the planner actually does.
+export function describeWindows(days: number[]): string {
+  const sorted = [...days].sort((a, b) => b - a);
+  const parts = sorted.map((d) => (d === 1 ? '1 day' : `${d} days`));
+  if (parts.length === 0) return 'No reminders';
+  if (parts.length === 1) return `${parts[0]} before`;
+  const last = parts.pop() as string;
+  return `${parts.join(', ')} and ${last} before`;
+}
