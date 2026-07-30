@@ -58,6 +58,10 @@ export function listAllDates(): Promise<live.DateWithContract[]> {
   return isConfigured ? live.listAllDates() : demo.listAllDates();
 }
 
+export function listAllRiskFlags(): Promise<live.RiskFlagRef[]> {
+  return isConfigured ? live.listAllRiskFlags() : demo.listAllRiskFlags();
+}
+
 export function getAnalysisCounts(): Promise<usage.AnalysisCounts> {
   return isConfigured ? usage.getAnalysisCounts() : demo.analysisCounts();
 }

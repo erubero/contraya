@@ -6,7 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getBundle, deleteContract, updateContract, setObligationCompleted, listAllDates,
 } from '@/data/repo';
-import { CONTRACT_TYPE_LABELS, DATE_TYPE_LABELS, Severity } from '@/data/types';
+import { CONTRACT_TYPE_LABELS, DATE_TYPE_LABELS, SEVERITY_LABELS } from '@/data/types';
+import { severityColor } from '@/theme/severity';
 import { rebuildAll } from '@/lib/notifications';
 import { useAuth } from '@/lib/AuthContext';
 import { Linking } from 'react-native';
@@ -91,11 +92,9 @@ export default function ContractDetail() {
 
   const { contract, dates, obligations, riskFlags } = bundle;
 
-  const severityColor: Record<Severity, { fg: string; bg: string }> = {
-    high: { fg: theme.statusExpired, bg: theme.statusExpiredBg },
-    medium: { fg: theme.statusExpiring, bg: theme.statusExpiringBg },
-    low: { fg: theme.mutedForeground, bg: theme.accent },
-  };
+  // Was a local duplicate of theme/severity.ts. Imported now so the two cannot
+  // drift, which is what STATUS.md already claimed was true.
+  const severity = severityColor(theme);
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: theme.background }} contentContainerStyle={{ padding: 16, gap: 14 }}>
@@ -312,7 +311,7 @@ export default function ContractDetail() {
           </Text>
           <View style={{ gap: 10 }}>
             {riskFlags.map((r) => {
-              const c = severityColor[r.severity];
+              const c = severity[r.severity];
               return (
                 <View
                   key={r.id}
@@ -327,8 +326,8 @@ export default function ContractDetail() {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <View style={{ backgroundColor: c.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-                      <Text style={{ color: c.fg, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' }}>
-                        {r.severity}
+                      <Text style={{ color: c.fg, fontSize: 11, fontWeight: '700' }}>
+                        {SEVERITY_LABELS[r.severity]}
                       </Text>
                     </View>
                     <Text style={{ flex: 1, color: theme.foreground, fontSize: 15, fontWeight: '600' }}>{r.title}</Text>

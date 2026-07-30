@@ -10,7 +10,7 @@ import { ContractAnalysis } from '@/data/analysis';
 import { InboxItem, ingestAddress } from '@/data/inbox';
 import { ChatTurn } from '@/data/chat';
 import { AnalysisCounts } from '@/api/usage';
-import { DateWithContract } from '@/api/contracts';
+import { DateWithContract, RiskFlagRef } from '@/api/contracts';
 
 const iso = (d: Date) => format(d, 'yyyy-MM-dd');
 
@@ -239,6 +239,9 @@ export const demo = {
       }
     }
     return out;
+  },
+  async listAllRiskFlags(): Promise<RiskFlagRef[]> {
+    return db.riskFlags.map((r) => ({ contract_id: r.contract_id, severity: r.severity }));
   },
   async analysisCounts(): Promise<AnalysisCounts> {
     return { lifetime: 0, month: 0 };

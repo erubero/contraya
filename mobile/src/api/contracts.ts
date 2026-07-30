@@ -6,7 +6,7 @@ import {
   Contract, ContractBundle, ContractInsert,
   ContractDate, ContractDateInsert,
   ContractObligation, ContractObligationInsert,
-  ContractRiskFlag, ContractRiskFlagInsert,
+  ContractRiskFlag, ContractRiskFlagInsert, Severity,
 } from '@/data/types';
 import { parseAnalysis, ContractAnalysis } from '@/data/analysis';
 
@@ -120,6 +120,19 @@ export async function listAllDates(): Promise<DateWithContract[]> {
     .order('due_date');
   if (error) throw error;
   return (data ?? []) as DateWithContract[];
+}
+
+// Just enough of every risk flag to filter the contracts list by severity.
+// Deliberately not whole rows: the list needs to know which contracts carry a
+// flag at which level, not what any of them say.
+export type RiskFlagRef = { contract_id: string; severity: Severity };
+
+export async function listAllRiskFlags(): Promise<RiskFlagRef[]> {
+  const { data, error } = await supabase
+    .from('contract_risk_flags')
+    .select('contract_id, severity');
+  if (error) throw error;
+  return (data ?? []) as RiskFlagRef[];
 }
 
 // Uploads a source file to the private bucket under the owner's folder BEFORE

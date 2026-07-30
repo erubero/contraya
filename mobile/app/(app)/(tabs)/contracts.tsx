@@ -3,9 +3,10 @@ import { View, Text, FlatList, Pressable, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { listContracts, listAllDates } from '@/data/repo';
+import { listContracts, listAllDates, listAllRiskFlags } from '@/data/repo';
 import { searchContracts } from '@/data/search';
-import { ContractStatus } from '@/data/types';
+import { filterByRisk, RiskFilter } from '@/data/filters';
+import { ContractStatus, SEVERITY_LABELS } from '@/data/types';
 import { useSearch } from '@/lib/SearchContext';
 import { useTheme } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -24,6 +25,15 @@ const CHIPS: { key: Filter; label: string }[] = [
   { key: 'archived', label: 'Archived' },
 ];
 
+// Second row. "Any risk" rather than another "All", so the two rows never read
+// as offering the same choice twice.
+const RISK_CHIPS: { key: RiskFilter; label: string }[] = [
+  { key: 'any', label: 'Any risk' },
+  { key: 'high', label: SEVERITY_LABELS.high },
+  { key: 'medium', label: SEVERITY_LABELS.medium },
+  { key: 'low', label: SEVERITY_LABELS.low },
+];
+
 export default function Contracts() {
   const theme = useTheme();
   const clearance = useTabBarClearance();
@@ -32,6 +42,7 @@ export default function Contracts() {
   // The search query lives in the island tab bar (SearchContext).
   const { query } = useSearch();
   const [filter, setFilter] = useState<Filter>('all');
+  const [risk, setRisk] = useState<RiskFilter>('any');
 
   // Consume the one-shot filter deep-link from the Dashboard tiles.
   useEffect(() => {
@@ -50,12 +61,16 @@ export default function Contracts() {
     queryKey: ['contract-dates'],
     queryFn: listAllDates,
   });
+  const { data: riskFlags = [] } = useQuery({
+    queryKey: ['risk-flags'],
+    queryFn: listAllRiskFlags,
+  });
 
   const filtered = useMemo(() => {
     const searched = searchContracts(contracts, query);
-    if (filter === 'all') return searched;
-    return searched.filter((c) => c.status === filter);
-  }, [contracts, query, filter]);
+    const byStatus = filter === 'all' ? searched : searched.filter((c) => c.status === filter);
+    return filterByRisk(byStatus, riskFlags, risk);
+  }, [contracts, query, filter, riskFlags, risk]);
 
   const searching = query.trim() !== '';
 
@@ -72,35 +87,9 @@ export default function Contracts() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         ListHeaderComponent={
           <View style={{ gap: 12, marginBottom: 4 }}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {CHIPS.map((c) => {
-                const active = filter === c.key;
-                return (
-                  <Pressable
-                    key={c.key}
-                    onPress={() => setFilter(c.key)}
-                    style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 7,
-                      borderRadius: 999,
-                      backgroundColor: active ? theme.primary : theme.card,
-                      borderColor: active ? theme.primary : theme.border,
-                      borderWidth: 1,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: active ? '#FFFFFF' : theme.mutedForeground,
-                        fontSize: 13,
-                        fontWeight: '600',
-                      }}
-                    >
-                      {c.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {/* Two rows, not one: the four status chips already fill the width. */}
+            <ChipRow chips={CHIPS} selected={filter} onSelect={setFilter} />
+            <ChipRow chips={RISK_CHIPS} selected={risk} onSelect={setRisk} />
             {searching && filtered.length > 0 && (
               <Text style={{ color: theme.mutedForeground, fontSize: 13, fontWeight: '600' }}>
                 {filtered.length === 1 ? 'Contry found 1 match' : `Contry found ${filtered.length} matches`}
@@ -155,6 +144,54 @@ export default function Contracts() {
           )
         }
       />
+    </View>
+  );
+}
+
+// One row of pill filters. Extracted so the status row and the risk row cannot
+// drift apart visually, which is what happens when two hand-rolled copies of the
+// same markup sit ten lines from each other.
+function ChipRow<T extends string>({
+  chips,
+  selected,
+  onSelect,
+}: {
+  chips: { key: T; label: string }[];
+  selected: T;
+  onSelect: (key: T) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      {chips.map((c) => {
+        const active = selected === c.key;
+        return (
+          <Pressable
+            key={c.key}
+            onPress={() => onSelect(c.key)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              borderRadius: 999,
+              backgroundColor: active ? theme.primary : theme.card,
+              borderColor: active ? theme.primary : theme.border,
+              borderWidth: 1,
+            }}
+          >
+            <Text
+              style={{
+                color: active ? theme.primaryForeground : theme.mutedForeground,
+                fontSize: 13,
+                fontWeight: '600',
+              }}
+            >
+              {c.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

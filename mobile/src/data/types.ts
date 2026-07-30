@@ -39,6 +39,16 @@ export type Recurrence = (typeof RECURRENCES)[number];
 export const SEVERITIES = ['high', 'medium', 'low'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
+// Display only. The stored values stay 'high' | 'medium' | 'low': the DB CHECK,
+// the model's JSON schema and every existing row use those, and renaming them
+// would be a migration for no gain. Screens must never render the raw enum.
+// "HIGH" is developer vocabulary, not something a person reads about a lease.
+export const SEVERITY_LABELS: Record<Severity, string> = {
+  high: 'Critical',
+  medium: 'Moderate',
+  low: 'Minor',
+};
+
 // Reminder windows (days before) a date row may carry. The DB CHECK mirrors
 // this set; keep the two in sync.
 export const ALLOWED_WINDOWS = [1, 3, 7, 14, 30, 60, 90] as const;
