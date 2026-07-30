@@ -1,8 +1,36 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-07-28. Read this first when resuming work.
+Updated: 2026-07-29. Read this first when resuming work.
 
-## 🚧 PRE-LAUNCH — codebase forked from Warraya and fully retargeted; no backend exists yet
+## 🚧 PRE-LAUNCH — code complete and backend live; not yet run on a device
+
+The backend is no longer a plan: project `tzqjnbcbrcfltnjutels` is up, all
+seven migrations are applied, verify.sql returns 34/34 PASS, and all five
+edge functions are deployed and reject unauthenticated calls with 401. What
+has *not* happened is a single real run: nobody has built the app in Xcode,
+signed up, or pushed a real contract through `analyze-contract`. Everything
+below marked DONE is verified in this repo or in the Supabase dashboard;
+nothing is verified on a phone.
+
+### What is actually left, in order
+
+1. **First device build.** `cd mobile && npx expo prebuild --platform ios`,
+   open `mobile/ios/Contraya.xcworkspace` in Xcode, Run. `npx expo start` in
+   a second tab for Metro. Nothing else can be trusted until this happens.
+2. **First real analysis.** Sign up live, put a real lease PDF through it.
+   This is the go/no-go on the two things no amount of code review can
+   settle: how long the analysis actually takes, and whether the extracted
+   dates are right. See "Device E2E smoke" below for the full sequence.
+3. **Logo** (blocker 12) — still not in `brand/`, checked again 2026-07-29.
+   Every icon in the tree is Warraya's mark. Blocks App Store submission,
+   not development.
+4. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
+   `send-date-reminders` cannot run, so no push reminders. (`ANTHROPIC_API_KEY`
+   is already set, which is why analysis works and reminders do not.)
+5. **Deploy the landing.** Never deployed. The App Store listing needs a live
+   Privacy Policy URL, so this blocks submission too.
+6. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
+   **screenshots**. All submission-time, none blocking a build today.
 
 The full plan (market research, architecture decisions, phases) lives in the
 planning doc from the 2026-07-28 session; the decisions that matter are
@@ -369,8 +397,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    `supabase link --project-ref tzqjnbcbrcfltnjutels`, then
    **`supabase db push` DONE (2026-07-28)** — all seven migrations applied
    clean on the first successful run, so the schema, RLS, triggers, quota
-   RPCs and both storage buckets are live. Still to run:
-   `supabase functions deploy`.
+   RPCs and both storage buckets are live. Functions deployed too (item 3).
    **Schema verified live (2026-07-29):** `supabase/verify.sql` run in the
    SQL Editor returned 34/34 PASS. Confirmed in production, not just in the
    migration files: all 11 tables with RLS on, anon holding zero table
@@ -391,12 +418,23 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    separately from Warraya's). Still to set: `CRON_SECRET` (owner-held,
    needed before the reminder cron can run), `INGEST_SECRET` (see item 10),
    `RESEND_API_KEY` (later; the email channel soft-skips without it).
-3. **Deploy functions** (Claude can do this once the project exists):
-   `analyze-contract`, `chat-contract`, `delete-account` (normal),
-   `send-date-reminders` (`--no-verify-jwt`, see its SETUP.md),
-   `ingest-email` (`--no-verify-jwt`). The JWT posture is codified in
-   `supabase/config.toml`, so a plain `supabase functions deploy` gets it
-   right. Probe all: 401 unauthed.
+3. **Deploy functions** — **DONE (2026-07-29).** All five are live in the
+   dashboard: `analyze-contract`, `chat-contract`, `delete-account` (normal
+   JWT), `send-date-reminders` and `ingest-email` (`--no-verify-jwt`, they
+   carry their own shared-secret header check instead). The JWT posture is
+   codified in `supabase/config.toml`, so a plain `supabase functions deploy`
+   got it right. **Unauthenticated probe passed:** all five returned `401`,
+   including the two `--no-verify-jwt` ones, which proves their in-function
+   secret checks fire and that flipping off JWT verification did not leave
+   them open. Re-run the probe after any redeploy:
+   ```
+   for f in analyze-contract chat-contract delete-account \
+            send-date-reminders ingest-email; do
+     printf '%-22s ' "$f"
+     curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+       "https://tzqjnbcbrcfltnjutels.supabase.co/functions/v1/$f"
+   done
+   ```
 3b. **Attorney review of Terms + Privacy before launch.** Both documents
    were generated and audited in-repo, but nobody licensed has read them.
    Cheap flat-fee review is enough; when the text changes, bump the
@@ -489,6 +527,9 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     `npx expo prebuild --platform ios`. The mascot art (Contry, all four
     slots still null) is a separate owner-supplied item and is NOT blocking:
     those slots fall back to icons by design.
+    **Still open as of 2026-07-29** — `brand/` on `main` contains only
+    `README.md`. GitHub's web uploader needs the second "Commit changes"
+    step; dropping the file into the picker alone does not push it.
 
 ## Device E2E smoke (after setup, before TestFlight)
 
