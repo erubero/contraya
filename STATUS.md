@@ -27,9 +27,14 @@ nothing is verified on a phone.
    first build can look like a total success while never once touching the
    live backend. Tell them apart by signing up: demo mode accepts anything
    and never sends a real email.
-2. **First device build.** `cd mobile && npx expo prebuild --platform ios`,
-   open `mobile/ios/Contraya.xcworkspace` in Xcode, Run. `npx expo start` in
-   a second tab for Metro. Nothing else can be trusted until this happens.
+2. **First device build.** On the Mac, the full pickup ritual (the
+   `npm install` is NOT optional anymore: `expo-font` became a direct
+   dependency on 2026-07-29, and an ios/ generated before the icon swap still
+   carries Warraya's shield):
+   `git pull origin main && cd mobile && npm install &&
+   npx expo prebuild --platform ios && open ios/Contraya.xcworkspace`,
+   then Run IN Xcode (⌘R). `npx expo start` in a second tab for Metro.
+   Nothing else can be trusted until this happens.
 3. **First real analysis.** Sign up live, put a real lease PDF through it.
    This is the go/no-go on the two things no amount of code review can
    settle: how long the analysis actually takes, and whether the extracted
