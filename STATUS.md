@@ -14,22 +14,35 @@ nothing is verified on a phone.
 
 ### What is actually left, in order
 
-1. **First device build.** `cd mobile && npx expo prebuild --platform ios`,
+1. **Create `mobile/.env` FIRST.** It is gitignored, so it does not exist on
+   the Mac yet. Copy `mobile/.env.example` to `mobile/.env` and fill:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=https://tzqjnbcbrcfltnjutels.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=<Supabase → Settings → API → anon public>
+   ```
+   Leave the two RevenueCat keys blank for now (blank = no paywall, which is
+   what you want until RevenueCat is set up). **This is the easy one to skip
+   and the worst one to skip:** with a blank `.env` the app boots into demo
+   mode with seeded contracts and behaves like a finished product, so the
+   first build can look like a total success while never once touching the
+   live backend. Tell them apart by signing up: demo mode accepts anything
+   and never sends a real email.
+2. **First device build.** `cd mobile && npx expo prebuild --platform ios`,
    open `mobile/ios/Contraya.xcworkspace` in Xcode, Run. `npx expo start` in
    a second tab for Metro. Nothing else can be trusted until this happens.
-2. **First real analysis.** Sign up live, put a real lease PDF through it.
+3. **First real analysis.** Sign up live, put a real lease PDF through it.
    This is the go/no-go on the two things no amount of code review can
    settle: how long the analysis actually takes, and whether the extracted
    dates are right. See "Device E2E smoke" below for the full sequence.
-3. **Logo** (blocker 12) — still not in `brand/`, checked again 2026-07-29.
+4. **Logo** (blocker 12) — still not in `brand/`, checked again 2026-07-29.
    Every icon in the tree is Warraya's mark. Blocks App Store submission,
    not development.
-4. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
+5. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
    `send-date-reminders` cannot run, so no push reminders. (`ANTHROPIC_API_KEY`
    is already set, which is why analysis works and reminders do not.)
-5. **Deploy the landing.** Never deployed. The App Store listing needs a live
+6. **Deploy the landing.** Never deployed. The App Store listing needs a live
    Privacy Policy URL, so this blocks submission too.
-6. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
+7. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
    **screenshots**. All submission-time, none blocking a build today.
 
 The full plan (market research, architecture decisions, phases) lives in the
@@ -68,7 +81,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **100 tests across 14 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Mobile app compiles and tests green:** tsc strict clean, **113 tests across 16 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
@@ -95,7 +108,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   (date row, occurrence, window, channel), month-end clamping matches the
   planner). Windows default by type: payment {7,1},
   renewal/termination_notice {60,30,7}, expiry {30,7}.
-- **Edge function `analyze-contract`** written (NOT deployed): Warraya's
+- **Edge function `analyze-contract`** (deployed 2026-07-29): Warraya's
   security skeleton (auth 401 → validate → download → atomic quota consume →
   model → refund on failure → 422 on refusal/not-a-contract → no upstream
   leaks). claude-sonnet-5, max_tokens 8000, adaptive thinking at
@@ -107,7 +120,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   with the service role, which bypasses storage RLS). Server ceiling
   ANALYSIS_CEILING=20/user/month (tightened 2026-07-28), fail-closed 503. Token usage logged per
   call — watch cost from day one.
-- **Migrations** written (NOT pushed): `20260728000000_init` (5 tables +
+- **Migrations** (all applied 2026-07-28): `20260728000000_init` (5 tables +
   documents bucket + per-user 200-contract cap + per-contract 100-child-row
   caps), `20260728000100_reminders` (push_tokens + register_push_token +
   contract_date_reminders ledger), `20260728000200_analysis_usage`
