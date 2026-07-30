@@ -149,15 +149,25 @@ document-processing service provider to produce the summaries. Declare:
 
 **Data collected and linked to the user (all for App Functionality, none for tracking):**
 - Contact Info → Email Address — account creation and sign-in
-- Contact Info → Emails or Text Messages — ONLY messages the user forwards to
+- User Content → Emails or Text Messages — ONLY messages the user forwards to
   their own Contraya address (sender, subject, and PDF attachments are stored;
-  the message body is not)
+  the message body is not). NOTE: this sits under **User Content** in Apple's
+  taxonomy, not Contact Info. An earlier draft of this doc filed it under
+  Contact Info, which does not exist as an option and will send you hunting.
 - User Content → Photos or Videos — contract page photos and the avatar
 - User Content → Other User Content — contract records, uploaded PDFs, chat
   questions
-- Identifiers → User ID — account identity
+- Identifiers → User ID — account identity, and the RevenueCat app user ID
 - Identifiers → Device ID — the push notification token, stored to deliver
   reminders
+- Purchases → Purchase History — RevenueCat. `src/lib/purchases.ts` configures
+  the SDK with `appUserID` set to the Supabase user id, so a third party
+  receives subscription transactions tied to an identifiable account. Apple's
+  own StoreKit purchases would not need declaring; routing them through
+  RevenueCat does. Declare this even if the RevenueCat keys are still blank at
+  first submission, because the SDK ships in the binary and the description
+  sells a subscription. Under-declaring here is the failure mode that gets
+  flagged, and it is invisible until it is not.
 
 **For every item above:** Used for App Functionality = Yes; Linked to identity = Yes; Used for Tracking = No.
 **Data used to track you:** None.
