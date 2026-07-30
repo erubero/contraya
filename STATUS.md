@@ -72,8 +72,18 @@ nothing is verified on a phone.
 5. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
    `send-date-reminders` cannot run, so no push reminders. (`ANTHROPIC_API_KEY`
    is already set, which is why analysis works and reminders do not.)
-6. **Deploy the landing.** Never deployed. The App Store listing needs a live
-   Privacy Policy URL, so this blocks submission too.
+6. **Deploy the landing. DONE, LIVE 2026-07-30** and verified from outside:
+   usecontraya.com serves the LATEST build (v2 brand + SEO commit,
+   new-string asserted per the deploy-verification rule), sitemap and
+   robots fetch, og-image serves, /privacy SPA-fallback works, CSP/HSTS
+   headers present. Google Search Console: domain property verified (TXT
+   in DNS), sitemap submitted, homepage indexing requested (owner,
+   2026-07-30). This also un-404s the in-app Terms/Privacy/Help links
+   (audit finding 16 resolved) and unblocks the App Review Privacy Policy
+   URL. **One hole found the same day: NO MX records, so
+   hello@usecontraya.com bounces — the landing's early-access CTA and the
+   app's support address are dead until Cloudflare Email Routing is
+   enabled (hello@ → info@prrenovatio.com, the standard pattern).**
 7. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
    **screenshots**. All submission-time, none blocking a build today.
 
@@ -182,9 +192,9 @@ destructive-tinted isolated Sign Out.**
 15. email-in renders RPC failure as "Your address is being set up."
     forever (`email-in.tsx:43-81`; retry 1, staleTime Infinity, no error
     state, no retry button).
-16. Every in-app web link 404s until the landing deploys (`appMeta.ts:9-15`:
-    Terms, Privacy, Help, share message) — Terms/Privacy resolving is an
-    App Review requirement, so the landing deploy gates submission.
+16. RESOLVED 2026-07-30 by the landing deploy — every in-app web link now
+    resolves (Terms, Privacy, Help, share message all live at
+    usecontraya.com).
 17. `support.tsx:74-79` hand-writes a third disclaimer wording instead of
     importing from `legal.ts` (drops the AI-disclosure and no-privilege
     claims); `about.tsx:53-57` data-handling claims are inline too.
