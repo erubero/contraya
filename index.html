@@ -30,6 +30,12 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded here, not via CSS @import, so the font request starts with the
+         document instead of waiting for the stylesheet to parse. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    />
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <script type="application/ld+json">
@@ -42,7 +48,34 @@
       "description": "Contraya reads the contracts you sign, puts them in plain English, and reminds you before payments, renewals, and notice deadlines. It describes what your contracts say; it is not legal advice.",
       "applicationCategory": "UtilitiesApplication",
       "operatingSystem": "iOS",
-      "keywords": "contract analyzer, lease review, contract reminder, renewal reminder, plain english contracts"
+      "keywords": "contract analyzer, lease review, contract reminder, renewal reminder, plain english contracts",
+      "image": "https://usecontraya.com/og-image.png",
+      "offers": [
+        {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Free: Contry reads 2 contracts, with plain-English summaries, every date on your calendar with reminders, email-in, and flagged clauses."
+        },
+        {
+          "@type": "Offer",
+          "price": "7.99",
+          "priceCurrency": "USD",
+          "description": "Premium, monthly: up to 15 contract readings and 50 Ask Contry questions a month."
+        },
+        {
+          "@type": "Offer",
+          "price": "49.99",
+          "priceCurrency": "USD",
+          "description": "Premium, yearly."
+        }
+      ],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Renovatio, LLC",
+        "url": "https://usecontraya.com/",
+        "logo": "https://usecontraya.com/icons/icon-512.png"
+      }
     }
     </script>
   </head>

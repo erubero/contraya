@@ -40,6 +40,27 @@ function EarlyAccessButton({ small = false }) {
   );
 }
 
+// FAQPage structured data, generated from the same array the visible FAQ
+// renders, so the two can never drift. type="application/ld+json" is inert
+// data (never executed), so the strict script-src CSP does not apply to it.
+function FaqSchema() {
+  const json = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }}
+    />
+  );
+}
+
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
@@ -321,7 +342,7 @@ export default function Landing() {
               </div>
               <p className="text-slate-500 text-sm mb-6">Everything you need to try it on a real contract.</p>
               <ul className="space-y-3 text-slate-700 text-sm flex-1">
-                {['Contry reads 2 contracts, on us', 'Plain-English summary of each one', 'Every date on your calendar, with reminders', 'Risky clauses flagged with the exact quote'].map((line) => (
+                {['Contry reads 2 contracts, on us', 'Plain-English summary of each one', 'Every date on your calendar, with reminders', 'Forward contracts straight from your email', 'Risky clauses flagged with the exact quote'].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <ScrollText className="w-4 h-4 text-lime-700 flex-shrink-0 mt-0.5" />
                     <span>{line}</span>
@@ -342,7 +363,7 @@ export default function Landing() {
               </div>
               <p className="text-slate-300 text-sm mb-6">or $49.99 / year, saving 48%.</p>
               <ul className="space-y-3 text-slate-50 text-sm flex-1">
-                {['Contry reads up to 15 contracts a month', 'Ask Contry up to 50 questions a month', 'Forward contracts straight from your email', 'Everything in Free'].map((line) => (
+                {['Contry reads up to 15 contracts a month', 'Ask Contry up to 50 questions a month', 'Everything in Free'].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <ScrollText className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                     <span>{line}</span>
@@ -368,6 +389,7 @@ export default function Landing() {
             {faqs.map(f => <FaqItem key={f.q} q={f.q} a={f.a} />)}
           </div>
         </div>
+        <FaqSchema />
       </section>
 
       {/* CTA */}

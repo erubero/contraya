@@ -7,6 +7,7 @@ import Landing from './pages/Landing';
 // iOS/Android app; this site is the marketing landing only.
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const ThemeProvider = ({ children }) => {
   useEffect(() => {
@@ -34,7 +35,7 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="*" element={<Landing />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </Router>

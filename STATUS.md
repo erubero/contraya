@@ -769,6 +769,24 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    Warraya's; follow the same steps).
 9. **Cloudflare:** point usecontraya.com at the worker (auto-deploys on push
    like warraya.com), Email Routing for hello@usecontraya.com.
+9b. **After the landing deploys: put it in front of Google (added by the
+    2026-07-30 SEO audit).** The on-page work is DONE and launch-complete
+    (per-route meta, robots.txt, sitemap.xml, SoftwareApplication schema
+    with offers, FAQPage schema generated from the visible FAQ, real 404
+    page with noindex, font loading unblocked; the audit also caught the
+    landing's Premium card selling email forwarding, which is free — same
+    as app finding 14 — now fixed). What only the owner can do, in order:
+    1. In a browser: search.google.com/search-console → Add property →
+       **Domain** → `usecontraya.com` → it shows a TXT record → Cloudflare
+       DNS offers a one-click add for it → back in Search Console, Verify.
+    2. Search Console → Sitemaps → submit `https://usecontraya.com/sitemap.xml`.
+    3. Search Console → URL inspection → `https://usecontraya.com/` →
+       Request indexing.
+    4. Optional, two minutes: bing.com/webmasters → Import from Search
+       Console.
+    Expectations, honestly: "Contraya" ranks within days; generic terms
+    ("contract analyzer", "lease review") need the post-launch SEO guide
+    pages (deliberately cut from MVP) plus backlinks and time.
 10. **Email-in setup:** deploy `ingest-email` (normal JWT mode is OFF — it
     auths via INGEST_SECRET; deploy with `--no-verify-jwt`) and set
     `INGEST_SECRET` (long random, owner-held) in Supabase secrets. Deploy the
