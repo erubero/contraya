@@ -353,11 +353,13 @@ Deno.serve(async (req) => {
     // back. Refunding a billed outcome would let anyone loop large
     // non-contract PDFs for unbounded spend, defeating this ceiling (the only
     // server-side cost cap). Best effort.
-    refund = () =>
-      service.rpc('refund_analysis', { p_user_id: user.id, p_period: period }).then(
-        () => {},
-        (e) => console.error('analysis refund failed', e)
-      );
+    refund = async () => {
+      try {
+        await service.rpc('refund_analysis', { p_user_id: user.id, p_period: period });
+      } catch (e) {
+        console.error('analysis refund failed', e);
+      }
+    };
 
     // encodeBase64 emits no newlines (the Claude API rejects wrapped base64).
     // Document/image blocks go BEFORE the text block.
@@ -384,7 +386,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+        'x-api-key': (Deno.env.get('ANTHROPIC_API_KEY') ?? Deno.env.get('CLAUDE_API_KEY'))!,
         'anthropic-version': '2023-06-01',
       },
       // Bounded below the edge function's wall clock so a slow upstream turns
@@ -405,7 +407,7 @@ Deno.serve(async (req) => {
     if (!anthropicResponse.ok) {
       // Don't leak upstream error bodies to the client.
       console.error('Anthropic request failed', anthropicResponse.status, await anthropicResponse.text());
-      await refund();
+      await refund?.();
       return Response.json({ error: 'Analysis request failed' }, { status: 502, headers: corsHeaders });
     }
 
@@ -455,7 +457,7 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+            'x-api-key': (Deno.env.get('ANTHROPIC_API_KEY') ?? Deno.env.get('CLAUDE_API_KEY'))!,
             'anthropic-version': '2023-06-01',
           },
           signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),

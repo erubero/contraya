@@ -168,11 +168,13 @@ Deno.serve(async (req) => {
     if (allowed !== true) {
       return Response.json({ error: 'Monthly question limit reached' }, { status: 429, headers: corsHeaders });
     }
-    refund = () =>
-      service.rpc('refund_chat', { p_user_id: user.id, p_period: period }).then(
-        () => {},
-        (e) => console.error('chat refund failed', e)
-      );
+    refund = async () => {
+      try {
+        await service.rpc('refund_chat', { p_user_id: user.id, p_period: period });
+      } catch (e) {
+        console.error('chat refund failed', e);
+      }
+    };
 
     // Stored notes travel as compact JSON; they cover most questions and keep
     // answers consistent with what the app already shows.
@@ -227,7 +229,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+        'x-api-key': (Deno.env.get('ANTHROPIC_API_KEY') ?? Deno.env.get('CLAUDE_API_KEY'))!,
         'anthropic-version': '2023-06-01',
       },
       signal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
@@ -242,7 +244,7 @@ Deno.serve(async (req) => {
 
     if (!anthropicResponse.ok) {
       console.error('Anthropic request failed', anthropicResponse.status, await anthropicResponse.text());
-      await refund();
+      await refund?.();
       return Response.json({ error: 'Question failed' }, { status: 502, headers: corsHeaders });
     }
 

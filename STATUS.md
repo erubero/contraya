@@ -652,10 +652,16 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    That table is owned by supabase_storage_admin and the migration role
    cannot ALTER it. Creating policies on it is fine; toggling its RLS is
    not. Do not add that statement back.
-2. **Secrets:** `ANTHROPIC_API_KEY` **DONE** (2026-07-28, owner set it as a
-   Supabase edge secret; it is a new key so Contraya's token spend tracks
-   separately from Warraya's). Still to set: `CRON_SECRET` (owner-held,
-   needed before the reminder cron can run), `INGEST_SECRET` (see item 10),
+2. **Secrets:** the Anthropic key is **DONE but lives under the name
+   `CLAUDE_API_KEY`** (owner named it that on 2026-07-28; it is a new key so
+   Contraya's token spend tracks separately from Warraya's). **Caught
+   2026-07-30:** the functions read `ANTHROPIC_API_KEY`, which does not
+   exist in the dashboard, so the very first real analysis would have
+   502'd. Both functions now accept either name (`ANTHROPIC_API_KEY` first,
+   `CLAUDE_API_KEY` fallback), redeployed and byte-verified the same day.
+   `CRON_SECRET` **DONE** (verified in the secrets list, set 2026-07-29;
+   STATUS previously said it was missing). Still to set: `APNS_TEAM_ID` +
+   `APNS_KEY_ID` + `APNS_P8_BASE64` (item 13), `INGEST_SECRET` (item 10),
    `RESEND_API_KEY` (later; the email channel soft-skips without it).
 3. **Deploy functions** — **DONE (2026-07-29).** All five are live in the
    dashboard: `analyze-contract`, `chat-contract`, `delete-account` (normal
@@ -782,6 +788,11 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     so the generator upscales. Fine for flat art, but re-export at 1024+ if the
     design tool is ever opened again. See `brand/README.md`.
 13. **APNs secrets (gate push reminders; reworked 2026-07-30, NO Expo).**
+    The key EXISTS: `AuthKey_9QH4GR7D82.p8` at `~/Developer/keys/`, Key ID
+    `9QH4GR7D82`, registered Sandbox & Production, Team Scoped. But as of
+    the last `supabase secrets list` check the three APNS secrets were NOT
+    in the dashboard (a save step likely got missed); only steps 2-3 below
+    remain.
     Push goes device → Supabase cron → Apple directly. Tokens mint with no
     setup at all (the app registers the raw APNs device token); these three
     secrets are only about the cron being able to SEND. Steps:
