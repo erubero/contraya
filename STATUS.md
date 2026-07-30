@@ -370,8 +370,17 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    **`supabase db push` DONE (2026-07-28)** — all seven migrations applied
    clean on the first successful run, so the schema, RLS, triggers, quota
    RPCs and both storage buckets are live. Still to run:
-   `supabase functions deploy`. Then verify anon probes bounce 42501 on
-   every table.
+   `supabase functions deploy`.
+   **Schema verified live (2026-07-29):** `supabase/verify.sql` run in the
+   SQL Editor returned 34/34 PASS. Confirmed in production, not just in the
+   migration files: all 11 tables with RLS on, anon holding zero table
+   grants, all 10 functions, the four metered quota RPCs unreachable by
+   `authenticated`, all 7 triggers including `contract_dates_freeze_parent`,
+   and both buckets private at 10MB/2MB. Two results that look wrong but are
+   correct: `contract_date_reminders` has 0 policies (RLS on + revoked from
+   authenticated = service-role only, the strictest state), and
+   storage.objects has 7 policies (3 documents, no UPDATE by design, + 4
+   avatars). Re-run verify.sql after any future migration.
    Gotcha burned on the first attempt: an `alter table storage.objects
    enable row level security` in init.sql aborted the whole migration.
    That table is owned by supabase_storage_admin and the migration role
