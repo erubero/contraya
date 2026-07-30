@@ -16,8 +16,8 @@ import { useTheme, RADIUS } from '@/theme/colors';
 import ContryFace from '@/components/ContryFace';
 import InsightCard from '@/components/InsightCard';
 import { splitLeadIn } from '@/lib/textFormat';
+import { DISCLAIMER_CHAT } from '@/lib/legal';
 
-const DISCLAIMER = 'Contry explains what the contract says. It is not legal advice.';
 
 export default function ContractChat() {
   const theme = useTheme();
@@ -105,7 +105,7 @@ export default function ContractChat() {
         }}
       >
         <Ionicons name="information-circle-outline" size={16} color={theme.mutedForeground} />
-        <Text style={{ flex: 1, color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
+        <Text style={{ flex: 1, color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER_CHAT}</Text>
       </View>
 
       <ScrollView

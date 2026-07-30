@@ -14,8 +14,8 @@ import { useTheme, RADIUS } from '@/theme/colors';
 import TypeIcon from '@/components/TypeIcon';
 import StatusBadge from '@/components/StatusBadge';
 import DocumentsSection from '@/components/DocumentsSection';
+import { DISCLAIMER } from '@/lib/legal';
 
-const DISCLAIMER = 'This explains what the contract says. It is not legal advice.';
 
 export default function ContractDetail() {
   const theme = useTheme();

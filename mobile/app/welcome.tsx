@@ -7,6 +7,7 @@ import { markWelcomeSeen } from '@/lib/onboarding';
 import { TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
 import { useTheme, RADIUS } from '@/theme/colors';
 import GlowBackdrop from '@/components/GlowBackdrop';
+import { BUILT_BY, DISCLAIMER } from '@/lib/legal';
 
 // First-open pitch. Shown once per install; both CTAs mark it seen and
 // replace the route so there is no back-swipe into it.
@@ -51,8 +52,8 @@ export default function Welcome() {
             Somewhere in that contract you signed, a deadline is quietly coming due
           </Text>
           <Text style={{ color: theme.mutedForeground, fontSize: 16, lineHeight: 24 }}>
-            Contraya puts every contract in plain English and reminds you before payments, renewals,
-            and notice deadlines. No surprises hiding in the fine print.
+            Contry uses AI to put every contract in plain English and reminds you before
+            payments, renewals, and notice deadlines. No surprises hiding in the fine print.
           </Text>
 
           <View style={{ position: 'relative' }}>
@@ -112,6 +113,9 @@ export default function Welcome() {
           </Pressable>
           <Text style={{ color: theme.mutedForeground, fontSize: 12, textAlign: 'center' }}>
             Takes about a minute
+          </Text>
+          <Text style={{ color: theme.mutedForeground, fontSize: 12, textAlign: 'center', lineHeight: 17 }}>
+            {`${BUILT_BY} ${DISCLAIMER}`}
           </Text>
           <Pressable onPress={signIn} style={{ padding: 8, alignItems: 'center' }}>
             <Text style={{ color: theme.mutedForeground, fontSize: 14 }}>

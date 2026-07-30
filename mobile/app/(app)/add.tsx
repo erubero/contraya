@@ -34,6 +34,7 @@ import GlowBackdrop from '@/components/GlowBackdrop';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
 import { FREE_ANALYSIS_LIFETIME_LIMIT, PRO_MONTHLY_ANALYSES } from '@/lib/limits';
+import { DISCLAIMER } from '@/lib/legal';
 
 // What the user picked before analysis: one PDF, or 1..12 page photos.
 type Source =
@@ -51,7 +52,6 @@ const STAGES = [
   'Writing the plain-English summary',
 ];
 
-const DISCLAIMER = 'This explains what the contract says. It is not legal advice.';
 
 export default function AddContract() {
   const theme = useTheme();

@@ -12,6 +12,7 @@ import { requestPermission } from '@/lib/notifications';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ProgressBar from '@/components/ProgressBar';
 import PersonalizedInsight from '@/components/PersonalizedInsight';
+import { DISCLAIMER, NO_ATTORNEY_RELATIONSHIP } from '@/lib/legal';
 import NotificationPreview from '@/components/NotificationPreview';
 
 type Step = 'intro' | 'q1' | 'q2' | 'q3' | 'done';
@@ -208,6 +209,9 @@ export default function Onboarding() {
             <Text style={{ color: theme.mutedForeground, fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
               You're ready. Add your first contract and Contraya starts watching the dates for
               you.
+            </Text>
+            <Text style={{ color: theme.mutedForeground, fontSize: 12, textAlign: 'center', lineHeight: 18, paddingHorizontal: 4 }}>
+              {`One thing before you start. ${DISCLAIMER} ${NO_ATTORNEY_RELATIONSHIP}`}
             </Text>
             <Pressable
               onPress={finishToAdd}

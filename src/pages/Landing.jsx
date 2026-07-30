@@ -9,8 +9,10 @@ import { usePageMeta } from '@/lib/usePageTitle';
 const LOGO = "/icons/icon-192.png";
 
 const faqs = [
-  { q: "How does Contraya work?", a: "Add a contract as a photo or a PDF, or forward the email it arrived in. Contry reads it and gives you a plain-English summary, every key date, and any clauses worth a second look, each one quoted straight from the document. You confirm the dates, and Contraya reminds you before each one." },
-  { q: "Is this legal advice?", a: "No. Contraya describes what is written in your document and quotes the lines it came from, so you can check every word yourself. It never tells you whether something is legal, whether you would win a dispute, or what you should do. Those are questions for a licensed attorney." },
+  { q: "How does Contraya work?", a: "Add a contract as a photo or a PDF, or forward the email it arrived in. Contry uses AI to read it and give you a plain-English summary, every key date, and any clauses worth a second look, each one quoted straight from the document. You confirm the dates, and Contraya reminds you before each one." },
+  { q: "Is this legal advice?", a: "No. Contraya describes what is written in your document and quotes the lines it came from, so you can check every word yourself. It never tells you whether something is legal, whether you would win a dispute, or what you should do. Using Contraya does not create an attorney-client relationship, and nothing you put here is protected by attorney-client privilege. Those are questions for a licensed attorney of your own." },
+  { q: "Who built this?", a: "A lawyer, for people who are not lawyers. Contraya exists because the person who built it kept watching friends sign things they had not read. That is who designed it, not an offer of legal services, and nobody at Contraya becomes your attorney." },
+  { q: "Does AI read my contract?", a: "Yes. An AI model reads the document and writes the summary, and no person reviews it before you see it. That is why every clause it flags is quoted word for word: so you can check it against the original yourself. AI can miss things and can get a date wrong, so the original document is always the one that counts." },
   { q: "What kinds of contracts can it read?", a: "Apartment leases, phone and internet plans, gym memberships, wedding and event vendor agreements, freelance client contracts, loans, storage units, contractor bids. If it is a PDF or a clear photo of a document, Contry can read it." },
   { q: "When will I hear about a deadline?", a: "Every date you confirm gets reminders before it arrives, with enough lead time to actually act on it: give the notice, make the payment, or cancel before the renewal locks in. Recurring dates, like monthly rent, repeat on their own." },
   { q: "Is my information private?", a: "Your contracts are stored in private storage only you can access, encrypted in transit and at rest, and never sold or shared. You can delete your account and everything in it whenever you like." },
@@ -131,7 +133,8 @@ export default function Landing() {
             </div>
 
             <p className="text-xs text-slate-400 mt-6 max-w-xl">
-              Contraya explains what your contract says. It is not legal advice.
+              Contry uses AI to explain what your contract says. It is not legal advice, and using
+              Contraya does not create an attorney-client relationship.
             </p>
 
           </div>
@@ -236,7 +239,7 @@ export default function Landing() {
               <div>
                 <p className="font-bold text-slate-900 text-lg">Everything comes from your document</p>
                 <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                  Contry describes what the contract says and shows you where it says it. It never tells you what to do, and it is not legal advice. It shows you what you agreed to, so nothing in there surprises you again.
+                  Contry uses AI to describe what the contract says and shows you where it says it. It never tells you what to do, and it is not legal advice. Because a model wrote it, every flagged clause is quoted word for word, so you can check it against the original yourself.
                 </p>
               </div>
             </div>
@@ -395,7 +398,9 @@ export default function Landing() {
             <p>© {new Date().getFullYear()} Contraya. All rights reserved.</p>
           </div>
           <p className="text-center text-xs text-slate-400">
-            Contraya explains what your contracts say. It is not legal advice.
+            Built by a lawyer, for everyday people. Contry uses AI to explain what your contracts
+            say. It is not legal advice, and using Contraya does not create an attorney-client
+            relationship or attorney-client privilege.
           </p>
         </div>
       </footer>

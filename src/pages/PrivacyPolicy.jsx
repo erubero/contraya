@@ -7,7 +7,7 @@ const LOGO = "/icons/icon-192.png";
 
 // Bump this by hand whenever the document text changes. Never compute it:
 // a legal document's revision date must not move on its own.
-const LAST_UPDATED = 'July 28, 2026';
+const LAST_UPDATED = 'July 29, 2026';
 
 export default function PrivacyPolicy() {
   usePageMeta({
@@ -43,7 +43,8 @@ export default function PrivacyPolicy() {
         <p>We store the contract records you create, including titles, party names, dates, summaries, obligations, and notes.</p>
 
         <h3>Uploaded Files</h3>
-        <p>Contracts and documents you upload are stored in private storage that only your account can access. When you add a contract, the document is sent to the third-party document-processing provider we use to produce the plain-English summary, dates, and highlights for you. The provider processes documents under confidentiality obligations, does not use them to train any model, and retains them only for a limited period.</p>
+        <p>Contracts and documents you upload are stored in private storage that only your account can access. When you add a contract, the document is sent to a third-party AI provider we use to produce the plain-English summary, dates, and highlights for you. That provider processes documents under confidentiality obligations, does not use them to train any model, and retains them only for a limited period.</p>
+        <p>Because a summary is produced by an AI model rather than by a person, nothing you upload is covered by attorney-client privilege, and using Contraya does not create an attorney-client relationship. Treat what you send here the way you would treat any document held by a service provider, not the way you would treat a file with your own attorney.</p>
 
         <h3>Notification Data</h3>
         <p>If you enable reminders, we store your device's push notification token so we can deliver them. The token is removed when you sign out of that device or delete your account.</p>

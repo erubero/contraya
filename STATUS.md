@@ -435,6 +435,10 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    dashboard: `analyze-contract`, `chat-contract`, `delete-account` (normal
    JWT), `send-date-reminders` and `ingest-email` (`--no-verify-jwt`, they
    carry their own shared-secret header check instead). The JWT posture is
+   **Redeploy needed:** `chat-contract` changed on 2026-07-29 (a rule was added
+   so Contry answers plainly that it is not a lawyer and that no attorney-client
+   privilege exists). The deployed copy predates it. Run
+   `supabase functions deploy chat-contract` and re-probe.
    codified in `supabase/config.toml`, so a plain `supabase functions deploy`
    got it right. **Unauthenticated probe passed:** all five returned `401`,
    including the two `--no-verify-jwt` ones, which proves their in-function
@@ -448,7 +452,17 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
        "https://tzqjnbcbrcfltnjutels.supabase.co/functions/v1/$f"
    done
    ```
-3b. **Attorney review of Terms + Privacy before launch.** Both documents
+3b. **Attorney review of Terms + Privacy before launch.** NOW ALSO COVERS THE
+   CREDENTIAL CLAIM. On 2026-07-29 the owner added "Built by a lawyer, for
+   everyday people" to the welcome screen, the landing, the store description,
+   and About These Summaries. This was done against advice: a credential claim
+   used to market a service is attorney advertising in most jurisdictions, and
+   naming no jurisdiction of licensure is what several bars specifically flag.
+   It also raises the odds a user reads output as advice, which is why the
+   attorney-client disclaimers were strengthened at the same time. The reviewing
+   attorney should be asked directly whether this phrasing is permissible for
+   the licensing jurisdiction, and whether it needs "licensed in <state>"
+   attached. Do not add a name, a firm, or a jurisdiction before then. Both documents
    were generated and audited in-repo, but nobody licensed has read them.
    Cheap flat-fee review is enough; when the text changes, bump the
    hardcoded LAST_UPDATED constants in both page files.
