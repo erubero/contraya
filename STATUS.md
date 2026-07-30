@@ -554,6 +554,43 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     so the generator upscales. Fine for flat art, but re-export at 1024+ if the
     design tool is ever opened again. See `brand/README.md`.
 
+## Xcode pre-flight (audited 2026-07-29, `npx expo-doctor`)
+
+Run `npx expo-doctor` from `mobile/` before any archive. Current state is
+17/20, and the three that fail are each understood:
+
+- **Expo config schema** and **React Native Directory** both fail only in
+  Claude's sandbox, where the proxy blocks those two lookups (the error is
+  literally "Host not in allowlist" arriving where JSON was expected). They
+  pass on a normal network. Ignore them here, believe them on the Mac.
+- **Duplicate react** is a FALSE ALARM for this layout and must not be
+  "fixed". `mobile/` is its own npm project nested inside the landing's
+  folder, so doctor sees react@19.2.3 in `mobile/node_modules` and
+  react@18.3.1 in `../node_modules`. Node and Metro both resolve
+  nearest-first, verified directly: from `mobile/` react resolves to 19.2.3,
+  from the repo root to 18.3.1. They never share a resolution context.
+  **Do not add a metro.config.js to force this.** That was tried on
+  2026-07-29 with `resolver.disableHierarchicalLookup = true`, and it broke
+  the bundle outright: `@expo/metro-runtime` stopped resolving and
+  `expo export` failed at the entry point. The default config bundles clean
+  (7MB Hermes, verified via `npx expo export --platform ios`).
+
+Fixed during the same audit: **`expo-font` was missing.** `@expo/vector-icons`
+needs it as a direct dependency, and the app uses Ionicons on nearly every
+screen. It was present transitively, so tests and typecheck passed, but a
+native build can drop an undeclared native peer and crash at launch. Now
+pinned at `~57.0.0`.
+
+Also removed the `ios` and `android` npm scripts, which were `expo run:ios` /
+`expo run:android`. Those compile through the terminal, which the repo rule
+forbids, and they sat one `npm run ios` away from being triggered by muscle
+memory. `npm run prebuild` replaces them.
+
+Verified present in the generated project: bundle id `com.contraya.app`, team
+`DYR4YB9FVL`, entitlements for Sign in with Apple and push, camera and photo
+permission strings, `CFBundleShortVersionString` 1.0.0, and the real Contraya
+app icon at 1024 opaque.
+
 ## Device E2E smoke (after setup, before TestFlight)
 
 Demo boot with blank env → live sign-up → analyze a real lease PDF → edit a
