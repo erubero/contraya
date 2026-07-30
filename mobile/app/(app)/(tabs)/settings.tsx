@@ -136,6 +136,18 @@ export default function Settings() {
                   Restore purchases
                 </Text>
               </Pressable>
+              {/* Deliberately shown to NON-subscribers too. Whoever needs to
+                  check or cancel a subscription is often precisely the person
+                  the entitlement check reads as free: bought on another
+                  device, or under a different Apple Account. Gating this
+                  behind isPro hides it from the only people who need it. The
+                  Customer Center handles "no subscription" on its own, and
+                  falls back to Apple's native subscriptions page. */}
+              <Pressable onPress={presentCustomerCenter} style={{ alignItems: 'center', paddingVertical: 4 }}>
+                <Text style={{ color: theme.mutedForeground, fontSize: 14, fontWeight: '600' }}>
+                  Manage Subscription
+                </Text>
+              </Pressable>
             </View>
           )}
         </View>
