@@ -1,6 +1,6 @@
 {
   "name": "contraya",
-  "description": "Keep every warranty and receipt in one place, and get a heads up before coverage runs out.",
+  "description": "Contraya reads the contracts you sign, explains them in plain English, and reminds you before payments, renewals, and notice deadlines.",
   "homepage": "https://usecontraya.com",
   "private": true,
   "version": "0.1.0",

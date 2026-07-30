@@ -23,8 +23,10 @@ actually submitting, roughly in the order they bite:
    and `usecontraya.com` are both used in this listing, and the site has never
    been deployed (STATUS.md checklist item 9). A 404 there is a rejection.
    This is the first domino: deploy the landing, then point the domain.
-2. **The app icon.** ASC wants a 1024x1024 opaque icon, and the one in the
-   tree is still Warraya's shield mark. See `brand/README.md`.
+2. **The app icon.** RESOLVED 2026-07-29: the tree now carries the real
+   Contraya mark (navy/lime document + magnifier), 1024x1024 opaque,
+   regenerated across app and web by `brand/generate-icons.py`. See
+   `brand/README.md`.
 3. **Screenshots** (section 7). Cannot be captured until the app runs, and
    the palette just changed to lime, so any earlier captures are stale.
 4. **The price must be real.** The description below states $7.99 / $49.99.
@@ -254,9 +256,10 @@ lead with the payoff, not the empty state.
 6. *(optional)* **Calendar** — the month view with dates marked.
    Caption: *"Everything you signed, on one calendar."*
 
-Copy rules apply to captions exactly as they do in the app: no "AI", no em
-dashes, and nothing that implies advice. Do not put the not-legal-advice
-disclaimer in a caption; it is on the screens themselves, which is the point.
+Copy rules apply to captions exactly as they do in the app: say "AI" plainly
+where the mechanism comes up (rule reversed 2026-07-29), no em dashes, and
+nothing that implies advice. Do not put the not-legal-advice disclaimer in a
+caption; it is on the screens themselves, which is the point.
 
 ---
 
@@ -301,5 +304,6 @@ Builds go through Xcode, never `eas build` / `eas submit` (repo rule):
 English only at launch (mirrors the Warraya 2026-07-27 decision; a stale or
 partial localization can re-trigger 3.1.2/2.3.2 rejections on its own). When
 a Spanish launch is wanted, write the es-MX mirror fresh from the English
-above, keeping the same rules: Contry described by what it does, no "AI"
-wording, no dashes, subscription block with the EULA link.
+above, keeping the same rules: Contry described by what it does, "AI" said
+plainly (rule reversed 2026-07-29), no dashes, subscription block with the
+EULA link.

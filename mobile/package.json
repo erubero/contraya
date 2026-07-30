@@ -50,7 +50,6 @@
   "scripts": {
     "start": "expo start",
     "prebuild": "expo prebuild --platform ios",
-    "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },

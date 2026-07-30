@@ -1,17 +1,32 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-07-29, end of session. Read this first when resuming work.
+Updated: 2026-07-30, end of the full-app audit session. Read this first.
 
-**Session handoff (for the 2026-07-30 re-audit):** GitHub and the remote
-session are byte-identical and clean. The Mac was last verified at `e6e66f4`,
-which already contains the real icons and the expo-font fix; everything after
-it is docs-only, so the Mac's first move tomorrow is just `git pull origin
-main`. Then confirm prebuild ran after the icon swap: in Xcode,
-`Images.xcassets` → AppIcon must show the navy/lime Contraya mark. A blue
-shield there means run `cd mobile && npm install && npx expo prebuild
---platform ios` again. Open items are unchanged and listed below: chat-contract
-redeploy, CRON_SECRET, landing /privacy check in a browser, then the first
-device build and first real analysis.
+**Session handoff (2026-07-30 audit ran; results below):** The whole-app
+audit happened on the Mac: five parallel deep reviews (onboarding/auth,
+settings, core screens, backend, project config) plus every mechanical gate.
+Mac state verified end to end: tree clean and synced, `mobile/.env` filled
+(live mode; RevenueCat blank on purpose), AppIcon in `ios/` is the real
+navy/lime mark, pods installed, typecheck clean, 119 tests green, Hermes
+export builds (7MB), expo-doctor 18/20 (the two failures are the documented
+duplicate-react false alarm and Expo-registry patch drift). Live backend
+re-verified: 401 probe passed and **all five deployed functions were
+downloaded and diffed byte-identical to the repo — the chat-contract
+redeploy item is CLOSED.** Landing built and `/`, `/privacy`, `/terms` all
+render correctly from the production bundle in a real browser (that open
+item is closed too; the DEPLOY itself is still pending). Fixed in place
+this session: a stale nested `contraya/` clone (untracked cruft, verified
+nothing unique, moved to Trash), stale typed routes that broke typecheck
+on the Mac (gotcha + fix now in CLAUDE.md), prebuild re-run with node@22
+and `ios/.xcode.env.local` pinned to the upgrade-stable
+`/opt/homebrew/opt/node@22/bin/node`, Warraya leftover in the root
+package.json description, missing `og:image` meta, STORE_LISTING's stale
+icon claim and two stale no-"AI" rules, and the dead `web` npm script.
+**The audit found real pre-launch bugs — see "2026-07-30 audit findings"
+below. The five items under "Fix before the first device build" are the
+new next actions; the owner checklist (CRON_SECRET, INGEST_SECRET + email
+worker, landing deploy, RevenueCat, ASC record, pg_cron, attorney review)
+is unchanged.**
 
 ## 🚧 PRE-LAUNCH — code complete and backend live; not yet run on a device
 
@@ -25,8 +40,10 @@ nothing is verified on a phone.
 
 ### What is actually left, in order
 
-1. **Create `mobile/.env` FIRST.** It is gitignored, so it does not exist on
-   the Mac yet. Copy `mobile/.env.example` to `mobile/.env` and fill:
+1. **Create `mobile/.env` FIRST.** DONE — verified on the Mac 2026-07-30:
+   URL + anon key filled for `tzqjnbcbrcfltnjutels`, RevenueCat keys blank
+   (deliberate: no paywall until RevenueCat exists). Kept here because the
+   trap description still applies to any fresh machine:
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://tzqjnbcbrcfltnjutels.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=<Supabase → Settings → API → anon public>
@@ -59,6 +76,183 @@ nothing is verified on a phone.
    Privacy Policy URL, so this blocks submission too.
 7. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
    **screenshots**. All submission-time, none blocking a build today.
+
+## 2026-07-30 audit findings (five parallel deep reviews; all file:line verified)
+
+Every finding below was traced in code, not guessed. The previous audits'
+security claims were re-verified: all nine documented backend properties
+hold (two deviations became findings 19 and 20), and the schema, the edge
+functions' json_schema, and the client decoder were compared field by field
+with zero drift. Live = repo was proven by downloading and diffing all five
+deployed functions.
+
+### Fix before real users (the top five)
+
+1. **Inbox retry destroys the emailed PDF (data loss).** A failed inbox
+   analysis leaves `inboxItem` set (`add.tsx:106-136`); the save branch
+   checks `inboxItem` FIRST (`add.tsx:308-331`), so a fresh source then
+   saves under the email's title (photos: only page 1 attached), and
+   `removeInboxItem` deletes the inbox row. If attach fails,
+   `documents.ts:34-38` deletes the stored object too — the only copy of an
+   emailed contract is gone while the alert says "add it again". Fix: clear
+   `inboxItem` when its analysis fails, and never let the inbox branch
+   shadow a freshly picked source.
+2. **Notification taps only work warm + local.** The single response
+   listener (`(app)/_layout.tsx:38-44`) parses local-notification ids only;
+   the cron's pushes carry `data.contractId`
+   (`send-date-reminders/index.ts:116`) which nothing reads, and there is no
+   `getLastNotificationResponseAsync`, so cold-start taps drop even for
+   local reminders. Server-push taps will never deep-link.
+3. **Push tokens can never mint.** `app.config.ts` has no
+   `extra.eas.projectId`; `pushToken.ts:20-21` silently returns. The daily
+   cron has nobody to push to — MovePact's exact open trap. Owner item:
+   create the Expo project id, then wire it in. (Once fixed, decide finding
+   37 first or users get double reminders.)
+4. **Sign-out can silently not sign out.** `AuthContext.tsx:213-214`
+   ignores `signOut()`'s error; with an expired access token while offline,
+   auth-js returns an error BEFORE removing the stored session, the UI
+   shows signed-out, and the next online launch silently signs back in.
+   Bad on a handed-over phone. Cousin: offline cold boot with an expired
+   token shows the sign-in screen to a genuinely signed-in user.
+5. **Account deletion and sign-out leave scheduled reminders alive.**
+   `account.tsx:117-135` and `settings.tsx:43-48` never call
+   `clearAll`/`disableAndClear` — after deletion, up to 60 reminders keep
+   firing with contract titles, deep-linking into a signed-out app, while
+   the row promised "erases every reminder". One line in both paths.
+
+### Real product bugs (fix before launch)
+
+6. `createContract` is not transactional: parent row commits, child insert
+   fails, retry inserts a DUPLICATE contract (`contracts.ts:49-73`). Needs
+   an RPC transaction or parent cleanup on child failure.
+7. Analysis/chat error copy is unreachable: `FunctionsHttpError.message`
+   never contains the status code, so `msg.includes('422')` etc. never
+   match (`contracts.ts:156-160`, `add.tsx:242-251`, `chat/[id].tsx:75-78`).
+   A user at the monthly ceiling (429) is told "try again". Read the
+   response status/body instead of matching the message.
+8. Per-device AsyncStorage bleeds across accounts: `remindersEnabled`,
+   insight-dismissed, `onboardingPending` are never namespaced or cleared
+   (`notifications.ts:8,38-41`, `onboarding.ts:141`). Worst case: a new
+   user answers "Yes, remind me" on q3 but `rebuildAll` early-returns on a
+   previous account's OFF flag, and q3's yes-handler never re-enables it
+   (`onboarding.tsx:185-193`) — zero reminders despite the promise.
+9. The "Past due" dashboard tile and the calendar's overdue dot are
+   structurally always zero: occurrences floor at today
+   (`reminderPlanner.ts:38-53`, `StatsOverview.tsx:23-29`).
+10. Recurring dates read "Past due" forever on the detail screen and lose
+    the card's next-up chip (`contract/[id].tsx:252`, `status.ts:23-28`
+    ignore recurrence) — contradicts calendar/dashboard, which expand
+    occurrences.
+11. Analyzed contracts never get `end_date` (not in the analysis schema;
+    review shows the date fields only in manual mode, `add.tsx:478-483`),
+    so the "ends soon" badge is inert on the app's primary flow.
+12. The disclaimer trio is 2-of-3 on analysis surfaces: `DISCLAIMER` and
+    `DISCLAIMER_CHAT` (`legal.ts:17-30`) omit the no-attorney-client
+    claim the house rule says travels together. Extend the constants or
+    amend the rule — as written the rule is violated on add/detail/chat.
+13. Reminders toggle shows ON when iOS permission is denied: the
+    `requestPermission()` result is discarded (`notifications.tsx:28-39`),
+    no denied-state UI, no `Linking.openSettings()` shortcut.
+14. Premium card sells "email forwarding" but forwarding is free for
+    everyone (`settings.tsx:118-121` vs ungated RPC and email-in's own
+    "Arriving in your inbox is free"). Fix the pitch or gate the mint.
+15. email-in renders RPC failure as "Your address is being set up."
+    forever (`email-in.tsx:43-81`; retry 1, staleTime Infinity, no error
+    state, no retry button).
+16. Every in-app web link 404s until the landing deploys (`appMeta.ts:9-15`:
+    Terms, Privacy, Help, share message) — Terms/Privacy resolving is an
+    App Review requirement, so the landing deploy gates submission.
+17. `support.tsx:74-79` hand-writes a third disclaimer wording instead of
+    importing from `legal.ts` (drops the AI-disclosure and no-privilege
+    claims); `about.tsx:53-57` data-handling claims are inline too.
+18. Email worker duplicates on retry: the ingest POST is unwrapped
+    (`email-worker/src/index.js:63`), a rejected `email()` makes the MTA
+    redeliver, and `ingest-email` mints a fresh UUID path per call — no
+    idempotency key (message-id/hash) anywhere. Partial-store then 429
+    also duplicates (`:82-86`).
+19. The reminder ledger claim is not atomic: read → send → insert with the
+    insert error swallowed (`send-date-reminders/index.ts:216-275`), while
+    `reminders.sql:79-81` documents an upsert-claim. Overlapping runs
+    (manual curl during the cron, pg_net retry) double-send; send-before-
+    record re-delivers next day after an insert failure.
+20. Yearly recurrence anchored on Feb 29 diverges: cron rolls to Mar 1
+    (`setUTCFullYear`, `index.ts:62`), client clamps to Feb 28 (date-fns
+    `addYears`). Ledger keys the wrong occurrence; channels disagree.
+21. No `stop_reason` check in analyze/chat, and adaptive thinking shares
+    `max_tokens` (chat's 1500 is tight): truncation surfaces as the same
+    422 "Couldn't read this document" as garbage input, with the slot
+    consumed.
+22. A password-recovery link opened while signed in swaps the session
+    without invalidating cached contracts (`reset-password.tsx:49-56`;
+    the layout invalidates only on status TRANSITIONS) — account A's data
+    renders under account B's session until a refetch.
+23. Dark-mode cold boot flashes white: `index.tsx` spinner View has no
+    background and the root Stack sets no `contentStyle`/nav theme.
+24. Android: the add-document Alert has four buttons; Android renders at
+    most three, dropping Cancel, and RN Android alerts are not cancelable
+    (`DocumentsSection.tsx:92-98`).
+25. Photo-pages mode is a one-way door (`add.tsx:398-406`): can't switch
+    back to PDF, the tray's add tile is camera-only even for
+    library-picked flows, and "Done, read it" with zero pages hits the
+    generic error via a server 400.
+26. `NotificationPreview.tsx:41-44` is a hand copy of `reminderPlanner`
+    strings (`TITLES` is not exported, no test locks them) — first copy
+    edit strands the onboarding preview showing a notification the app
+    will never send.
+
+### Polish (LOW — batch when convenient)
+
+27. Sign-in network failure reads as wrong credentials
+    (`signin.tsx:106-109`); forgot-password claims "sent" even when the
+    request never left the device.
+28. Apple sign-in: a failed display-name save rejects a SUCCESSFUL
+    sign-in (wrong alert over the redirect; name unrecoverable —
+    `AuthContext.tsx:180-186`), and the Apple button is not disabled
+    while busy.
+29. Onboarding q1's "Rarely, I'm organized" is drifted copy and the
+    `forgets` metadata key is semantically inverted (means "reads") —
+    owner call, before any analytics build on it.
+30. No `returnKeyType`/`onSubmitEditing` chaining on signin/reset forms;
+    keyboard can clip the Apple button on small phones.
+31. Flashes: dismissed insight re-appears for a frame on every dashboard
+    mount; reminders switch defaults ON before the stored value loads;
+    onboarding Skip awaits a network write with no busy state.
+32. Toggle-off during a mid-flight rebuild can leave reminders scheduled
+    with the switch OFF (self-heals on next signed-in foreground).
+33. Delete-account has no in-flight guard/spinner; a lost response leaves
+    "Couldn't delete" shown for an already-deleted account.
+34. Detail screen shows terminal "Not found" for transient fetch errors;
+    dead `/contracts?filter=` deep-link (dashboard pushes the bare
+    route); date rows with a label but no date are silently dropped on
+    save; the inbox-failure alert promises "stays in your inbox" but a
+    later save consumes it.
+35. a11y labels missing on the detail trash, month chevrons, and page-add
+    tile; two hardcoded `#FFFFFF` bypassing `theme.primaryForeground`
+    (`contracts.tsx:93`, `MonthCalendar.tsx:122`); demo mode shows a
+    fake-but-plausible ingest address App Review may try to email
+    (`demo.ts:331-333`) — add a review-notes line.
+36. Premium pitch hardcodes 15/50 instead of importing `limits.ts`;
+    mailto dead-taps silently with no mail client; `delete-account` lists
+    storage non-recursively (moot with today's flat paths — breaks on the
+    first future subfolder); reminder-email subject interpolates raw
+    label/title (Resend-dependent, self-harm only).
+37. **Design decision needed before push works:** local 9:00 notification
+    + 13:00 UTC cron push for the same (date, window) with no
+    cross-channel dedup = two near-identical banners the same morning on
+    every healthy device in the Americas.
+
+### Verified solid by the same audit (no action)
+
+All nine backend security properties (auth gating, `${user.id}/` path
+checks, atomic fail-closed quotas, RLS + grants, cascade deletion,
+timing-safe secrets, verify-pass clamping, no upstream leakage, config.toml
+posture); three-way schema/edge/decoder consistency; blank-RevenueCat
+degradation everywhere (no crash, no lockout, entitlement `premium` exact);
+demo mode's full loop for App Review; timezone-safe occurrence math and
+identical monthly clamping on both sides; tab-bar clearance on all tabs;
+chat optimistic-send rollback; brand and copy rules (no em dashes in
+user-facing strings, no E2EE claims, hello@ only, lime rules, "AI" said
+plainly, Terms/Privacy links on welcome and signin).
 
 The full plan (market research, architecture decisions, phases) lives in the
 planning doc from the 2026-07-28 session; the decisions that matter are
@@ -96,7 +290,7 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **113 tests across 16 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Mobile app compiles and tests green:** tsc strict clean, **119 tests across 16 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
@@ -317,9 +511,12 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     INSERT only, so a client could re-parent owned `contract_dates` rows
     between owned contracts and grow rows without bound (swelling the
     all-users scan in send-date-reminders). Added a BEFORE UPDATE trigger
-    freezing `contract_id`/`user_id`. Also pinned `alter table storage.objects
-    enable row level security` explicitly, and gave `contract_obligations`
-    UPDATE the same parent-ownership `with check` for parity.
+    freezing `contract_id`/`user_id`. Storage RLS stays guaranteed by
+    verify.sql's live check, NOT by a migration statement — `alter table
+    storage.objects enable row level security` cannot run under db push
+    (see the gotcha in checklist item 1) and no migration contains it. Also
+    gave `contract_obligations` UPDATE the same parent-ownership
+    `with check` for parity.
   - **MEDIUM — email push phishing:** the ingest push interpolated the
     spoofable sender + filename into a notification carrying the app's title
     ("invoice.pdf arrived from billing@yourbank.com"). Push body is now a
@@ -449,11 +646,12 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 3. **Deploy functions** — **DONE (2026-07-29).** All five are live in the
    dashboard: `analyze-contract`, `chat-contract`, `delete-account` (normal
    JWT), `send-date-reminders` and `ingest-email` (`--no-verify-jwt`, they
-   carry their own shared-secret header check instead). The JWT posture is
-   **Redeploy needed:** `chat-contract` changed on 2026-07-29 (a rule was added
-   so Contry answers plainly that it is not a lawyer and that no attorney-client
-   privilege exists). The deployed copy predates it. Run
-   `supabase functions deploy chat-contract` and re-probe.
+   carry their own shared-secret header check instead).
+   **Redeploy CLOSED 2026-07-30:** the 2026-07-29 chat rule (Contry answers
+   plainly that it is not a lawyer, no attorney-client privilege) IS live.
+   All five deployed functions were downloaded with
+   `supabase functions download` and diffed byte-identical to the repo, and
+   the deploy timestamps postdate the rule commit. The JWT posture is
    codified in `supabase/config.toml`, so a plain `supabase functions deploy`
    got it right. **Unauthenticated probe passed:** all five returned `401`,
    including the two `--no-verify-jwt` ones, which proves their in-function
