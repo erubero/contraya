@@ -100,7 +100,16 @@ Debug-build tokens, dead-token pruning, iOS-only filtering so future FCM
 tokens are never sent to Apple). No expo.dev account, project, or id exists
 anywhere in the app. Activation = checklist item 13 (Apple .p8 + three
 Supabase secrets). The five entries below are kept as written for the
-record.
+record. **Later the same day, a Docusign-informed settings/profile pass
+(Mobbin study, owner-approved plan) also FIXED findings 13 (denied-state
+banner + Open Settings), 14 (premium pitch de-falsified + limits imported),
+15 (email-in error state + retry), 17 (support disclaimer now sourced from
+legal.ts), and 33 (deletion moved from an Alert to a dedicated
+confirmation screen, delete-account.tsx, with a busy guard — the Docusign
+Close Account pattern). Same pass: success toasts on profile saves
+(Toast.tsx), email folded into the Account identity card, pencil
+affordance on the name field, 52pt minimum row height in SettingsRow,
+destructive-tinted isolated Sign Out.**
 
 1. **FIXED — Inbox retry destroys the emailed PDF (data loss).** A failed inbox
    analysis leaves `inboxItem` set (`add.tsx:106-136`); the save branch

@@ -80,6 +80,7 @@ export function SettingsRow({
         justifyContent: 'space-between',
         paddingHorizontal: 14,
         paddingVertical: subtitle ? 12 : 14,
+        minHeight: 52,
         gap: 12,
       }}
     >
@@ -138,6 +139,7 @@ export function SettingsSwitchRow({
         justifyContent: 'space-between',
         paddingHorizontal: 14,
         paddingVertical: 12,
+        minHeight: 52,
         gap: 12,
       }}
     >

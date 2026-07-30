@@ -12,6 +12,7 @@ import ScreenHeader from '@/components/ScreenHeader';
 import { useTabBarClearance } from '@/components/TabBar';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { purchasesConfigured, presentPaywall, restore, presentCustomerCenter } from '@/lib/purchases';
+import { PRO_MONTHLY_ANALYSES, PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { SectionTitle, SettingsGroup, SettingsRow, settingsCard } from '@/components/SettingsRow';
 
 // The Settings root is a map, not a workbench. Every control that needs more
@@ -120,8 +121,7 @@ export default function Settings() {
                 </Text>
               </View>
               <Text style={{ color: theme.mutedForeground, fontSize: 14, lineHeight: 20 }}>
-                Premium reads up to 15 contracts a month, answers up to 50 questions, and unlocks
-                email forwarding.
+                {`Premium reads up to ${PRO_MONTHLY_ANALYSES} contracts a month and answers up to ${PRO_MONTHLY_CHATS} questions about them.`}
               </Text>
               <Pressable
                 onPress={onUpgrade}
@@ -192,8 +192,8 @@ export default function Settings() {
           },
         ]}
       >
-        <Ionicons name="log-out-outline" size={20} color={theme.foreground} />
-        <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
+        <Ionicons name="log-out-outline" size={20} color={theme.destructive} />
+        <Text style={{ color: theme.destructive, fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
       </Pressable>
     </ScrollView>
   );

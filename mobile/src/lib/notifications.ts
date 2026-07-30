@@ -70,7 +70,7 @@ export async function clearAll(): Promise<void> {
 export async function rebuildAll(items: PlannableDate[]): Promise<void> {
   await clearAll();
   if (!(await remindersEnabled())) return;
-  const granted = await requestPermissionSilently();
+  const granted = await permissionGranted();
   if (!granted) return;
   await ensureAndroidChannel();
 
@@ -87,8 +87,10 @@ export async function rebuildAll(items: PlannableDate[]): Promise<void> {
   }
 }
 
-// Reschedule without prompting (used by the foreground sweep).
-async function requestPermissionSilently(): Promise<boolean> {
+// Reschedule without prompting (used by the foreground sweep). Exported so
+// the notifications screen can render an honest denied state instead of a
+// switch that says ON while iOS delivers nothing.
+export async function permissionGranted(): Promise<boolean> {
   const { status } = await Notifications.getPermissionsAsync();
   return status === 'granted';
 }

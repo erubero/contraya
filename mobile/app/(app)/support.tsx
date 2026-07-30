@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { useTheme } from '@/theme/colors';
 import { SUPPORT_EMAIL, HELP_URL, SHARE_MESSAGE } from '@/lib/appMeta';
+import { DISCLAIMER, NO_ATTORNEY_RELATIONSHIP } from '@/lib/legal';
 import { SectionTitle, SettingsGroup, SettingsRow, SettingsNote, settingsCard } from '@/components/SettingsRow';
 
 export default function Support() {
@@ -71,10 +72,11 @@ export default function Support() {
         </SettingsGroup>
       </View>
 
+      {/* Sourced from legal.ts, never retyped: the wording drifted here once
+          already and this file was the drift. */}
       <View style={[settingsCard(theme), { padding: 14 }]}>
         <Text style={{ color: theme.mutedForeground, fontSize: 13, lineHeight: 19 }}>
-          Contraya explains what your contracts say. It is not a law firm and cannot tell you what
-          to do. For advice about your situation, talk to a licensed attorney.
+          {`${DISCLAIMER} ${NO_ATTORNEY_RELATIONSHIP}`}
         </Text>
       </View>
     </ScrollView>
