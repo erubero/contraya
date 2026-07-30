@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { deleteAccount } from '@/api/account';
 import { isConfigured } from '@/api/supabase';
 import { clearAll as clearScheduledReminders } from '@/lib/notifications';
+import { clearAllDrafts } from '@/lib/draftStore';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import { settingsCard } from '@/components/SettingsRow';
@@ -37,6 +38,7 @@ export default function DeleteAccount() {
       if (isDemo) demo.reset();
       // The promise on the row that led here: no reminder survives deletion.
       await clearScheduledReminders().catch(() => {});
+      await clearAllDrafts();
       await signOut();
       queryClient.clear();
       router.replace('/signin');

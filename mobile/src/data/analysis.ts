@@ -92,16 +92,25 @@ function isoDate(v: unknown): string | null {
   return year >= 2000 && year <= 2100 ? v : null;
 }
 
-function decodeDate(v: unknown): AnalyzedDate | null {
+/**
+ * Decodes one date row from untrusted input.
+ *
+ * `allowPartial` exists for restoring a saved draft: the review screen
+ * legitimately holds half-typed rows (a label with no date yet, or the blank row
+ * the "Add a date" button inserts), and dropping those on restore would delete
+ * the user's in-progress work. Model output never uses it, so a partial row can
+ * never come from an analysis. Every other guard is identical either way.
+ */
+export function decodeDateRow(v: unknown, opts?: { allowPartial?: boolean }): AnalyzedDate | null {
   if (typeof v !== 'object' || v === null) return null;
   const o = v as Record<string, unknown>;
   const label = str(o.label, 200);
   const date = isoDate(o.date);
   const date_type = oneOf<DateType>(o.date_type, DATE_TYPES) ?? 'custom';
-  if (!label || !date) return null;
+  if (!opts?.allowPartial && (!label || !date)) return null;
   return {
-    label,
-    date,
+    label: label ?? '',
+    date: date ?? '',
     date_type,
     recurrence: oneOf<Recurrence>(o.recurrence, RECURRENCES) ?? 'none',
     note: str(o.note, 200),
@@ -159,7 +168,7 @@ export function parseAnalysis(raw: unknown): ContractAnalysis {
     payment_terms: str(o.payment_terms, 2000),
     total_value: money(o.total_value),
     party_other_contact: str(o.party_other_contact, 300),
-    key_dates: decodeArray(o.key_dates, decodeDate, MAX_DATES),
+    key_dates: decodeArray(o.key_dates, (v) => decodeDateRow(v), MAX_DATES),
     obligations: decodeArray(o.obligations, decodeObligation, MAX_OBLIGATIONS),
     risk_flags: decodeArray(o.risk_flags, decodeRiskFlag, MAX_RISK_FLAGS),
   };

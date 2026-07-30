@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { listContracts, listAllDates, getAvatarUrl, listInbox } from '@/data/repo';
 import { overdueTasks } from '@/data/tasks';
+import { readDraft } from '@/lib/draftStore';
 import { daysUntil } from '@/data/status';
 import { nextOccurrences } from '@/lib/reminderPlanner';
 import { useAuth } from '@/lib/AuthContext';
@@ -23,7 +24,7 @@ export default function Dashboard() {
   const theme = useTheme();
   const clearance = useTabBarClearance();
   const router = useRouter();
-  const { displayName, email, avatarPath, onboardingAnswers } = useAuth();
+  const { displayName, email, avatarPath, onboardingAnswers, userId } = useAuth();
 
   // Same avatar resolution as Settings: storage path -> displayable URL.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -53,10 +54,14 @@ export default function Dashboard() {
     queryKey: ['contract-dates'],
     queryFn: listAllDates,
   });
-  // Kept for the avatar badge count only. The list itself lives on /tasks.
+  // Kept for the avatar badge count only. The lists themselves live on /tasks.
   const { data: inbox = [] } = useQuery({
     queryKey: ['inbox'],
     queryFn: listInbox,
+  });
+  const { data: draft = null } = useQuery({
+    queryKey: ['draft', userId],
+    queryFn: () => readDraft(userId),
   });
 
   // Concrete occurrences (recurring rows expanded) so tiles and the "coming
@@ -87,7 +92,7 @@ export default function Dashboard() {
   // in and never added. Drives both the Past due tile and the avatar badge, so
   // the two can never disagree with the /tasks list.
   const overdue = useMemo(() => overdueTasks(allDates), [allDates]);
-  const taskCount = overdue.length + inbox.length;
+  const taskCount = overdue.length + inbox.length + (draft ? 1 : 0);
 
   const openTile = (tile: TileKey) =>
     tile === 'contracts'

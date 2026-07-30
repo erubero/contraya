@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image,
+  View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image, AppState,
 } from 'react-native';
 import Animated, {
   FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming,
@@ -36,6 +36,10 @@ import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES } from '@/lib/limits';
 import { analysisGate } from '@/lib/quotaGate';
 import { DISCLAIMER } from '@/lib/legal';
+import {
+  ContractDraft, DRAFT_DEBOUNCE_MS, DRAFT_VERSION, isDraftWorthKeeping,
+} from '@/data/draft';
+import { clearDraft, readDraft, writeDraft } from '@/lib/draftStore';
 
 // What the user picked before analysis: one PDF, or 1..12 page photos.
 type Source =
@@ -60,7 +64,7 @@ export default function AddContract() {
   const queryClient = useQueryClient();
   const { userId } = useAuth();
   const { isPro, offeringReady, refresh: refreshPro } = usePurchases();
-  const params = useLocalSearchParams<{ inbox?: string }>();
+  const params = useLocalSearchParams<{ inbox?: string; draft?: string }>();
 
   const [step, setStep] = useState<Step>('source');
   const [inboxItem, setInboxItem] = useState<InboxItem | null>(null);
@@ -68,7 +72,20 @@ export default function AddContract() {
   const [stageIndex, setStageIndex] = useState(0);
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
   const [sourcePaths, setSourcePaths] = useState<string[]>([]);
+  // What was UPLOADED, as opposed to `source`, which is what the user picked and
+  // holds base64. Only these two reach the attach step, so a restored draft can
+  // attach without ever having carried megabytes through storage.
+  const [sourceKind, setSourceKind] = useState<'pdf' | 'images' | null>(null);
+  const [sourceName, setSourceName] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Draft plumbing. `null` means "not looked yet" so the source step can wait
+  // rather than render and then jump when the draft card appears a frame later.
+  const [draftChecked, setDraftChecked] = useState(false);
+  const [restorable, setRestorable] = useState<ContractDraft | null>(null);
+  const draftRef = useRef<ContractDraft | null>(null);
+  const savedRef = useRef(false);
+  const wroteOnceRef = useRef(false);
 
   // Review state (editable before save).
   const [title, setTitle] = useState('');
@@ -118,6 +135,8 @@ export default function AddContract() {
           return;
         }
         setSourcePaths([item.storage_path]);
+        setSourceKind('pdf');
+        setSourceName(null);
         setStep('analyzing');
         const a = await analyzeContract([item.storage_path], 'pdf');
         if (!cancelled) applyAnalysis(a);
@@ -127,8 +146,12 @@ export default function AddContract() {
         // source would still take the inbox branch: attaching under the
         // email's title and consuming the inbox row whose file was never
         // attached — destroying the user's only copy of an emailed PDF.
+        // Same both-or-neither rule applied to the saved draft: a half-reset on
+        // disk would let a restore rebuild the very pairing this clears.
         setInboxItem(null);
         setSourcePaths([]);
+        setSourceKind(null);
+        clearDraft(userId).catch(() => {});
         Alert.alert(
           "Contry couldn't read this document",
           'You can still add the details yourself. The email stays in your inbox.'
@@ -141,6 +164,127 @@ export default function AddContract() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.inbox]);
+
+  // ---- Draft: survive an accidental dismiss without paying twice ----
+
+  const restoreDraft = async (d: ContractDraft) => {
+    let item: InboxItem | null = null;
+    let paths = d.sourcePaths;
+    let kind = d.sourceKind;
+    if (d.inboxItemId) {
+      // Never trust a serialized inbox pairing. The row is re-fetched and the
+      // SERVER decides whether it still matches; the disk only remembers an id.
+      try {
+        const fresh = await getInboxItem(d.inboxItemId);
+        if (fresh.storage_path === d.sourcePaths[0]) item = fresh;
+        else {
+          paths = [];
+          kind = null;
+        }
+      } catch {
+        // Row gone: dismissed from Tasks, which deletes its file too. Keep the
+        // analysis and the edits, drop the attachment ENTIRELY. Both fields
+        // together, never one of them, for the reason spelled out in the inbox
+        // error path above.
+        paths = [];
+        kind = null;
+      }
+    }
+    setInboxItem(item);
+    setSourcePaths(paths);
+    setSourceKind(kind);
+    setSourceName(d.sourceName);
+    setAnalysis(d.analysis);
+    setTitle(d.fields.title);
+    setType(d.fields.type);
+    setPartyOther(d.fields.partyOther);
+    setEffectiveDate(d.fields.effectiveDate);
+    setEndDate(d.fields.endDate);
+    setNotes(d.fields.notes);
+    setDates(d.fields.dates);
+    setRestorable(null);
+    // Must be d.step, not 'review': only the manual branch renders the start and
+    // end date fields and converts a typed end date into a tracked row.
+    setStep(d.step);
+  };
+
+  useEffect(() => {
+    // An active inbox import never consults a draft.
+    if (params.inbox) {
+      setDraftChecked(true);
+      return;
+    }
+    let cancelled = false;
+    readDraft(userId).then((d) => {
+      if (cancelled) return;
+      // Arriving from the Tasks screen: the tap was already the confirmation,
+      // so skip the card.
+      if (d && params.draft === '1') restoreDraft(d);
+      else setRestorable(d);
+      setDraftChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.inbox, params.draft, userId]);
+
+  // Refreshed after EVERY render (no dep array) so the unmount flush below can
+  // never write a stale snapshot.
+  useEffect(() => {
+    draftRef.current =
+      step === 'review' || step === 'manual'
+        ? {
+            v: DRAFT_VERSION,
+            userId: userId ?? '',
+            savedAt: new Date().toISOString(),
+            step,
+            analysis,
+            sourceKind,
+            sourceName,
+            sourcePaths,
+            inboxItemId: inboxItem?.id ?? null,
+            fields: { title, type, partyOther, effectiveDate, endDate, notes, dates },
+          }
+        : null;
+  });
+
+  useEffect(() => {
+    const d = draftRef.current;
+    if (!d || !userId || savedRef.current) return;
+    // The first write of a session is immediate: the analysis has just landed
+    // and is the most expensive thing on the screen. Later writes are only
+    // keystrokes, so they debounce.
+    const delay = wroteOnceRef.current ? DRAFT_DEBOUNCE_MS : 0;
+    const t = setTimeout(() => {
+      wroteOnceRef.current = true;
+      if (isDraftWorthKeeping(d)) writeDraft(userId, d);
+      else clearDraft(userId);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [
+    step, analysis, sourcePaths, sourceKind, sourceName, inboxItem,
+    title, type, partyOther, effectiveDate, endDate, notes, dates, userId,
+  ]);
+
+  useEffect(() => {
+    const flush = () => {
+      const d = draftRef.current;
+      if (savedRef.current || !d || !userId) return;
+      if (isDraftWorthKeeping(d)) writeDraft(userId, d);
+    };
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') flush();
+    });
+    return () => {
+      sub.remove();
+      // The one that matters. Swiping a modal away unmounts this screen but does
+      // NOT background the app, so AppState never fires for the case this whole
+      // feature exists for. The JS runtime keeps running through the unmount, so
+      // this write completes.
+      flush();
+    };
+  }, [userId]);
 
   // The analysis is the metered operation (the model call). The verdict lives
   // in `analysisGate` so it can be unit-tested; this function owns only the
@@ -231,6 +375,11 @@ export default function AddContract() {
   };
 
   const runAnalysis = async (src: Source) => {
+    // A new document supersedes any saved draft. Deliberately here rather than
+    // on the picker tap: hitting the paywall in passQuotaGate and backing out
+    // must not destroy a perfectly good draft.
+    clearDraft(userId).catch(() => {});
+    setRestorable(null);
     setSource(src);
     setStep('analyzing');
     try {
@@ -250,6 +399,12 @@ export default function AddContract() {
         kind = 'images';
       }
       setSourcePaths(paths);
+      // Kind and name are tracked separately from `source` because `source`
+      // holds up to 12 base64 pages and can never go in a draft. These two are
+      // what the attach step actually needs, so a restored draft can still
+      // attach its documents.
+      setSourceKind(kind);
+      setSourceName(src.kind === 'pdf' ? src.name : null);
 
       const a = await analyzeContract(paths, kind);
       applyAnalysis(a);
@@ -316,6 +471,14 @@ export default function AddContract() {
 
       const bundle = await createContract(contract, dateRows, obligations, riskFlags);
 
+      // Here, not in onSuccess, and before the attach block. If a draft outlives
+      // a successful save, the next Add offers to restore a contract that
+      // already exists; saving that creates a duplicate sharing these same
+      // storage objects, and deleting either one deletes the objects out from
+      // under the other. savedRef also stops the unmount flush rewriting it.
+      savedRef.current = true;
+      await clearDraft(userId).catch(() => {});
+
       // Attach the analyzed source files; a failed attach must never cost the
       // user their saved contract (they can re-attach from the detail screen).
       let attachFailed = false;
@@ -334,11 +497,11 @@ export default function AddContract() {
         // The object now lives as the contract's document; drop the inbox row
         // but keep the file. Best effort: a leftover row is harmless.
         await removeInboxItem(inboxItem, false).catch(() => {});
-      } else if (source?.kind === 'pdf' && sourcePaths[0]) {
-        await attachDocument(bundle.contract.id, sourcePaths[0], 'pdf', source.name, null).catch(() => {
+      } else if (sourceKind === 'pdf' && sourcePaths[0]) {
+        await attachDocument(bundle.contract.id, sourcePaths[0], 'pdf', sourceName, null).catch(() => {
           attachFailed = true;
         });
-      } else if (source?.kind === 'images') {
+      } else if (sourceKind === 'images') {
         for (let i = 0; i < sourcePaths.length; i++) {
           await attachDocument(bundle.contract.id, sourcePaths[i], 'image', null, i + 1).catch(() => {
             attachFailed = true;
@@ -356,6 +519,9 @@ export default function AddContract() {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       queryClient.invalidateQueries({ queryKey: ['contract-dates'] });
       queryClient.invalidateQueries({ queryKey: ['inbox'] });
+      // The dashboard stays mounted behind this modal, so without this its
+      // avatar badge would keep counting a draft that no longer exists.
+      queryClient.invalidateQueries({ queryKey: ['draft'] });
       if (attachFailed) {
         Alert.alert('Saved, but a document did not attach', 'You can add it again from the contract.');
         router.back();
@@ -409,8 +575,34 @@ export default function AddContract() {
       contentContainerStyle={{ padding: 16, gap: 16 }}
       keyboardShouldPersistTaps="handled"
     >
-      {step === 'source' && (
+      {/* Held until the draft lookup returns, so the resume card cannot appear a
+          frame late and shove the source cards down. The modal is still
+          animating in, so this reads as nothing at all. */}
+      {step === 'source' && draftChecked && (
         <View style={{ gap: 12 }}>
+          {restorable && !source && (
+            <ResumeCard
+              draft={restorable}
+              onContinue={() => restoreDraft(restorable)}
+              onDiscard={() =>
+                Alert.alert(
+                  'Discard the unfinished contract?',
+                  'The reading Contry already did will be lost.',
+                  [
+                    { text: 'Keep it', style: 'cancel' },
+                    {
+                      text: 'Discard',
+                      style: 'destructive',
+                      onPress: () => {
+                        clearDraft(userId).catch(() => {});
+                        setRestorable(null);
+                      },
+                    },
+                  ]
+                )
+              }
+            />
+          )}
           {source?.kind === 'images' ? (
             <PageTray
               pages={source.pages}
@@ -699,6 +891,71 @@ function PageTray({
           Done, read it
         </Text>
       </Pressable>
+    </View>
+  );
+}
+
+// Solid card, unlike the dashed SourceCards below it: this is something that
+// already exists, not an empty slot to fill.
+function ResumeCard({
+  draft,
+  onContinue,
+  onDiscard,
+}: {
+  draft: ContractDraft;
+  onContinue: () => void;
+  onDiscard: () => void;
+}) {
+  const theme = useTheme();
+  const name = draft.fields.title.trim() || draft.sourceName?.trim() || 'a contract';
+  return (
+    <View
+      style={{
+        backgroundColor: theme.card,
+        borderColor: theme.brand,
+        borderWidth: 1,
+        borderRadius: RADIUS,
+        padding: 16,
+        gap: 12,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Ionicons name="document-text-outline" size={20} color={theme.brandText} />
+        <Text style={{ color: theme.foreground, fontSize: 16, fontWeight: '700', flex: 1 }}>
+          Pick up where you left off
+        </Text>
+      </View>
+      <Text style={{ color: theme.mutedForeground, fontSize: 14, lineHeight: 20 }}>
+        {draft.analysis
+          ? `Contry already read ${name}. Continue and nothing is read twice.`
+          : `You started adding ${name}.`}
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Pressable
+          onPress={onContinue}
+          style={{
+            flex: 1,
+            backgroundColor: theme.brand,
+            borderRadius: RADIUS,
+            paddingVertical: 12,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: theme.brandForeground, fontWeight: '700' }}>Continue</Text>
+        </Pressable>
+        <Pressable
+          onPress={onDiscard}
+          style={{
+            paddingHorizontal: 18,
+            paddingVertical: 12,
+            borderRadius: RADIUS,
+            borderColor: theme.border,
+            borderWidth: 1,
+          }}
+        >
+          <Text style={{ color: theme.mutedForeground, fontWeight: '600' }}>Discard</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

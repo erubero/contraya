@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listAllDates, listInbox, removeInboxItem } from '@/data/repo';
 import { InboxItem, inboxItemTitle } from '@/data/inbox';
 import { overdueTasks, Task } from '@/data/tasks';
+import { clearDraft, readDraft } from '@/lib/draftStore';
+import { useAuth } from '@/lib/AuthContext';
 import { useTheme, RADIUS } from '@/theme/colors';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -29,6 +31,13 @@ export default function Tasks() {
     queryKey: ['inbox'],
     queryFn: listInbox,
   });
+  // An unfinished contract is the most valuable thing that can be waiting here:
+  // the analysis behind it was paid for and re-doing it costs again.
+  const { userId } = useAuth();
+  const { data: draft = null } = useQuery({
+    queryKey: ['draft', userId],
+    queryFn: () => readDraft(userId),
+  });
 
   const overdue = useMemo(() => overdueTasks(allDates), [allDates]);
 
@@ -38,7 +47,7 @@ export default function Tasks() {
     onError: () => Alert.alert("Couldn't dismiss", 'Please try again.'),
   });
 
-  const empty = overdue.length === 0 && inbox.length === 0;
+  const empty = overdue.length === 0 && inbox.length === 0 && !draft;
 
   return (
     <>
@@ -47,6 +56,59 @@ export default function Tasks() {
         style={{ flex: 1, backgroundColor: theme.background }}
         contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 32 }}
       >
+        {draft && (
+          <View style={{ gap: 10 }}>
+            <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700' }}>Unfinished</Text>
+            <Pressable
+              onPress={() => router.push('/add?draft=1')}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                borderWidth: 1,
+                borderRadius: RADIUS,
+                padding: 14,
+              }}
+            >
+              <Ionicons name="document-text-outline" size={20} color={theme.brandText} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+                  {draft.fields.title.trim() || draft.sourceName?.trim() || 'A contract you started'}
+                </Text>
+                <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }} numberOfLines={1}>
+                  {draft.analysis ? 'Already read. Tap to finish adding it.' : 'Tap to finish adding it.'}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() =>
+                  Alert.alert(
+                    'Discard the unfinished contract?',
+                    'The reading Contry already did will be lost.',
+                    [
+                      { text: 'Keep it', style: 'cancel' },
+                      {
+                        text: 'Discard',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await clearDraft(userId);
+                          queryClient.invalidateQueries({ queryKey: ['draft'] });
+                        },
+                      },
+                    ]
+                  )
+                }
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Discard unfinished contract"
+              >
+                <Ionicons name="close-circle" size={20} color={theme.mutedForeground} />
+              </Pressable>
+            </Pressable>
+          </View>
+        )}
+
         {overdue.length > 0 && (
           <View style={{ gap: 10 }}>
             <Text style={{ color: theme.foreground, fontSize: 17, fontWeight: '700' }}>Past due</Text>

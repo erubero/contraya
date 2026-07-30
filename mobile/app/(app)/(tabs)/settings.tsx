@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
 import { clearAll as clearScheduledReminders } from '@/lib/notifications';
+import { clearAllDrafts } from '@/lib/draftStore';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -46,6 +47,9 @@ export default function Settings() {
     // The device must not keep firing this account's reminders after it
     // leaves; the next sign-in rebuilds them from that account's data.
     await clearScheduledReminders().catch(() => {});
+    // No userId argument on purpose: signOut() nulls it, so a per-account clear
+    // placed here would be a silent no-op depending on call order.
+    await clearAllDrafts();
     if (isDemo) demo.reset();
     await signOut();
     queryClient.clear();
