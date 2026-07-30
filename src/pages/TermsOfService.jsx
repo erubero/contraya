@@ -12,7 +12,7 @@ const LAST_UPDATED = 'July 28, 2026';
 export default function TermsOfService() {
   usePageMeta({
     title: 'Terms of Service',
-    description: 'The terms that govern your use of Contraya, the contract reader and reminder app.',
+    description: 'The terms that govern your use of Contraya, the contract analyzer and reminder app.',
     canonicalPath: '/terms',
   });
   return (

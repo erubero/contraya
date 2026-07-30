@@ -42,7 +42,12 @@ owner can do.
 
 ## 0. Decisions (locked)
 
-- **App name:** Contraya: Contract Reader
+- **App name:** Contraya: Contract Analyzer (changed from "Contract Reader"
+  2026-07-29). "Reader" collided with PDF-viewer searches, which pulls the
+  wrong intent, and it undersold a product whose whole job is extracting dates
+  and flagging clauses. "Analyzer" also matches the codebase, where the edge
+  function is literally `analyze-contract`. Deliberately NOT "Contract Review":
+  that phrase means attorney work, and this app describes rather than advises.
 - **Support email:** hello@usecontraya.com (Cloudflare Email Routing must be
   live before submission so this mailbox receives mail; owner checklist item)
 - **Languages:** English (U.S.) only at launch.
@@ -53,8 +58,8 @@ owner can do.
 
 ## 1. App Information (set once)
 
-- **Name:** Contraya: Contract Reader
-- **Subtitle (30 max):** Contracts in plain English
+- **Name:** Contraya: Contract Analyzer  (27 of 30 chars)
+- **Subtitle (30 max):** Plain English, every deadline  (29 of 30)
 - **Bundle ID:** com.contraya.app  (already set in app.config.ts)
 - **SKU:** contraya-ios-1
 - **Primary language:** English (U.S.)
@@ -77,10 +82,13 @@ owner can do.
 Somewhere in that contract is a deadline that will cost you money. Contraya puts it in plain English and reminds you before payments, renewals, and notice dates.
 
 **Keywords (100 max, comma separated, single words on purpose: Apple combines
-them into phrases. "contract" and "reader" already live in the name, so they
-are deliberately not repeated. ASO judgment, not data; revisit once real
-search data exists):**
-lease,agreement,renewal,deadline,reminder,vendor,wedding,freelance,gym,landlord,tenant,clause
+them into phrases. "contract" and "analyzer" already live in the name, so they
+are deliberately not repeated. "reader" is here precisely because it left the
+name: it still has search volume, and as an invisible keyword it catches that
+traffic without the name promising a plain document viewer. Exactly 100 of 100
+characters, so anything added has to displace something. ASO judgment, not
+data; revisit once real search data exists):**
+lease,agreement,renewal,deadline,reminder,vendor,wedding,freelance,gym,landlord,tenant,clause,reader
 
 **Support URL:** https://usecontraya.com
 **Marketing URL (optional):** https://usecontraya.com
