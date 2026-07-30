@@ -3,10 +3,11 @@
 Source art for Contraya. Every web and app icon is generated from the master
 logo in this folder, so this is the single source of truth for the brand mark.
 
-## STATUS: logo landed 2026-07-29, all icons regenerated
+## STATUS: v2 mark landed 2026-07-30, all icons regenerated
 
-`contraya-logo.png` is the master mark: a white document with a lime
-magnifying glass and a check, on a deep navy field. Every icon in the repo is
+`contraya-logo.png` is the master mark: a lime "C" wrapping three fine-print
+text bars, on a deep navy field (v2, replaced the document-and-magnifier v1
+from 2026-07-29; v1 lives in git history). Every icon in the repo is
 generated from it, so it is the single source of truth for the brand.
 
 Source file facts worth knowing before you regenerate:
@@ -15,13 +16,19 @@ Source file facts worth knowing before you regenerate:
   `generate-icons.py` upscales to 1024 with Lanczos. At 1.14x on flat vector
   style art this is not visible, but **if you ever re-export from the design
   tool, export at 1024 or larger** and the upscale stops mattering.
-- **The navy field is `#04193E`.** That exact value is mirrored in
-  `mobile/app.config.ts` (splash + Android adaptive background),
+- **The navy field is `#01132F`** (v2; v1 was `#04193E`). That exact value is
+  mirrored in `mobile/app.config.ts` (splash + Android adaptive background),
   `public/manifest.webmanifest`, and `index.html`. If the logo's navy ever
-  changes, change all four together or the splash will show a seam.
-- **The magnifier's inner circle is the same navy as the field.** A naive
-  colour-key would punch a hole straight through it, so the generator floods
-  inward from the border instead. Keep that if you rewrite it.
+  changes, resample the border (the generator has the constant) and change
+  all four together or the splash will show a seam.
+- **The generator floods transparency inward from the border** rather than
+  colour-keying, so navy enclosed by artwork survives. The v2 mark's
+  bar gaps connect to the outer field through the C's opening, so they knock
+  out correctly. Keep the flood if you rewrite it.
+- **The logo's lime (~#BEE424) is yellower than the UI token `brand`
+  (#A3E635).** Deliberate non-issue: UI lime was chosen by contrast
+  measurement (see `mobile/src/theme/colors.ts`); do not re-tint the app to
+  match the logo without redoing that math.
 
 ## Regenerating
 

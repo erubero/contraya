@@ -783,7 +783,15 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     no attachment → expect a bounce.
 11. **Trademark/handles** (from the plan): USPTO first-pass for "Contraya",
     social handles. Runners-up if a conflict surfaces: Firmaya, Inkaya, Duly.
-12. **Logo: RESOLVED 2026-07-29.** The official mark (white document, lime
+12. **Logo: v2 mark landed 2026-07-30** (owner-supplied lime C wrapping
+    fine-print bars; replaced the document-and-magnifier v1 below). All nine
+    outputs regenerated, brand navy re-aligned `#04193E` → `#01132F`
+    (generator constant + app.config splash/adaptive + index.html
+    theme-color + manifest, per the README's change-together rule), web
+    icon cache-bust bumped to `?v=2`, prebuild re-run and the native
+    AppIcon visually verified as the new mark. Same 900x900 upscale caveat
+    as v1. History of v1 follows:
+    **v1: RESOLVED 2026-07-29.** The official mark (white document, lime
     magnifier and check, on `#04193E` navy) is committed at
     `brand/contraya-logo.png`, and all nine icons were regenerated from it by
     `brand/generate-icons.py`: `mobile/assets/{icon,adaptive-icon,splash-icon}.png`,

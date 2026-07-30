@@ -23,10 +23,9 @@ actually submitting, roughly in the order they bite:
    and `usecontraya.com` are both used in this listing, and the site has never
    been deployed (STATUS.md checklist item 9). A 404 there is a rejection.
    This is the first domino: deploy the landing, then point the domain.
-2. **The app icon.** RESOLVED 2026-07-29: the tree now carries the real
-   Contraya mark (navy/lime document + magnifier), 1024x1024 opaque,
-   regenerated across app and web by `brand/generate-icons.py`. See
-   `brand/README.md`.
+2. **The app icon.** RESOLVED (v2 mark, 2026-07-30): the tree carries the
+   lime C-and-fine-print mark on navy, 1024x1024 opaque, regenerated across
+   app and web by `brand/generate-icons.py`. See `brand/README.md`.
 3. **Screenshots** (section 7). Cannot be captured until the app runs, and
    the palette just changed to lime, so any earlier captures are stale.
 4. **The price must be real.** The description below states $7.99 / $49.99.

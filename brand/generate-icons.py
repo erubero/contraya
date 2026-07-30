@@ -8,7 +8,9 @@ from PIL import Image, ImageDraw
 import os
 
 SRC = 'brand/contraya-logo.png'
-NAVY = (0x04, 0x19, 0x3E)
+# Sampled from the master's border (v2 C-mark, 2026-07-30). If the logo's
+# field ever changes, resample and update the four mirrors listed in README.
+NAVY = (0x01, 0x13, 0x2F)
 L = Image.LANCZOS
 
 src = Image.open(SRC).convert('RGB')
