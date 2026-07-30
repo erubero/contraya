@@ -1,6 +1,17 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-07-29. Read this first when resuming work.
+Updated: 2026-07-29, end of session. Read this first when resuming work.
+
+**Session handoff (for the 2026-07-30 re-audit):** GitHub and the remote
+session are byte-identical and clean. The Mac was last verified at `e6e66f4`,
+which already contains the real icons and the expo-font fix; everything after
+it is docs-only, so the Mac's first move tomorrow is just `git pull origin
+main`. Then confirm prebuild ran after the icon swap: in Xcode,
+`Images.xcassets` → AppIcon must show the navy/lime Contraya mark. A blue
+shield there means run `cd mobile && npm install && npx expo prebuild
+--platform ios` again. Open items are unchanged and listed below: chat-contract
+redeploy, CRON_SECRET, landing /privacy check in a browser, then the first
+device build and first real analysis.
 
 ## 🚧 PRE-LAUNCH — code complete and backend live; not yet run on a device
 
