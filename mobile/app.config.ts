@@ -8,7 +8,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'contraya',
   owner: 'erubero1',
   scheme: 'contraya',
-  version: '0.1.0',
+  // Must match the Version field in App Store Connect string for string. ASC
+  // creates the record as "1.0"; set it to 1.0.0 there so this archive is
+  // selectable under it. A build whose CFBundleShortVersionString does not
+  // match the store version simply never appears in the build picker.
+  version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
