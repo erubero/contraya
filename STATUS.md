@@ -1,42 +1,74 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-07-30, end of the full-app audit session. Read this first.
+Updated: 2026-07-30, end of the marathon session. Read this first.
 
-**Session handoff (2026-07-30 audit ran; results below):** The whole-app
-audit happened on the Mac: five parallel deep reviews (onboarding/auth,
-settings, core screens, backend, project config) plus every mechanical gate.
-Mac state verified end to end: tree clean and synced, `mobile/.env` filled
-(live mode; RevenueCat blank on purpose), AppIcon in `ios/` is the real
-navy/lime mark, pods installed, typecheck clean, 119 tests green, Hermes
-export builds (7MB), expo-doctor 18/20 (the two failures are the documented
-duplicate-react false alarm and Expo-registry patch drift). Live backend
-re-verified: 401 probe passed and **all five deployed functions were
-downloaded and diffed byte-identical to the repo — the chat-contract
-redeploy item is CLOSED.** Landing built and `/`, `/privacy`, `/terms` all
-render correctly from the production bundle in a real browser (that open
-item is closed too; the DEPLOY itself is still pending). Fixed in place
-this session: a stale nested `contraya/` clone (untracked cruft, verified
-nothing unique, moved to Trash), stale typed routes that broke typecheck
-on the Mac (gotcha + fix now in CLAUDE.md), prebuild re-run with node@22
-and `ios/.xcode.env.local` pinned to the upgrade-stable
-`/opt/homebrew/opt/node@22/bin/node`, Warraya leftover in the root
-package.json description, missing `og:image` meta, STORE_LISTING's stale
-icon claim and two stale no-"AI" rules, and the dead `web` npm script.
-**The audit found real pre-launch bugs — see "2026-07-30 audit findings"
-below. The five items under "Fix before the first device build" are the
-new next actions; the owner checklist (CRON_SECRET, INGEST_SECRET + email
-worker, landing deploy, RevenueCat, ASC record, pg_cron, attorney review)
-is unchanged.**
+**Session handoff (2026-07-30 — the biggest day this project has had).**
+What happened, in order, all committed and pushed:
 
-## 🚧 PRE-LAUNCH — code complete and backend live; not yet run on a device
+1. **Full-app audit** (five parallel deep reviews + every mechanical gate):
+   37 ranked findings, codified below under "2026-07-30 audit findings".
+   Every mechanical claim re-verified (backend byte-identical to repo, 401
+   probes, Hermes export, landing render).
+2. **The audit's top five bugs FIXED** (inbox-retry data loss, notification
+   tap routing incl. cold start + push payloads with a regression suite,
+   sign-out force-clears the stored session, deletion/sign-out cancel
+   scheduled reminders).
+3. **Push redesigned to DIRECT APNs on owner direction — no Expo services
+   anywhere, ever.** Client registers the raw device token; the cron signs
+   its own ES256 JWTs to api.push.apple.com (sandbox retry for Debug
+   tokens, iOS-only filter). APNs key exists (`AuthKey_9QH4GR7D82.p8` in
+   `~/Developer/keys/`); the three APNS dashboard secrets are STILL NOT
+   SAVED (checklist item 13).
+4. **Production-breaking catch: the Anthropic key was saved as
+   CLAUDE_API_KEY but the functions read ANTHROPIC_API_KEY — analysis was
+   dead in prod.** Both functions now accept either name; redeployed,
+   byte-verified. `deno check supabase/functions/*/index.ts` is now a
+   standard gate (found two latent type errors too).
+5. **THE APP RAN ON A REAL PHONE FOR THE FIRST TIME** (owner's iPhone 15
+   Pro, Xcode ⌘R, first try).
+6. **Docusign-informed settings/profile pass** (Mobbin study): dedicated
+   delete-account screen, save toasts, denied-notifications banner,
+   premium-pitch fix, email-in error state, support disclaimer from
+   legal.ts (audit findings 13/14/15/17/33 closed).
+7. **Brand v2**: new lime C-and-fine-print mark everywhere, brand navy
+   re-aligned to `#01132F` in all four mirrors, native AppIcon verified.
+8. **SEO launch-readiness**: FAQPage schema from the live FAQ array,
+   offers + publisher in the app schema, honest pricing bullets, real 404
+   with noindex, font loading unblocked. Full verdict in checklist 9b.
+9. **THE LANDING IS LIVE at usecontraya.com** — verified from outside
+   (latest build, sitemap/robots/og-image, CSP/HSTS). Search Console
+   domain-verified, sitemap submitted, indexing requested. In-app legal
+   links now resolve (finding 16 closed). **Found: NO MX records —
+   hello@usecontraya.com bounces, so the landing's early-access CTA and
+   the support address are dead until Cloudflare Email Routing is enabled
+   (hello@ → info@prrenovatio.com).**
+10. **Pricing DECIDED and codified: $9.99/mo, $69.99/yr, 3-day free trial
+    on both; quotas 10 analyses + 40 Ask Contry questions/month** (priced
+    against measured token cost; math in `mobile/src/lib/limits.ts`).
+    Landing, store listing, JSON-LD, and limits all aligned; the quota
+    gates got a pure tested module (`quotaGate.ts`). Sign in with Apple
+    RESOLVED config-side (native path needs no Services ID; Supabase
+    provider live).
 
-The backend is no longer a plan: project `tzqjnbcbrcfltnjutels` is up, all
-seven migrations are applied, verify.sql returns 34/34 PASS, and all five
-edge functions are deployed and reject unauthenticated calls with 401. What
-has *not* happened is a single real run: nobody has built the app in Xcode,
-signed up, or pushed a real contract through `analyze-contract`. Everything
-below marked DONE is verified in this repo or in the Supabase dashboard;
-nothing is verified on a phone.
+**Next session, in order:** (a) the FIRST REAL ANALYSIS — sign up live on
+the phone, put a real lease PDF through, watch latency vs the 150s wall
+clock and date accuracy, confirm `cache_read_input_tokens > 0` on the
+verify turn, probe chat with "can I sue them?"; (b) owner dashboard items:
+Email Routing MX (top: the CTA bounces today), APNS secrets, RevenueCat at
+the NEW prices with the trial on both products, pg_cron, INGEST_SECRET +
+email worker, ASC record, attorney review; (c) the remaining findings
+backlog (6-12, 18-26 + LOW batch); (d) screenshots once the UI settles,
+then TestFlight. Decide finding 37 (double-channel reminders) before push
+goes live.
+
+## 🚧 PRE-LAUNCH — runs on a device; first real analysis still pending
+
+The backend is live (project `tzqjnbcbrcfltnjutels`, all seven migrations,
+verify.sql 34/34, five functions deployed + byte-verified + 401-gated), the
+landing is LIVE at usecontraya.com, and the app has run on real hardware
+(2026-07-30). What has *not* happened: a real signup and a real contract
+through `analyze-contract` end to end on the phone. That first analysis is
+the remaining go/no-go; nothing below substitutes for it.
 
 ### What is actually left, in order
 
@@ -371,17 +403,50 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   revoke anon, explicit GRANTs, CHECKs, `(select auth.uid())`).
 - **Monetization wiring:** entitlement `premium`, fail-open philosophy,
   soft paywall at the analysis wall. FREE_ANALYSIS_LIFETIME_LIMIT=2 (lifetime,
-  summed across periods), PRO_MONTHLY_ANALYSES=15 (client gate; hard alert,
+  summed across periods), PRO_MONTHLY_ANALYSES=10 (client gate; hard alert,
   no paywall, when a premium user hits it). Contracts + reminders unlimited
-  on both tiers.
+  on both tiers. Gate verdicts now live in `mobile/src/lib/quotaGate.ts` as
+  pure functions (`analysisGate`, `chatOpenGate`, `chatSendGate`) with the
+  screens keeping only the side effects, covered by
+  `__tests__/quotaGate.test.ts` (13 cases). That suite is the ONLY pre-launch
+  verification of the gates, because StoreKit vends nothing before approval.
+- **PRICING DECIDED 2026-07-30: $9.99/mo, $69.99/yr (42% off), 3-day free
+  trial on both products. Premium = 10 analyses + 40 Ask Contry questions a
+  month.** This replaces the advertised $7.99/$49.99 with 15/50, which had
+  never been checked against unit cost. The math the old note demanded:
+  - `claude-sonnet-5` intro pricing ($2/$10) **ends 2026-08-31**, stepping to
+    $3/$15. All figures below are post-step-up, since the app launches into
+    the higher rate.
+  - Per analysis (two calls, whole document inlined, no OCR service): ~$0.10
+    for a typical 5-page PDF, ~$0.18 for 12 photographed pages, ~$0.56 for a
+    50-page PDF at the byte cap.
+  - Old quota worst case: 15 x $0.50 + 50 x $0.05 = **$10.00/mo COGS** against
+    $6.79 net of Apple's 15%. Underwater by $3.21 for anyone who used what was
+    advertised, and far worse on the old $49.99 annual.
+  - New quota worst case: 10 x $0.50 + 40 x $0.05 = **$7.00** against $8.49
+    net. Positive at the ceiling; ~91% margin at the realistic median of 2-4
+    contracts a month (~$0.75/mo COGS).
+  - Server ceilings stay 20/60, giving 2x headroom on analyses and 1.5x on
+    chats. `quotaGate.test.ts` asserts ceiling > product limit so a future
+    quota bump cannot silently start 429-ing paying users.
+  - **Trial exposure, accepted by owner:** a trialist is `isPro`, so 3 days
+    buys the full 10-analysis quota at zero revenue, ~$5 of tokens each, very
+    roughly $16 per acquired subscriber at a 30% conversion rate.
+  - **Cost risk still open:** `chat-contract` re-sends the whole document per
+    question against a 5-minute ephemeral cache, so a user asking one question
+    a day pays cache WRITES (1.25x), not reads (0.1x). The "~$0.02-0.05 a
+    question" estimate holds for short contracts and bursty sessions only; on
+    a 50-page contract it is nearer $0.30. Does not change the price, but it
+    is the biggest remaining unknown in COGS. Measure from the logged usage
+    numbers before raising PRO_MONTHLY_CHATS.
 - **Landing** (repo root): full marketing page mirroring Warraya's landing
   structure (nav, gradient hero with a floating lease-card mock, pain/fix
   features panel, how-it-works, contract-type chips, pricing, FAQ, CTA,
   footer), adapted for pre-launch: the only CTA is the early-access mailto
   (hello@usecontraya.com) — swap in the App Store badge at launch. Advertised
-  pricing is **$7.99/mo or $49.99/yr** (middle of the approved $6.99-9.99
-  range; align the RevenueCat products with this or tell Claude the final
-  number and the page gets updated). Not-legal-advice line appears under the
+  pricing is **$9.99/mo or $69.99/yr, 3-day free trial** (owner decision
+  2026-07-30, see "Pricing decided" below; the Premium badge now reads
+  "3-day free trial" where it read "Early access"). Not-legal-advice line appears under the
   hero CTA, in the features closer, in the FAQ, and in the footer. Adapted
   Privacy/Terms (Terms carries a "Not Legal Advice" section), builds clean.
   Web dashboard, guides, service worker all deleted — landing only.
@@ -767,16 +832,36 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    pg_net both needed; the dialog only installs pg_net).
 7. **RevenueCat:** new app, products `contraya_premium_monthly` +
    `contraya_premium_annual` attached to entitlement exactly `premium`,
-   offering `default` set Current, paywall + Customer Center. Pricing decision
-   from the plan: **$6.99-9.99/mo tier** (analysis costs ~15-30x a receipt
-   scan; do NOT copy Warraya's $4.99 without checking the math).
+   offering `default` set Current, paywall + Customer Center. **Price is
+   DECIDED (2026-07-30): $9.99/mo, $69.99/yr, 3-day free trial as an ASC
+   introductory offer on BOTH products.** The math the old note asked for has
+   now been run, see "Pricing decided" below. Paywall prices must come from
+   StoreKit variables, never typed literals. Paywall footer links (a Warraya
+   rejection vector): Terms to Apple's standard EULA URL, Privacy to
+   `https://usecontraya.com/privacy`.
 8. **App Store Connect:** new app record, bundle id `com.contraya.app`,
    name availability check for "Contraya". Review notes MUST say: summaries
    are informational descriptions of the user's own documents, not legal
    advice; a disclaimer is shown on every analysis screen; demo-mode
-   instructions + a sample contract PDF attached. Sign in with Apple: create
-   the Services ID + key for THIS bundle id (Warraya's `SNP29WP9P3` key is
-   Warraya's; follow the same steps).
+   instructions + a sample contract PDF attached. Review notes must also say
+   how to reach the paywall, or a reviewer who taps Ask Contry hits an
+   unexplained wall. **Subscriptions must be ATTACHED to the version
+   submission** — on a first submission this is manual, and omitting it hands
+   the reviewer RevenueCat Error 23, which cost Warraya a 2.1 rejection.
+   Confirm the version page Subscriptions section lists two products, not
+   "None". Sign in with Apple is DONE, see below.
+8b. **Sign in with Apple: DONE 2026-07-30.** App ID capability enabled on
+   `com.contraya.app` (Xcode Signing & Capabilities shows it clean, so the
+   profile carries the entitlement), and the Supabase Apple provider is
+   enabled with Client IDs `com.contraya.app` — verified live via
+   `GET /auth/v1/settings` returning `"apple": true`. **No Services ID and no
+   signing key were created, and none are needed.** Those exist only for the
+   browser OAuth flow; this app uses native `signInWithIdToken`, which
+   verifies Apple's token `aud` against the Client IDs list. The old note here
+   said to copy Warraya's Services-ID setup — that was over-scoped, and
+   skipping it also avoids inheriting Warraya's 6-month secret-expiry chore.
+   Still unverified on hardware: the Client IDs string itself is only proven
+   by a real sign-in, where a typo surfaces as an audience mismatch.
 9. **Cloudflare:** point usecontraya.com at the worker (auto-deploys on push
    like warraya.com), Email Routing for hello@usecontraya.com.
 9b. **After the landing deploys: put it in front of Google (added by the

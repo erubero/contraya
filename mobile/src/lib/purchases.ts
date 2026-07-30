@@ -64,13 +64,25 @@ export async function hasSellableOffering(): Promise<boolean> {
   if (!purchasesConfigured) return false;
   try {
     const offerings = await Purchases.getOfferings();
-    const packages = offerings.current?.availablePackages ?? [];
+    // Falling back to `default` by name covers the likeliest dashboard slip:
+    // the offering exists and its products vend, but it was never marked
+    // Current. Without this, `current` is null, every gate opens, and the
+    // reviewer sees unlimited Ask Contry while the App Store description
+    // sells it as a subscription — Warraya's 2.3.2 rejection, exactly.
+    const offering = offerings.current ?? offerings.all['default'] ?? null;
+    const packages = offering?.availablePackages ?? [];
+    if (__DEV__ && !offerings.current && offering) {
+      console.warn(
+        '[purchases] no Current offering; fell back to "default". ' +
+          'Set the default offering Current in RevenueCat.',
+      );
+    }
     // An offering that resolves but carries zero packages is the signature of
     // products the store would not vend (rejected, or agreement not active).
     // It looks identical to "no offering configured" unless we say so.
     if (__DEV__ && packages.length === 0) {
       console.warn(
-        `[purchases] current offering "${offerings.current?.identifier ?? 'none'}" has no packages; ` +
+        `[purchases] offering "${offering?.identifier ?? 'none'}" has no packages; ` +
           'check the products are fetchable in App Store Connect',
       );
     }

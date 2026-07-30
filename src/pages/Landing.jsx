@@ -354,16 +354,16 @@ export default function Landing() {
             {/* Premium */}
             <div className="rounded-3xl p-8 flex flex-col relative" style={{ background: 'linear-gradient(135deg, #0F2060 0%, #1A3A8F 100%)' }}>
               <span className="absolute top-6 right-6 text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
-                Early access
+                3-day free trial
               </span>
               <p className="text-sm font-semibold uppercase tracking-widest text-slate-300">Premium</p>
               <div className="mt-4 mb-1">
-                <span className="text-4xl font-extrabold text-white">$7.99</span>
+                <span className="text-4xl font-extrabold text-white">$9.99</span>
                 <span className="text-slate-300"> / month</span>
               </div>
-              <p className="text-slate-300 text-sm mb-6">or $49.99 / year, saving 48%.</p>
+              <p className="text-slate-300 text-sm mb-6">or $69.99 / year, saving 42%.</p>
               <ul className="space-y-3 text-slate-50 text-sm flex-1">
-                {['Contry reads up to 15 contracts a month', 'Ask Contry up to 50 questions a month', 'Everything in Free'].map((line) => (
+                {['Contry reads up to 10 contracts a month', 'Ask Contry up to 40 questions a month', 'Everything in Free'].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <ScrollText className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
                     <span>{line}</span>

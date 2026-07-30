@@ -28,11 +28,19 @@ actually submitting, roughly in the order they bite:
    app and web by `brand/generate-icons.py`. See `brand/README.md`.
 3. **Screenshots** (section 7). Cannot be captured until the app runs, and
    the palette just changed to lime, so any earlier captures are stale.
-4. **The price must be real.** The description below states $7.99 / $49.99.
-   Once that text ships, the RevenueCat products and the ASC subscription
-   prices have to match it exactly. Decide the number, then configure it.
-5. **Sign in with Apple** needs its own Services ID + key for
-   `com.contraya.app`. Warraya's key does not carry over.
+4. **The price must be real.** DECIDED 2026-07-30: **$9.99/mo, $69.99/yr, with
+   a 3-day free trial on both products**. The description below states those
+   figures, so the RevenueCat products and the ASC subscription prices have to
+   match them exactly, and both products need the trial as an introductory
+   offer. Priced against measured token cost, not copied from Warraya: worst
+   case at the 10/40 quota is $7.00 of tokens against $8.49 net of Apple's 15%.
+5. **Sign in with Apple** RESOLVED 2026-07-30: App ID capability enabled on
+   `com.contraya.app`, Supabase Apple provider enabled with Client IDs
+   `com.contraya.app` (verified live). **No Services ID and no signing key were
+   needed** — those are only for the browser OAuth flow, and this app uses the
+   native `signInWithIdToken` path. Warraya needed them because its Supabase
+   secret was set up for web; that does not carry over as a requirement.
+   Untested on hardware, like everything else here.
 6. **hello@usecontraya.com must receive mail** (Cloudflare Email Routing) or
    the support contact is dead on arrival.
 
@@ -52,8 +60,9 @@ owner can do.
 - **Support email:** hello@usecontraya.com (Cloudflare Email Routing must be
   live before submission so this mailbox receives mail; owner checklist item)
 - **Languages:** English (U.S.) only at launch.
-- **Pricing shown below ($7.99 / $49.99)** matches the landing page and
-  STATUS.md; align the RevenueCat products with it before submission.
+- **Pricing shown below ($9.99 / $69.99, 3-day free trial)** matches the
+  landing page and STATUS.md; align the RevenueCat products with it before
+  submission, including the introductory offer on both.
 
 ---
 
@@ -111,7 +120,7 @@ RISKY CLAUSES, QUOTED
 Anything that locks you in, charges you extra, or takes away an option gets flagged and quoted word for word, so you can find it in the document and read it yourself.
 
 ASK CONTRY
-Can I have a cat? What happens if I pay late? Contry answers from your document and quotes the lines the answer came from.
+Can I have a cat? What happens if I pay late? Contry answers from your document and quotes the lines the answer came from. Ask Contry is part of Contraya Premium, the paid subscription described below.
 
 FORWARD IT FROM YOUR EMAIL
 Contracts arrive by email. Contraya gives you a private forwarding address, and the PDF lands in the app ready to read.
@@ -126,12 +135,12 @@ PRIVATE BY DESIGN
 Your contracts are stored in private storage only your account can access, encrypted in transit and at rest, and never sold or shared. You can delete your account and everything in it at any time.
 
 CONTRAYA PREMIUM SUBSCRIPTION
-Contraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Contraya itself is free to use, and your first 2 contract readings are included. Contraya Premium includes up to 15 contract readings each month, up to 50 Ask Contry questions each month, and email forwarding.
+Contraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Contraya itself is free to use, and your first 2 contract readings are included. Contraya Premium includes up to 10 contract readings each month and up to 40 Ask Contry questions each month.
 
-Contraya Premium Monthly: $7.99 per month
-Contraya Premium Annual: $49.99 per year
+Contraya Premium Monthly: $9.99 per month
+Contraya Premium Annual: $69.99 per year
 
-Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically at the same price unless you turn off auto renew at least 24 hours before the current period ends, and your account is charged for the renewal within the 24 hours before the period ends. You can manage the subscription and turn off auto renew in your Apple Account settings after purchase.
+Both plans begin with a 3 day free trial. Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically at the same price unless you turn off auto renew at least 24 hours before the current period ends, and your account is charged for the renewal within the 24 hours before the period ends. Any unused part of a free trial is forfeited when you buy a subscription. You can manage the subscription and turn off auto renew in your Apple Account settings after purchase.
 
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://usecontraya.com/privacy

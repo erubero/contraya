@@ -12,6 +12,7 @@ import { ChatTurn, SUGGESTED_QUESTIONS, MAX_QUESTION_CHARS } from '@/data/chat';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_CHATS } from '@/lib/limits';
+import { chatOpenGate, chatSendGate } from '@/lib/quotaGate';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ContryFace from '@/components/ContryFace';
 import InsightCard from '@/components/InsightCard';
@@ -40,7 +41,7 @@ export default function ContractChat() {
   const gated = useRef(false);
   useEffect(() => {
     if (gated.current || !isConfigured) return;
-    if (!isPro && offeringReady) {
+    if (chatOpenGate({ isPro, offeringReady }) === 'paywall') {
       gated.current = true;
       (async () => {
         const bought = await presentPaywall();
@@ -57,7 +58,7 @@ export default function ContractChat() {
   const send = async (raw: string) => {
     const question = raw.trim().slice(0, MAX_QUESTION_CHARS);
     if (!question || busy) return;
-    if (isPro && monthCount + asked >= PRO_MONTHLY_CHATS) {
+    if (chatSendGate({ isPro, used: monthCount + asked }) === 'quota') {
       Alert.alert(
         'Monthly limit reached',
         `Your plan covers ${PRO_MONTHLY_CHATS} questions a month. The counter resets on the 1st.`

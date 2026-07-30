@@ -33,7 +33,8 @@ import InsightCard from '@/components/InsightCard';
 import GlowBackdrop from '@/components/GlowBackdrop';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
-import { FREE_ANALYSIS_LIFETIME_LIMIT, PRO_MONTHLY_ANALYSES } from '@/lib/limits';
+import { PRO_MONTHLY_ANALYSES } from '@/lib/limits';
+import { analysisGate } from '@/lib/quotaGate';
 import { DISCLAIMER } from '@/lib/legal';
 
 // What the user picked before analysis: one PDF, or 1..12 page photos.
@@ -141,17 +142,24 @@ export default function AddContract() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.inbox]);
 
-  // The analysis is the metered operation (the model call). Gate at the wall:
-  // free tier gets FREE_ANALYSIS_LIFETIME_LIMIT ever; Pro gets a monthly
-  // quota. Fails open when no offering exists yet (store outage never blocks).
+  // The analysis is the metered operation (the model call). The verdict lives
+  // in `analysisGate` so it can be unit-tested; this function owns only the
+  // side effects. Counts fail open, and so does the gate when no offering
+  // exists yet, so a store outage never blocks anyone.
   const passQuotaGate = async (): Promise<boolean> => {
     const counts = await getAnalysisCounts().catch(() => ({ lifetime: 0, month: 0 }));
-    if (!isPro && offeringReady && counts.lifetime >= FREE_ANALYSIS_LIFETIME_LIMIT) {
+    const decision = analysisGate({
+      isPro,
+      offeringReady,
+      lifetime: counts.lifetime,
+      month: counts.month,
+    });
+    if (decision === 'paywall') {
       const bought = await presentPaywall();
       await refreshPro();
-      if (!bought) return false;
+      return bought;
     }
-    if (isPro && counts.month >= PRO_MONTHLY_ANALYSES) {
+    if (decision === 'quota') {
       Alert.alert(
         'Monthly limit reached',
         `Your plan covers ${PRO_MONTHLY_ANALYSES} contract readings a month. The counter resets on the 1st. You can still add contracts by hand.`
