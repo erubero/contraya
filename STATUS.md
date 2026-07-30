@@ -34,9 +34,8 @@ nothing is verified on a phone.
    This is the go/no-go on the two things no amount of code review can
    settle: how long the analysis actually takes, and whether the extracted
    dates are right. See "Device E2E smoke" below for the full sequence.
-4. **Logo** (blocker 12) — still not in `brand/`, checked again 2026-07-29.
-   Every icon in the tree is Warraya's mark. Blocks App Store submission,
-   not development.
+4. **Logo** — DONE 2026-07-29. Real mark committed, all nine icons
+   regenerated, brand navy aligned to `#04193E`. See blocker 12 below.
 5. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
    `send-date-reminders` cannot run, so no push reminders. (`ANTHROPIC_API_KEY`
    is already set, which is why analysis works and reminders do not.)
@@ -541,22 +540,19 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
     no attachment → expect a bounce.
 11. **Trademark/handles** (from the plan): USPTO first-pass for "Contraya",
     social handles. Runners-up if a conflict surfaces: Firmaya, Inkaya, Duly.
-12. **LAUNCH BLOCKER: Contraya has no logo.** Every icon shipping today in
-    `public/icons/` and `mobile/assets/` is **Warraya's shield-and-clock
-    mark**, inherited by the fork and never replaced (found 2026-07-28 during
-    a repo polish pass; verified by eye, not just filename). They are left in
-    the tree only so the app and landing build. Shipping them would put the
-    same icon on two App Store apps from one developer, which is a brand
-    problem and an App Review risk. Warraya's source art has been removed
-    from `brand/` so nothing regenerates from the wrong mark again. To fix:
-    drop the real logo at `brand/contraya-logo.png` (see `brand/README.md`
-    for the full generated-asset list and the design note), regenerate, then
-    `npx expo prebuild --platform ios`. The mascot art (Contry, all four
-    slots still null) is a separate owner-supplied item and is NOT blocking:
-    those slots fall back to icons by design.
-    **Still open as of 2026-07-29** — `brand/` on `main` contains only
-    `README.md`. GitHub's web uploader needs the second "Commit changes"
-    step; dropping the file into the picker alone does not push it.
+12. **Logo: RESOLVED 2026-07-29.** The official mark (white document, lime
+    magnifier and check, on `#04193E` navy) is committed at
+    `brand/contraya-logo.png`, and all nine icons were regenerated from it by
+    `brand/generate-icons.py`: `mobile/assets/{icon,adaptive-icon,splash-icon}.png`,
+    `public/icons/{favicon,apple-touch-icon,icon-192,icon-512}.png`, and
+    `public/og-image.png`. Warraya's shield is gone from the tree. Verified by
+    eye in the generated `ios/.../AppIcon.appiconset`, not just by filename.
+    The brand navy was also aligned from the old `#0a1440` to the logo's real
+    `#04193E` in app.config.ts (splash + Android adaptive), manifest.webmanifest
+    and index.html, so nothing shows a seam.
+    Caveat carried forward: the source is 900x900, under Apple's 1024 minimum,
+    so the generator upscales. Fine for flat art, but re-export at 1024+ if the
+    design tool is ever opened again. See `brand/README.md`.
 
 ## Device E2E smoke (after setup, before TestFlight)
 

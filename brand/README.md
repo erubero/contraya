@@ -3,38 +3,43 @@
 Source art for Contraya. Every web and app icon is generated from the master
 logo in this folder, so this is the single source of truth for the brand mark.
 
-## STATUS: Contraya has no logo yet (launch blocker)
+## STATUS: logo landed 2026-07-29, all icons regenerated
 
-This folder is intentionally empty of art. The icons currently shipping in
-`public/icons/` and `mobile/assets/` were inherited from the Warraya fork and
-are **Warraya's** shield-and-clock mark, not Contraya's. They are still in the
-tree only so the app and the landing page build; they must be replaced before
-launch. Two apps from the same developer sharing one icon is a brand problem
-and an App Review risk.
+`contraya-logo.png` is the master mark: a white document with a lime
+magnifying glass and a check, on a deep navy field. Every icon in the repo is
+generated from it, so it is the single source of truth for the brand.
 
-Warraya's source art was removed from this folder so nothing regenerates
-Contraya's icons from the wrong brand again.
+Source file facts worth knowing before you regenerate:
 
-## Drop the logo here
+- **900x900, RGB, no alpha.** Below the 1024 App Store minimum, so
+  `generate-icons.py` upscales to 1024 with Lanczos. At 1.14x on flat vector
+  style art this is not visible, but **if you ever re-export from the design
+  tool, export at 1024 or larger** and the upscale stops mattering.
+- **The navy field is `#04193E`.** That exact value is mirrored in
+  `mobile/app.config.ts` (splash + Android adaptive background),
+  `public/manifest.webmanifest`, and `index.html`. If the logo's navy ever
+  changes, change all four together or the splash will show a seam.
+- **The magnifier's inner circle is the same navy as the field.** A naive
+  colour-key would punch a hole straight through it, so the generator floods
+  inward from the border instead. Keep that if you rewrite it.
 
-Save the official logo as:
+## Regenerating
 
-    brand/contraya-logo.png
+    python3 -m pip install Pillow
+    python3 brand/generate-icons.py        # run from the repo root
 
-Use the highest resolution you have (1024x1024 or larger, transparent
-background). If you have the original vector, add `brand/contraya-logo.svg`
-too; it scales to every size without any quality loss.
-
-Design note: the mark should read as documents, clarity, or reading, not as
-protection. A shield says "warranty" (that is Warraya's job). Contraya's job
-is telling you what a contract says.
+Then `cd mobile && npx expo prebuild --platform ios` so the native project
+picks up the new app icon.
 
 ## What gets generated from it
 
 - **Web** (`public/`): `icons/favicon.png`, `icons/apple-touch-icon.png`,
   `icons/icon-192.png`, `icons/icon-512.png`, and the `og-image.png` share card.
-- **Mobile** (`mobile/assets/`): `icon.png` (app icon, white background),
-  `adaptive-icon.png` (Android foreground), and `splash-icon.png`.
+- **Mobile** (`mobile/assets/`): `icon.png` (1024 square, opaque navy, since
+  App Store icons may not carry an alpha channel), `adaptive-icon.png`
+  (transparent, mark scaled to 60% so it survives Android's circular mask),
+  and `splash-icon.png` (transparent, 55%, sits on the configured
+  backgroundColor).
 
 That mobile list is exactly what `mobile/app.config.ts` consumes today. Older
 extras (`android-icon-background/foreground/monochrome.png`, a mobile
@@ -42,5 +47,3 @@ extras (`android-icon-background/foreground/monochrome.png`, a mobile
 and deleted; regenerate them only if the Android config later opts into a
 monochrome or background layer.
 
-After regenerating, re-run `npx expo prebuild --platform ios` so the native
-project picks up the new app icon.

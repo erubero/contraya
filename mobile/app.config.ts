@@ -37,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.contraya.app',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#0a1440',
+      backgroundColor: '#04193E',
     },
   },
   plugins: [
@@ -47,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         image: './assets/splash-icon.png',
         resizeMode: 'contain',
-        backgroundColor: '#0a1440',
+        backgroundColor: '#04193E',
       },
     ],
     [
