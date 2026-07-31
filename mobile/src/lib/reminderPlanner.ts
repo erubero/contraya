@@ -131,7 +131,11 @@ function when(days: number): string {
   return days === 1 ? 'tomorrow' : `in ${days} days`;
 }
 
-const iso = (d: Date) =>
+// A Date as its LOCAL calendar day. Built by hand rather than via toISOString,
+// which converts to UTC and hands back the wrong day for most of the planet.
+// Exported because calendarPlanner keys device calendar events off the same
+// day string, and two spellings of "which day is this" would drift.
+export const isoDay = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // Fire dates at 09:00 local, `w` days before each occurrence, for every window
@@ -154,7 +158,7 @@ export function planReminders(item: PlannableDate, now: Date = new Date()): Plan
       });
       if (fireDate.getTime() <= now.getTime()) continue;
       out.push({
-        id: `contract.${date.contract_id}.${date.id}.${iso(occ)}.${days}d`,
+        id: `contract.${date.contract_id}.${date.id}.${isoDay(occ)}.${days}d`,
         fireDate,
         title: TITLES[date.date_type],
         body: `${date.label} for ${contractTitle} is ${when(days)}.`,

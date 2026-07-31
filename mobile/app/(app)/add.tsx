@@ -12,12 +12,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import {
-  createContract, analyzeContract, getAnalysisCounts, listAllDates,
+  createContract, analyzeContract, getAnalysisCounts,
   uploadSourceImage, uploadSourcePdf, attachDocument, getInboxItem, removeInboxItem,
 } from '@/data/repo';
 import { downscaleToBase64 } from '@/lib/downscale';
 import { isSizeAllowed } from '@/data/documents';
-import { rebuildAll, requestPermission } from '@/lib/notifications';
+import { requestPermission } from '@/lib/notifications';
+import { refreshDeviceSchedules } from '@/lib/deviceSync';
 import { ContractAnalysis, AnalyzedDate } from '@/data/analysis';
 import { InboxItem, inboxItemTitle } from '@/data/inbox';
 import {
@@ -63,7 +64,7 @@ export default function AddContract() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { userId } = useAuth();
-  const { isPro, offeringReady, refresh: refreshPro } = usePurchases();
+  const { isPro, offeringReady, ready, refresh: refreshPro } = usePurchases();
   const params = useLocalSearchParams<{ inbox?: string; draft?: string }>();
 
   const [step, setStep] = useState<Step>('source');
@@ -509,10 +510,12 @@ export default function AddContract() {
         }
       }
 
+      // Notification permission only. Calendar access is never asked for here:
+      // it is requested from the calendar settings screen and nowhere else, so
+      // a user who has not opted in is never prompted and never has anything
+      // written to their calendar. The sync below no-ops unless they did.
       await requestPermission();
-      await listAllDates()
-        .then((all) => rebuildAll(all.map((d) => ({ date: d, contractTitle: d.contracts.title }))))
-        .catch(() => {});
+      await refreshDeviceSchedules(userId, { isPro, offeringReady, ready }).catch(() => {});
       return { attachFailed };
     },
     onSuccess: ({ attachFailed }) => {

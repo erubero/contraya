@@ -45,6 +45,23 @@ export function chatOpenGate(input: { isPro: boolean; offeringReady: boolean }):
   return 'allow';
 }
 
+/**
+ * Device calendar sync is premium-only, so the gate is on syncing at all.
+ *
+ * Fails OPEN for the same reason analysisGate does, and the stakes are higher
+ * here: fetchProStatus() returns false on ANY throw, and PurchasesContext
+ * re-runs it on every foreground, so an offline launch reads as "not premium".
+ * A gate that deleted events on that verdict would wipe a user's calendar off
+ * every device they own because a plane had no signal. So this gate only ever
+ * PAUSES the sync. Entitlement state must never delete events; only the
+ * toggle, sign-out and account deletion may.
+ */
+export function calendarSyncGate(input: { isPro: boolean; offeringReady: boolean }): GateDecision {
+  const { isPro, offeringReady } = input;
+  if (!isPro && offeringReady) return 'paywall';
+  return 'allow';
+}
+
 /** Per-question check once inside. `used` is the month's count plus this session's. */
 export function chatSendGate(input: { isPro: boolean; used: number }): GateDecision {
   const { isPro, used } = input;

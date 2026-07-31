@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { analysisGate, chatOpenGate, chatSendGate } from '@/lib/quotaGate';
+import { analysisGate, calendarSyncGate, chatOpenGate, chatSendGate } from '@/lib/quotaGate';
 import {
   FREE_ANALYSIS_LIFETIME_LIMIT,
   PRO_MONTHLY_ANALYSES,
@@ -67,6 +67,25 @@ describe('chat gates', () => {
   it('blocks a premium user at the monthly question quota', () => {
     expect(chatSendGate({ isPro: true, used: PRO_MONTHLY_CHATS - 1 })).toBe('allow');
     expect(chatSendGate({ isPro: true, used: PRO_MONTHLY_CHATS })).toBe('quota');
+  });
+});
+
+describe('calendar sync gate', () => {
+  it('paywalls any non-premium user', () => {
+    expect(calendarSyncGate(free)).toBe('paywall');
+  });
+
+  it('lets a premium user in', () => {
+    expect(calendarSyncGate(pro)).toBe('allow');
+  });
+
+  it('FAILS OPEN when no offering is sellable', () => {
+    // fetchProStatus() returns false on any throw and PurchasesContext re-runs
+    // it on every foreground, so an offline launch reads as "not premium". A
+    // closed gate here would stop a paying user's calendar updating because a
+    // plane had no signal. It must never do worse than that either: the gate
+    // only ever pauses the sync, it never deletes events.
+    expect(calendarSyncGate({ isPro: false, offeringReady: false })).toBe('allow');
   });
 });
 

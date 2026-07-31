@@ -4,8 +4,8 @@ import { Redirect, Stack, useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
-import { listAllDates } from '@/data/repo';
-import { rebuildAll } from '@/lib/notifications';
+import { usePurchases } from '@/lib/PurchasesContext';
+import { refreshDeviceSchedules } from '@/lib/deviceSync';
 import { syncPushToken } from '@/lib/pushToken';
 import { contractIdFromResponse } from '@/lib/reminderPlanner';
 import { useTheme } from '@/theme/colors';
@@ -29,20 +29,21 @@ function routeNotificationTap(
 }
 
 export default function AppLayout() {
-  const { status } = useAuth();
+  const { status, userId } = useAuth();
+  const { isPro, offeringReady, ready } = usePurchases();
   const router = useRouter();
   const queryClient = useQueryClient();
   const theme = useTheme();
 
-  // Rebuild reminders on every foreground so edits and clock drift self-heal.
+  // Rebuild reminders on every foreground so edits and clock drift self-heal,
+  // and reconcile the Apple Calendar mirror alongside them. The calendar leg
+  // costs nothing when nothing changed: it hashes the plan and returns before
+  // touching EventKit, which matters because this fires on every trip back
+  // from Settings, the share sheet or Face ID.
   useEffect(() => {
     if (status !== 'signedIn') return;
     const sweep = () => {
-      listAllDates()
-        .then((dates) =>
-          rebuildAll(dates.map((d) => ({ date: d, contractTitle: d.contracts.title })))
-        )
-        .catch(() => {});
+      refreshDeviceSchedules(userId, { isPro, offeringReady, ready }).catch(() => {});
       syncPushToken();
     };
     sweep();
@@ -50,7 +51,7 @@ export default function AppLayout() {
       if (s === 'active') sweep();
     });
     return () => sub.remove();
-  }, [status]);
+  }, [status, userId, isPro, offeringReady, ready]);
 
   // Tapping a reminder opens that contract. The listener covers taps while
   // the app is alive; the cold-start read covers taps that LAUNCHED the app

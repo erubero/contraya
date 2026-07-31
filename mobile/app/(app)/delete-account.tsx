@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { deleteAccount } from '@/api/account';
 import { isConfigured } from '@/api/supabase';
-import { clearAll as clearScheduledReminders } from '@/lib/notifications';
+import { clearDeviceSchedules } from '@/lib/deviceSync';
 import { clearAllDrafts } from '@/lib/draftStore';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
@@ -25,6 +25,7 @@ export default function DeleteAccount() {
 
   const consequences = [
     'Every contract, document, date, obligation, and reminder is erased, including anything that arrived by email.',
+    'The Contraya calendar is removed from this device, along with every event in it.',
     'Your private email-in address stops working immediately.',
     'This cannot be undone. There is no backup to restore from.',
     'If you want to use Contraya again, you will start over with a new account.',
@@ -36,8 +37,11 @@ export default function DeleteAccount() {
     try {
       if (isConfigured) await deleteAccount();
       if (isDemo) demo.reset();
-      // The promise on the row that led here: no reminder survives deletion.
-      await clearScheduledReminders().catch(() => {});
+      // The promise on the row that led here: no reminder survives deletion,
+      // and neither does the Contraya calendar. Leaving that behind would be a
+      // straight breach of the line above, and on an iCloud calendar the
+      // contract titles would still be sitting on the user's Mac.
+      await clearDeviceSchedules().catch(() => {});
       await clearAllDrafts();
       await signOut();
       queryClient.clear();

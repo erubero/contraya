@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Image, Pressable, Alert, ScrollView } from 'react-native';
+import { View, Text, Image, Pressable, Alert, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
-import { clearAll as clearScheduledReminders } from '@/lib/notifications';
+import { clearDeviceSchedules } from '@/lib/deviceSync';
 import { clearAllDrafts } from '@/lib/draftStore';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
@@ -45,8 +45,10 @@ export default function Settings() {
 
   const onSignOut = async () => {
     // The device must not keep firing this account's reminders after it
-    // leaves; the next sign-in rebuilds them from that account's data.
-    await clearScheduledReminders().catch(() => {});
+    // leaves, or keep its contract titles sitting in the Calendar app where
+    // the next person to hold this phone can read them. The next sign-in
+    // rebuilds both from that account's data.
+    await clearDeviceSchedules().catch(() => {});
     // No userId argument on purpose: signOut() nulls it, so a per-account clear
     // placed here would be a silent no-op depending on call order.
     await clearAllDrafts();
@@ -165,6 +167,16 @@ export default function Settings() {
             label="Notifications"
             onPress={() => router.push('/notifications')}
           />
+          {/* iOS only (EventKit), and hidden in demo mode: the sample
+              contracts are fabricated, and writing them into somebody's real
+              calendar to show off a feature would be indefensible. */}
+          {Platform.OS === 'ios' && !isDemo ? (
+            <SettingsRow
+              icon="calendar-outline"
+              label="Apple Calendar"
+              onPress={() => router.push('/calendar-sync')}
+            />
+          ) : null}
           <SettingsRow
             icon="mail-open-outline"
             label="Email a contract in"

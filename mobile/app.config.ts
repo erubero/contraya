@@ -58,6 +58,29 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
+      'expo-calendar',
+      {
+        // FULL access, not write-only. iOS 17 write-only access lets an app
+        // create events but NOT create, update or delete calendars, and
+        // Contraya only ever writes into a calendar it creates itself. Under
+        // write-only, reads come back empty, the reconcile degrades to
+        // append-only, and every foreground would add another copy of every
+        // event. deviceCalendar.fullAccessGranted() probes for that.
+        //
+        // This one string covers both models: the plugin writes it to
+        // NSCalendarsUsageDescription (iOS 16 devices, and the deployment
+        // target is 16.4) and NSCalendarsFullAccessUsageDescription (17+).
+        calendarPermission:
+          'Contraya adds your contract dates to a calendar it creates, so payments and deadlines show up alongside everything else.',
+        // The plugin writes NSRemindersUsageDescription and
+        // NSRemindersFullAccessUsageDescription with a stock string unless
+        // told not to. Contraya never touches EKReminders, and shipping a
+        // usage string for a capability the app does not use is a question
+        // from App Review with no good answer. `false` deletes both keys.
+        remindersPermission: false,
+      },
+    ],
+    [
       'expo-notifications',
       {
         // Android tints the notification icon with this. Brand lime.

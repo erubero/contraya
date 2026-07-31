@@ -355,7 +355,47 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 
 ## What is DONE (in this repo, verified)
 
-- **Mobile app compiles and tests green:** tsc strict clean, **119 tests across 16 suites** (`cd mobile && npm run typecheck && npm test`). Demo mode boots
+- **Apple Calendar sync (2026-07-31, roadmap item 2, NOT yet device tested):**
+  opt-in and Premium-only switch at `app/(app)/calendar-sync.tsx` that mirrors
+  contract dates into a calendar Contraya creates via EventKit
+  (`expo-calendar` 57.0.1, new class API). Owner decisions, locked: never
+  automatic (default OFF, and the toggle is the ONLY place calendar permission
+  is ever requested), no alarms on the events (Contraya already reminds twice),
+  Premium-gated, created on the user's DEFAULT calendar source so an iCloud
+  user gets it on their Mac and iPad, full titles by default with a "Hide
+  contract names" switch for sensitive contracts.
+  - Pure and tested: `src/lib/calendarPlanner.ts` (expands via the SAME
+    `nextOccurrences` the Calendar tab and reminders use, plans the copy,
+    hashes the plan, owns the window) and `src/lib/calendarSyncStore.ts`
+    (per-account AsyncStorage, defaults DISABLED on every failure path — the
+    deliberate INVERSE of `remindersEnabled()`, which defaults ON).
+  - Native and untested: `src/lib/deviceCalendar.ts`, the only EventKit
+    importer. `src/lib/deviceSync.ts` fans out to reminders + calendar so no
+    call site can update one and forget the other; it replaced the repeated
+    `listAllDates().then(rebuildAll)` idiom at all four sites, and
+    `clearDeviceSchedules()` replaced `clearScheduledReminders()` on sign-out
+    and account deletion.
+  - **Load-bearing choices, do not "optimize" away:** events are materialized
+    one per occurrence, NOT a native `recurrenceRule` — EKRecurrenceRule
+    repeating on the 31st SKIPS months without a 31st while `nextOccurrences`
+    clamps to the 28th, so the app and the phone would contradict each other.
+    Reconcile is a diff on (local day, title) rather than wipe-and-rebuild, to
+    keep iCloud churn down. The delete window starts at TODAY so past events
+    are never destroyed. The fingerprint does NOT include today's date (that
+    would rewrite every event daily). The fingerprint is written LAST so a
+    partial write self-heals on the next sweep.
+  - `app.config.ts` carries the plugin with FULL access (write-only cannot
+    create or delete calendars, and its empty reads would turn the reconcile
+    into a duplicate generator) and `remindersPermission: false` so no unused
+    NSReminders string ships. `PrivacyInfo.xcprivacy` needs nothing: calendar
+    is not a required-reason API and nothing is collected.
+  - **Owed: the device checklist in the plan.** The simulator exercises none
+    of what matters here (no iCloud source, no iOS 17 permission split, no
+    second device). Watch specifically: all-day events rendering as ONE day
+    not two, whether Calendar.app opens the `contraya://contract/<id>` URL
+    (drop the field if not), and whether iOS Default Alert Times adds an alert
+    despite `alarms: []`.
+- **Mobile app compiles and tests green:** tsc strict clean, **240 tests across 24 suites** (`cd mobile && npm run typecheck && npm test`), lint clean. Demo mode boots
   with blank env vars and seeds a lease (auto-renewal risk flag, recurring
   rent) + a wedding-vendor contract (obligations) — this doubles as the App
   Store reviewer path.
@@ -1009,7 +1049,7 @@ rows + storage.
    server ceilings 20/60 are the interim cost gate). Raise the ceilings
    back once entitlement is checked server-side.
 1. .docx support (add flow + email-in; edge fn extracts text server-side)
-2. Device calendar sync — expo-calendar, premium toggle (native dep, prebuild)
+2. ~~Device calendar sync~~ **SHIPPED 2026-07-31, see below. Device testing owed.**
 3. Biometric app lock — expo-local-authentication (native dep)
 4. Chat transcript persistence; regenerate email-in address; storage orphan
    cleanup; Android.
@@ -1026,6 +1066,19 @@ to 'none'; schema stays).
 
 ## Known gaps / risks (carried from the plan, plus new ones from the build)
 
+0. **Apple Calendar sync, accepted limitations (2026-07-31).** Recorded, not
+   to be fixed: the 13-month horizon runs dry if the app is not opened for
+   over a year, and an empty calendar reads as "nothing is due" (the screen
+   copy is the mitigation, so never promise more than "keeps about the next
+   year"); user edits inside the Contraya calendar are replaced on the next
+   dirty sync, and an event dragged to another calendar becomes invisible to
+   the reconcile so it gets recreated as a second copy (chasing it would mean
+   scanning every calendar, a much larger privacy ask); deleting the app does
+   NOT delete the calendar, because EventKit data is not sandboxed the way
+   notifications are; there is no history, since `nextOccurrences` never looks
+   backwards, so events only accumulate from the day sync was turned on;
+   `MAX_EVENTS` caps a sync at 400, nearest first; Android is out of scope and
+   gated off at both the settings row and the module.
 1. **Analysis latency vs the 150s edge wall clock** — the smoke test above is
    the go/no-go. Mitigations already in: effort low, 8k max_tokens, 10MB/50p
    caps, 120s upstream timeout with refund.

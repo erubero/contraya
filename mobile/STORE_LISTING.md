@@ -114,7 +114,7 @@ IN PLAIN ENGLISH
 Add a contract as a photo or a PDF and Contry uses AI to read the whole thing. You get a short summary of what you are agreeing to, what you pay, and what happens if you want out, in words you would use with a friend.
 
 EVERY DATE ON YOUR CALENDAR
-Payment deadlines, notice windows, renewal dates, end dates. Contry pulls each one out of the document, you confirm it, and it lands on your calendar with reminders attached.
+Payment deadlines, notice windows, renewal dates, end dates. Contry pulls each one out of the document, you confirm it, and it lands on your calendar with reminders attached. With Contraya Premium you can also add those dates straight to Apple Calendar, in a calendar Contraya creates, so they sit alongside everything else in your week.
 
 RISKY CLAUSES, QUOTED
 Anything that locks you in, charges you extra, or takes away an option gets flagged and quoted word for word, so you can find it in the document and read it yourself.
@@ -135,7 +135,7 @@ PRIVATE BY DESIGN
 Your contracts are stored in private storage only your account can access, encrypted in transit and at rest, and never sold or shared. You can delete your account and everything in it at any time.
 
 CONTRAYA PREMIUM SUBSCRIPTION
-Contraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Contraya itself is free to use, and your first 2 contract readings are included. Contraya Premium includes up to 10 contract readings each month and up to 40 Ask Contry questions each month.
+Contraya Premium is an optional auto-renewing subscription: a paid upgrade, not a free feature. Contraya itself is free to use, and your first 2 contract readings are included. Contraya Premium includes up to 10 contract readings each month, up to 40 Ask Contry questions each month, and adding your contract dates to Apple Calendar.
 
 Contraya Premium Monthly: $9.99 per month
 Contraya Premium Annual: $69.99 per year

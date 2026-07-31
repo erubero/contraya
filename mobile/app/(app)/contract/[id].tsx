@@ -4,12 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getBundle, deleteContract, updateContract, setObligationCompleted, listAllDates,
+  getBundle, deleteContract, updateContract, setObligationCompleted,
 } from '@/data/repo';
 import { CONTRACT_TYPE_LABELS, DATE_TYPE_LABELS, SEVERITY_LABELS } from '@/data/types';
 import { severityColor } from '@/theme/severity';
-import { rebuildAll } from '@/lib/notifications';
+import { refreshDeviceSchedules } from '@/lib/deviceSync';
 import { useAuth } from '@/lib/AuthContext';
+import { usePurchases } from '@/lib/PurchasesContext';
 import { Linking } from 'react-native';
 import { useTheme, RADIUS } from '@/theme/colors';
 import TypeIcon from '@/components/TypeIcon';
@@ -25,6 +26,7 @@ export default function ContractDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { userId } = useAuth();
+  const { isPro, offeringReady, ready } = usePurchases();
   const { data: bundle, isLoading } = useQuery({
     queryKey: ['contract', id],
     queryFn: () => getBundle(id),
@@ -35,15 +37,13 @@ export default function ContractDetail() {
     queryClient.invalidateQueries({ queryKey: ['contract-dates'] });
   };
 
-  const rescheduleReminders = () =>
-    listAllDates()
-      .then((all) => rebuildAll(all.map((d) => ({ date: d, contractTitle: d.contracts.title }))))
-      .catch(() => {});
+  const refreshSchedules = () =>
+    refreshDeviceSchedules(userId, { isPro, offeringReady, ready }).catch(() => {});
 
   const remove = useMutation({
     mutationFn: async () => {
       await deleteContract(bundle!.contract);
-      await rescheduleReminders();
+      await refreshSchedules();
     },
     onSuccess: () => {
       invalidateLists();
@@ -55,8 +55,9 @@ export default function ContractDetail() {
   const setStatus = useMutation({
     mutationFn: async (status: 'active' | 'ended') => {
       await updateContract(bundle!.contract.id, { status });
-      // Ended contracts drop out of the reminder query; reschedule now.
-      await rescheduleReminders();
+      // Ended contracts drop out of the reminder query, which is also what
+      // removes their events from the device calendar; reschedule now.
+      await refreshSchedules();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract', id] });
