@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { listContracts, listAllDates, getAvatarUrl, listInbox } from '@/data/repo';
 import { overdueTasks } from '@/data/tasks';
+import { contractInsight } from '@/data/insight';
 import { readDraft } from '@/lib/draftStore';
 import { daysUntil } from '@/data/status';
 import { nextOccurrences } from '@/lib/reminderPlanner';
@@ -93,6 +94,10 @@ export default function Dashboard() {
   // the two can never disagree with the /tasks list.
   const overdue = useMemo(() => overdueTasks(allDates), [allDates]);
   const taskCount = overdue.length + inbox.length + (draft ? 1 : 0);
+
+  // A line about the user's actual dates. Null once nothing is close, which
+  // falls the card back to the onboarding reflection.
+  const insight = useMemo(() => contractInsight({ overdue, comingUp }), [overdue, comingUp]);
 
   const openTile = (tile: TileKey) =>
     tile === 'contracts'
@@ -198,6 +203,7 @@ export default function Dashboard() {
         {!insightDismissed && (
           <PersonalizedInsight
             answers={onboardingAnswers}
+            insight={insight}
             dismissible
             onDismiss={() => {
               dismissPersonalizedInsight();

@@ -421,6 +421,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Couldn't read this document" }, { status: 422, headers: corsHeaders });
     }
 
+    // Truncation. The JSON is cut mid-structure, so JSON.parse below would
+    // throw and the user would be told their document is unreadable, which is
+    // false and unactionable. Caught here to say what actually happened.
+    //
+    // Deliberately NOT refunded, despite the outcome being our output cap
+    // rather than anything the user did. At this point there is no parsed
+    // body, so is_contract is unknowable, and a refund here would be a refund
+    // on any document that reliably truncates: upload, burn a full MAX_TOKENS
+    // of output, get the slot back, repeat. That is precisely the unbounded
+    // spend the no-refund-past-this-point rule above exists to stop, and the
+    // ceiling is the only server-side cost cap there is.
+    //
+    // The right fix is for this to stop happening: log it so the first real
+    // analyses show whether MAX_TOKENS is actually too low for a dense
+    // 50-page contract. Raising the cap costs nothing until it is used.
+    if (message.stop_reason === 'max_tokens') {
+      console.error('analysis truncated at max_tokens', JSON.stringify({ kind, files: pathList.length, usage: message.usage }));
+      return Response.json(
+        { error: "This document was too long to finish reading, so it still counts toward your limit. Try uploading the most important pages on their own." },
+        { status: 422, headers: corsHeaders }
+      );
+    }
+
     const textBlock = message.content?.find((b: { type: string }) => b.type === 'text');
     // Parsed in its own try: a JSON.parse error message quotes a slice of the
     // unparsed input, which is document-derived text that must not reach the

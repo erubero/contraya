@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert, Image, AppState,
 } from 'react-native';
@@ -19,7 +19,7 @@ import { downscaleToBase64 } from '@/lib/downscale';
 import { isSizeAllowed } from '@/data/documents';
 import { requestPermission } from '@/lib/notifications';
 import { refreshDeviceSchedules } from '@/lib/deviceSync';
-import { ContractAnalysis, AnalyzedDate } from '@/data/analysis';
+import { ContractAnalysis, AnalyzedDate, unresolvedDates } from '@/data/analysis';
 import { InboxItem, inboxItemTitle } from '@/data/inbox';
 import {
   CONTRACT_TYPES, CONTRACT_TYPE_LABELS, ContractType,
@@ -96,6 +96,10 @@ export default function AddContract() {
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [dates, setDates] = useState<AnalyzedDate[]>([]);
+
+  // Dates the verification pass flagged and the user has not answered yet.
+  // Blocks Save; see unresolvedDates for why that is not merely a nag.
+  const unresolved = useMemo(() => unresolvedDates(dates), [dates]);
 
   useEffect(() => {
     if (step !== 'analyzing') return;
@@ -752,6 +756,28 @@ export default function AddContract() {
                         ? "Contry couldn't re-find this date in the document. Check it."
                         : 'Contry corrected this date on a second read. Check it.'}
                     </Text>
+                    {/* A flagged date is often simply right, and editing was
+                        the only way to clear the flag: the user had to retype
+                        the value they had just confirmed was correct. This
+                        clears it the same way an edit does. */}
+                    <Pressable
+                      onPress={() =>
+                        setDates(dates.map((x, j) => (j === i ? { ...x, verified: 'unchecked' } : x)))
+                      }
+                      hitSlop={8}
+                      style={({ pressed }) => ({
+                        borderColor: theme.statusExpiring,
+                        borderWidth: 1,
+                        borderRadius: RADIUS - 6,
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Text style={{ color: theme.statusExpiring, fontSize: 12, fontWeight: '700' }}>
+                        Checked
+                      </Text>
+                    </Pressable>
                   </View>
                 )}
               </View>
@@ -817,10 +843,30 @@ export default function AddContract() {
 
           <Field label="Notes" value={notes} onChangeText={setNotes} placeholder="Anything else worth remembering" multiline />
 
+          {/* The flags above are the only thing standing between a date Contry
+              could not verify and a 9:00 push notification, so they have to
+              be answered rather than scrolled past. Tapping Checked or
+              editing the date clears one. */}
+          {unresolved.length > 0 && (
+            <Text
+              style={{
+                color: theme.statusExpiring,
+                fontSize: 13,
+                lineHeight: 19,
+                textAlign: 'center',
+                marginHorizontal: 2,
+              }}
+            >
+              {unresolved.length === 1
+                ? 'Check the date Contry flagged before saving.'
+                : `Check the ${unresolved.length} dates Contry flagged before saving.`}
+            </Text>
+          )}
+
           <Pressable
             onPress={onSave}
-            disabled={save.isPending}
-            style={{ backgroundColor: theme.primary, borderRadius: RADIUS, padding: 16, alignItems: 'center', opacity: save.isPending ? 0.6 : 1 }}
+            disabled={save.isPending || unresolved.length > 0}
+            style={{ backgroundColor: theme.primary, borderRadius: RADIUS, padding: 16, alignItems: 'center', opacity: save.isPending || unresolved.length > 0 ? 0.6 : 1 }}
           >
             {save.isPending ? (
               <ActivityIndicator color={theme.primaryForeground} />

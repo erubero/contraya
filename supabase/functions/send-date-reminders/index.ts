@@ -11,13 +11,10 @@
 // A date row carries its own reminder_windows (e.g. {60,30,7} for a notice
 // deadline) and may recur monthly or yearly; the cron reminds about the NEXT
 // occurrence. Copy states what the contract says and when — never advice.
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createApnsSender } from '../_shared/apns.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const APNS_PROD = 'https://api.push.apple.com';
-const APNS_SANDBOX = 'https://api.sandbox.push.apple.com';
-// APNs routes by the app's bundle id.
-const APNS_TOPIC = 'com.contraya.app';
 const RESEND_URL = 'https://api.resend.com/emails';
 const FROM_EMAIL = 'Contraya <hello@usecontraya.com>';
 // Longest supported window (see contract_dates_windows_bounds in the schema).
@@ -110,110 +107,6 @@ function reminderEmailHtml(label: string, contractTitle: string, daysLeft: numbe
   </div></body></html>`;
 }
 
-// ---- Direct APNs ------------------------------------------------------------
-
-function b64url(bytes: Uint8Array): string {
-  let s = '';
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-}
-
-// The APNS_P8_BASE64 secret is the base64 of the .p8 file; tolerate a raw PEM
-// pasted directly too. Either way it decodes to a PKCS8 EC P-256 key.
-async function importApnsKey(secret: string): Promise<CryptoKey> {
-  const pem = secret.includes('BEGIN')
-    ? secret
-    : new TextDecoder().decode(Uint8Array.from(atob(secret.replace(/\s+/g, '')), (c) => c.charCodeAt(0)));
-  const der = pem
-    .replace('-----BEGIN PRIVATE KEY-----', '')
-    .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s+/g, '');
-  const raw = Uint8Array.from(atob(der), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey('pkcs8', raw, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
-}
-
-// One provider token per run (APNs wants them between 20 and 60 minutes old;
-// a daily run always mints fresh).
-async function mintApnsJwt(key: CryptoKey, keyId: string, teamId: string): Promise<string> {
-  const enc = new TextEncoder();
-  const header = b64url(enc.encode(JSON.stringify({ alg: 'ES256', kid: keyId })));
-  const payload = b64url(enc.encode(JSON.stringify({ iss: teamId, iat: Math.floor(Date.now() / 1000) })));
-  const sig = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    key,
-    enc.encode(`${header}.${payload}`),
-  );
-  return `${header}.${payload}.${b64url(new Uint8Array(sig))}`;
-}
-
-async function apnsReason(res: Response): Promise<string | null> {
-  try {
-    const j = await res.json();
-    return typeof j?.reason === 'string' ? j.reason : null;
-  } catch {
-    return null;
-  }
-}
-
-// Sends one push per token, straight to Apple. Debug builds register SANDBOX
-// device tokens, so a prod BadDeviceToken retries the sandbox host before the
-// token is treated as dead. Dead tokens (Unregistered / BadDeviceToken on
-// both hosts) are pruned. Returns true if at least one delivery was accepted.
-async function sendPush(
-  supabase: SupabaseClient,
-  apnsJwt: string,
-  tokens: string[],
-  title: string,
-  body: string,
-  contractId: string,
-): Promise<boolean> {
-  // contractId rides top-level AND under the `body` custom key, which is the
-  // field expo-notifications surfaces as content.data for third-party APNs
-  // payloads; the app's tap router reads data.contractId either way.
-  const payload = JSON.stringify({
-    aps: { alert: { title, body }, sound: 'default' },
-    contractId,
-    body: { contractId },
-  });
-  const send = (host: string, token: string) =>
-    fetch(`${host}/3/device/${token}`, {
-      method: 'POST',
-      headers: {
-        authorization: `bearer ${apnsJwt}`,
-        'apns-topic': APNS_TOPIC,
-        'apns-push-type': 'alert',
-        'apns-priority': '10',
-        'content-type': 'application/json',
-      },
-      body: payload,
-    });
-
-  let delivered = false;
-  for (const token of tokens) {
-    try {
-      let res = await send(APNS_PROD, token);
-      let reason = res.ok ? null : await apnsReason(res);
-      if (reason === 'BadDeviceToken') {
-        res = await send(APNS_SANDBOX, token);
-        reason = res.ok ? null : await apnsReason(res);
-      }
-      if (res.ok) {
-        delivered = true;
-        continue;
-      }
-      if (res.status === 410 || reason === 'Unregistered' || reason === 'BadDeviceToken') {
-        await supabase.from('push_tokens').delete().eq('token', token);
-      } else {
-        // Never log the token itself.
-        console.error('apns send failed', res.status, reason);
-      }
-    } catch (e) {
-      console.error('apns send error', e);
-    }
-  }
-  return delivered;
-}
-
 async function sendEmail(
   apiKey: string,
   to: string,
@@ -254,17 +147,8 @@ Deno.serve(async (req) => {
 
   // Push soft-skips until all three APNS secrets exist (mirrors the email
   // channel's RESEND_API_KEY behavior), so the cron can run without either.
-  let apnsJwt: string | null = null;
-  const apnsTeamId = Deno.env.get('APNS_TEAM_ID');
-  const apnsKeyId = Deno.env.get('APNS_KEY_ID');
-  const apnsP8 = Deno.env.get('APNS_P8_BASE64');
-  if (apnsTeamId && apnsKeyId && apnsP8) {
-    try {
-      apnsJwt = await mintApnsJwt(await importApnsKey(apnsP8), apnsKeyId, apnsTeamId);
-    } catch (e) {
-      console.error('apns key setup failed; push channel skipped this run', e);
-    }
-  }
+  // Null when they are unset or the key will not import.
+  const pushTo = await createApnsSender(supabase);
 
   try {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -360,8 +244,8 @@ Deno.serve(async (req) => {
       };
 
       const tokens = tokensByUser.get(d.row.user_id) ?? [];
-      if (apnsJwt && tokens.length && !alreadySent.has(`${d.row.id}:${d.occurrence}:${d.window}:push`)) {
-        if (await sendPush(supabase, apnsJwt, tokens, title, body, d.row.contract_id)) {
+      if (pushTo && tokens.length && !alreadySent.has(`${d.row.id}:${d.occurrence}:${d.window}:push`)) {
+        if (await pushTo(tokens, title, body, { contractId: d.row.contract_id })) {
           await supabase.from('contract_date_reminders').insert({ ...ledger, channel: 'push' });
           pushSent++;
         }

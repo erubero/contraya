@@ -25,6 +25,31 @@ export type AnalyzedDate = {
   verified: DateVerification;
 };
 
+/**
+ * Dates the verification pass could not stand behind, which the human has not
+ * looked at yet. The review screen blocks Save while this is non-empty.
+ *
+ * This is the whole reason the second model call is worth paying for. Without
+ * it the pass runs, the screen shows a marker, and the verdict is dropped at
+ * save: a date Contry could not re-find in the document becomes a 9:00 push
+ * notification indistinguishable from one it confirmed twice. The review
+ * screen is named as THE mitigation for date accuracy, the product's top
+ * risk, and a mitigation nobody has to act on is not a mitigation.
+ *
+ * 'unchecked' is deliberately not blocking. It means the pass did not run (it
+ * is best-effort against a time budget) or the user typed the date, and both
+ * of those are neutral. Editing a flagged row resets it to 'unchecked'
+ * because the human just did the check the marker asked for; the review
+ * screen offers the same reset without an edit, since a flagged date is often
+ * simply correct.
+ */
+export function unresolvedDates(dates: { verified: DateVerification }[]): number[] {
+  return dates.reduce<number[]>((out, d, i) => {
+    if (d.verified === 'not_found' || d.verified === 'corrected') out.push(i);
+    return out;
+  }, []);
+}
+
 export type AnalyzedObligation = {
   who: string;
   description: string;

@@ -1,4 +1,4 @@
-import { parseAnalysis, MAX_DATES } from '@/data/analysis';
+import { parseAnalysis, unresolvedDates, MAX_DATES } from '@/data/analysis';
 
 describe('parseAnalysis', () => {
   it('decodes a well-formed analysis', () => {
@@ -104,5 +104,45 @@ describe('parseAnalysis', () => {
     expect(dates('0001-01-01')).toHaveLength(0);
     expect(dates('9999-12-31')).toHaveLength(0);
     expect(dates('2026-08-01')).toHaveLength(1);
+  });
+});
+
+describe('unresolvedDates', () => {
+  const rows = (...verified: string[]) =>
+    verified.map((v) => ({ verified: v as 'confirmed' | 'corrected' | 'not_found' | 'unchecked' }));
+
+  it('blocks a date the verification pass could not re-find', () => {
+    expect(unresolvedDates(rows('not_found'))).toEqual([0]);
+  });
+
+  it('blocks a date the second read corrected', () => {
+    expect(unresolvedDates(rows('corrected'))).toEqual([0]);
+  });
+
+  it('treats unchecked as neutral', () => {
+    // The verify pass is best-effort against a time budget, and a date the
+    // user typed is unchecked too. Blocking on it would stop a save for a
+    // check that was never asked for.
+    expect(unresolvedDates(rows('unchecked'))).toEqual([]);
+  });
+
+  it('lets a confirmed date through', () => {
+    expect(unresolvedDates(rows('confirmed'))).toEqual([]);
+  });
+
+  it('returns the positions of every flagged row', () => {
+    expect(unresolvedDates(rows('confirmed', 'not_found', 'unchecked', 'corrected'))).toEqual([1, 3]);
+  });
+
+  it('allows an empty list', () => {
+    expect(unresolvedDates([])).toEqual([]);
+  });
+
+  it('clears once the human answers the flag', () => {
+    // Editing a flagged date, or tapping Checked, resets it to 'unchecked'.
+    // That is the whole mechanism: a date Contry could not stand behind
+    // cannot become a 9:00 push until somebody looked at it.
+    const answered = rows('not_found').map((r) => ({ ...r, verified: 'unchecked' as const }));
+    expect(unresolvedDates(answered)).toEqual([]);
   });
 });

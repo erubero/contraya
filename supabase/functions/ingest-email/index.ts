@@ -10,6 +10,7 @@
 // (sender addresses are spoofable and are stored as metadata only).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { decodeBase64 } from 'jsr:@std/encoding@1/base64';
+import { createApnsSender } from '../_shared/apns.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,8 +23,6 @@ const MAX_PDF_BYTES = 10 * 1024 * 1024; // mirrors the bucket cap
 // anyone who leaks their address to a mailing list.
 const DAILY_LIMIT = 20;
 
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
-
 // Constant-time compare so the shared secret can't be probed byte by byte.
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
@@ -34,6 +33,9 @@ function timingSafeEqual(a: string, b: string): boolean {
   for (let i = 0; i < bufA.length; i++) diff |= bufA[i] ^ bufB[i];
   return diff === 0;
 }
+
+const toHex = (buf: ArrayBuffer): string =>
+  Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
 
 const clean = (v: unknown, max: number): string | null => {
   if (typeof v !== 'string') return null;
@@ -116,6 +118,32 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Not a PDF' }, { status: 415, headers: corsHeaders });
     }
 
+    // Same document, already waiting in this user's inbox. The email worker
+    // has no idempotency key and an MTA re-delivers when it does not see a
+    // timely 2xx, so without this the same contract files two or three times.
+    // Checked before the upload so a duplicate never orphans a storage object;
+    // the unique index is the race-safe backstop below.
+    //
+    // 200, not an error: a non-2xx tells the sending MTA to try again, which
+    // is how one duplicate becomes a queue of them.
+    // Copied into a freshly allocated buffer rather than passed directly:
+    // decodeBase64 hands back a view whose backing buffer type does not
+    // satisfy BufferSource under Deno's lib, and a view with a non-zero offset
+    // would hash the wrong bytes. A 10MB memcpy at most, once per email.
+    const owned = new Uint8Array(bytes.byteLength);
+    owned.set(bytes);
+    const digest = toHex(await crypto.subtle.digest('SHA-256', owned));
+    const { data: dupe, error: dupeError } = await service
+      .from('inbox_items')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('content_sha256', digest)
+      .maybeSingle();
+    if (dupeError) throw dupeError;
+    if (dupe) {
+      return Response.json({ ok: true, deduped: true }, { headers: corsHeaders });
+    }
+
     const path = `${userId}/${crypto.randomUUID()}.pdf`;
     const { error: uploadError } = await service.storage.from(BUCKET).upload(path, bytes, {
       contentType: 'application/pdf',
@@ -129,10 +157,17 @@ Deno.serve(async (req) => {
       original_filename: clean(body.filename, 200),
       from_address: clean(body.from_address, 320),
       subject: clean(body.subject, 500),
+      content_sha256: digest,
     });
     if (insertError) {
       // Don't leave an orphaned object when the row insert fails.
       await service.storage.from(BUCKET).remove([path]).catch(() => {});
+      // Two copies raced past the check above and the unique index caught the
+      // loser. That is a successful dedupe, not a failure: reporting it as one
+      // would have the MTA redeliver the copy we just declined.
+      if (insertError.code === '23505') {
+        return Response.json({ ok: true, deduped: true }, { headers: corsHeaders });
+      }
       throw insertError;
     }
 
@@ -151,19 +186,18 @@ Deno.serve(async (req) => {
         // address push a convincing spoofed alert ("invoice.pdf arrived from
         // billing@yourbank.com") to the victim's lock screen. The real sender
         // is shown, labeled unverified, only inside the app.
-        await fetch(EXPO_PUSH_URL, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', accept: 'application/json' },
-          body: JSON.stringify(
-            tokens.map((to) => ({
-              to,
-              title: 'A document arrived by email',
-              body: 'Open Contraya to review it.',
-              sound: 'default',
-              data: { inbox: true },
-            }))
-          ),
-        });
+        //
+        // Straight to Apple. This used to POST to Expo's push service, which
+        // silently could not deliver: push_tokens holds RAW APNs device
+        // tokens and that endpoint only accepts ExponentPushToken[...], so
+        // every emailed document arrived with no notification at all. Null
+        // when the APNS_* secrets are unset, exactly like the reminder cron.
+        const pushTo = await createApnsSender(service);
+        if (pushTo) {
+          await pushTo(tokens, 'A document arrived by email', 'Open Contraya to review it.', {
+            inbox: true,
+          });
+        }
       }
     } catch (e) {
       console.error('inbox push failed', e);

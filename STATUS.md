@@ -230,11 +230,17 @@ destructive-tinted isolated Sign Out.**
 17. `support.tsx:74-79` hand-writes a third disclaimer wording instead of
     importing from `legal.ts` (drops the AI-disclosure and no-privilege
     claims); `about.tsx:53-57` data-handling claims are inline too.
-18. Email worker duplicates on retry: the ingest POST is unwrapped
-    (`email-worker/src/index.js:63`), a rejected `email()` makes the MTA
-    redeliver, and `ingest-email` mints a fresh UUID path per call — no
-    idempotency key (message-id/hash) anywhere. Partial-store then 429
-    also duplicates (`:82-86`).
+18. ~~Email worker duplicates on retry~~ **FIXED 2026-07-31.** The ingest
+    POST is unwrapped (`email-worker/src/index.js:63`), a rejected
+    `email()` makes the MTA redeliver, and `ingest-email` mints a fresh
+    UUID path per call, so the same contract filed two or three times.
+    Now the PDF bytes are SHA-256'd and the digest stored on `inbox_items`
+    (migration `20260731000000_inbox_dedupe.sql`, partial unique index on
+    `(user_id, content_sha256)`); a repeat returns 200 `deduped` without
+    uploading, and the unique index catches the concurrent race. Scoped to
+    rows still IN the inbox, because importing deletes the row, so
+    re-forwarding the same PDF later still works. **Owner must run
+    `supabase db push`.**
 19. The reminder ledger claim is not atomic: read → send → insert with the
     insert error swallowed (`send-date-reminders/index.ts:216-275`), while
     `reminders.sql:79-81` documents an upsert-claim. Overlapping runs
@@ -243,10 +249,18 @@ destructive-tinted isolated Sign Out.**
 20. Yearly recurrence anchored on Feb 29 diverges: cron rolls to Mar 1
     (`setUTCFullYear`, `index.ts:62`), client clamps to Feb 28 (date-fns
     `addYears`). Ledger keys the wrong occurrence; channels disagree.
-21. No `stop_reason` check in analyze/chat, and adaptive thinking shares
-    `max_tokens` (chat's 1500 is tight): truncation surfaces as the same
-    422 "Couldn't read this document" as garbage input, with the slot
-    consumed.
+21. **HALF FIXED 2026-07-31 (analyze; chat still open).** Truncation used
+    to surface as the same 422 "Couldn't read this document" as garbage
+    input, with the slot consumed. `analyze-contract` now checks
+    `stop_reason === 'max_tokens'` and says what actually happened.
+    **Deliberately still not refunded:** at that point there is no parsed
+    body, so `is_contract` is unknowable, and refunding would let any
+    document that reliably truncates be looped for unbounded spend, which
+    is exactly what the no-refund-past-this-point rule exists to stop. It
+    now logs `usage`, so the first real analyses will show whether
+    `MAX_TOKENS = 8000` is simply too low for a dense 50-page contract;
+    raising the cap costs nothing until it is used. `chat-contract` has
+    the same gap and its 1500 is tighter.
 22. A password-recovery link opened while signed in swaps the session
     without invalidating cached contracts (`reset-password.tsx:49-56`;
     the layout invalidates only on status TRANSITIONS) — account A's data
@@ -355,6 +369,42 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
 
 ## What is DONE (in this repo, verified)
 
+- **Agentic follow-through, slice 1 (2026-07-31).** Direction chosen by the
+  owner: the app may act between sessions on facts the user has ALREADY
+  CONFIRMED, and interprets nothing. "Describe, never advise" stays absolute
+  (no drafting, no recommendations, no positions). Calendar sync is the
+  template. Four changes, each independent, each fixing a verified defect:
+  1. **The email-in push was dead and is fixed.** `ingest-email` was POSTing
+     to Expo's push service (`exp.host`) long after commit `8d288d7` moved
+     push to direct APNs, and `push_tokens` holds RAW APNs device tokens,
+     which that endpoint cannot accept. **Every document that arrived by
+     email landed in the inbox silently, since 2026-07-30.** The APNs signer
+     is now `supabase/functions/_shared/apns.ts` (`createApnsSender`), used by
+     both `ingest-email` and `send-date-reminders`; the cron's payload is
+     byte-identical to before. The fixed, non-interpolated push body stays
+     exactly as it was, for the spoofing reason its comment gives. Dead until
+     the APNS_* secrets land (checklist item 13), same as the cron.
+  2. **`stop_reason === 'max_tokens'` guard** in `analyze-contract`. See
+     audit finding 21 for why it deliberately does not refund.
+  3. **The review screen is now a mechanism, not a claim.** The verification
+     pass ran, the screen showed a marker, and the verdict was dropped at
+     save, so a date Contry could not re-find became a 9:00 push
+     indistinguishable from one it confirmed twice. Save is now blocked while
+     any date is `not_found` or `corrected` (`unresolvedDates` in
+     `src/data/analysis.ts`, pure and tested), and a "Checked" tap clears a
+     flag without forcing the user to retype a value that was already right.
+     **The verdict is still not persisted, on purpose:** storing "we could
+     not verify this" would put a judgment ABOUT the document on a contract
+     screen, which is the failure mode `legal.ts:32-37` guards against and
+     Terms §3 disclaims. It acts at the only moment it can act honestly.
+  4. **Inbound email dedupes by content hash.** See finding 18.
+  Plus `PersonalizedInsight` now reads real data (`src/data/insight.ts`,
+  pure and tested) instead of reflecting three onboarding answers back at
+  everyone. **It performs no arithmetic over money and a test pins that:**
+  `total_value` is null whenever a document states no total, there is no
+  currency column, and lease totals / coverage limits / vendor prices are not
+  the same quantity, so a portfolio sum would be a figure appearing in no
+  document.
 - **Apple Calendar sync (2026-07-31, roadmap item 2, NOT yet device tested):**
   opt-in and Premium-only switch at `app/(app)/calendar-sync.tsx` that mirrors
   contract dates into a calendar Contraya creates via EventKit
@@ -1038,6 +1088,30 @@ curl with a date seeded ~2 weeks out → push arrives → tap routes to the
 contract → sandbox purchase past the 2-analysis wall → account deletion wipes
 rows + storage.
 
+Added 2026-07-31: forward a PDF to the ingest address and confirm **a push
+actually arrives** (it could not before, see the DONE section); forward the
+identical PDF again and confirm no second inbox row; confirm Save is blocked
+while a flagged date is unanswered and unblocks on Checked.
+
+**While running the first real analyses, record two numbers.** Both decide
+open questions and neither costs an extra run:
+
+1. `usage.output_tokens` per analysis, and whether `stop_reason` ever comes
+   back `max_tokens`. Answers whether `MAX_TOKENS = 8000` is too low
+   (finding 21). Raising the cap costs nothing until it is used.
+2. Across ~10 real contracts, **how many `due_note`s carry a resolvable
+   anchor AND do not already exist as a `contract_dates` row.** This is the
+   go/no-go on "obligations get a clock" (see the roadmap). The prompt at
+   `analyze-contract/index.ts:194` tells the model to compute a concrete date
+   when the anchor is in the document and put the rule in an obligation
+   OTHERWISE, so `due_note` is by construction the residue of what the first
+   pass could not resolve. `demo.ts:74-77` and `:105-109` also show the
+   duplicate case: one notice deadline expressed as both a date row and an
+   obligation. If the count is under roughly 2 per 10 contracts, the money
+   goes to `output_config.effort: 'low' → 'medium'` instead, so the FIRST
+   pass resolves more rules into `key_dates` where the whole pipeline already
+   works. One line against a multi-week feature.
+
 ## Post-launch roadmap (owner-approved order, from the v1.1 brief review)
 
 0. At launch: cross-promote from Warraya — "New from us: Contraya" row in
@@ -1053,6 +1127,25 @@ rows + storage.
 3. Biometric app lock — expo-local-authentication (native dep)
 4. Chat transcript persistence; regenerate email-in address; storage orphan
    cleanup; Android.
+5. **Obligations get a clock — GATED on the `due_note` count in the Device
+   E2E smoke above, not scheduled.** `contract_obligations.due_note` holds a
+   deadline in the contract's own words and nothing converts it to a date, so
+   obligations never reach reminders, the calendar or the Tasks screen. If
+   the measurement says it is worth building, these are prerequisites and not
+   niceties: **edit-after-save** for dates and obligations (nothing in
+   `mobile/` updates `contract_dates` today, so a wrong resolved date would
+   be permanent short of deleting the contract and paying another slot); a
+   real obligations section on the review screen rather than the count at
+   `add.tsx:812`; anchoring by stable key, never array index, since
+   `add.tsx:723` reindexes on delete; writing any resolved date at INSERT
+   rather than widening the deliberately narrow `update (completed_at)` grant
+   (`chat-contract` folds `description`/`due_note` into the model's context,
+   so a client-writable text column there is a prompt-injection channel);
+   reserving the `MAX_PENDING = 60` notification budget for `contract_dates`
+   first, or one wedding contract's 20 obligations evicts rent reminders; and
+   `contract/[id].tsx:69-73` calling `refreshSchedules()` on toggle, which it
+   does not, so ticking an obligation off would not cancel its notification.
+   Decide finding 37 (local/push double-notify) before any of it.
 
 ## NOT in MVP (agreed cuts — do not scope-creep)
 
