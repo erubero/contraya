@@ -18,11 +18,10 @@ not a free feature.
 The text below is finished and paste-ready. These are the things that block
 actually submitting, roughly in the order they bite:
 
-1. **The landing must be deployed.** App Store Connect requires a working
-   **Privacy Policy URL** and Apple does check it. `usecontraya.com/privacy`
-   and `usecontraya.com` are both used in this listing, and the site has never
-   been deployed (STATUS.md checklist item 9). A 404 there is a rejection.
-   This is the first domino: deploy the landing, then point the domain.
+1. **The landing must be deployed. DONE, verified 2026-08-09.**
+   `usecontraya.com`, `/privacy`, `/terms` and `/support` all return 200, so
+   the Privacy Policy URL this listing depends on resolves. A 404 there would
+   have been a rejection.
 2. **The app icon.** RESOLVED (v2 mark, 2026-07-30): the tree carries the
    lime C-and-fine-print mark on navy, 1024x1024 opaque, regenerated across
    app and web by `brand/generate-icons.py`. See `brand/README.md`.
@@ -41,11 +40,21 @@ actually submitting, roughly in the order they bite:
    native `signInWithIdToken` path. Warraya needed them because its Supabase
    secret was set up for web; that does not carry over as a requirement.
    Untested on hardware, like everything else here.
-6. **hello@usecontraya.com must receive mail** (Cloudflare Email Routing) or
-   the support contact is dead on arrival.
+6. **hello@usecontraya.com must receive mail. DONE, verified 2026-08-09** —
+   three `route*.mx.cloudflare.net` records answer for the domain, so
+   Cloudflare Email Routing is live and the support contact resolves.
+7. **A per-subscription review screenshot**, one for each of the two products.
+   Added by the 2026-08-09 audit; it was missing from every list in this repo.
+   Required on a first subscription submission. A live paywall cannot be
+   screenshotted before approval, so use the RevenueCat paywall editor's
+   preview render.
 
-Nothing here is code. All six are account-and-dashboard work that only the
-owner can do.
+Nothing here is code. These are account-and-dashboard work that only the owner
+can do, and as of 2026-08-09 only items 3, 4 and 7 are still open.
+
+**Email-in is hidden in 1.0** (lean-1.0 decision, 2026-08-09). Do not mention
+the forwarding address in the description, the keywords, or the review notes
+for this submission.
 
 ---
 

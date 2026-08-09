@@ -1,6 +1,51 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-07-30, end of the marathon session. Read this first.
+Updated: 2026-08-09, submission-readiness audit. Read this first.
+
+## 2026-08-09 — submission-readiness audit, and the LEAN 1.0 decision
+
+Everything below this section was written on or before 2026-07-31 and several
+of its claims had gone stale. Verified live against DNS, the Supabase API and
+the built plist on 2026-08-09:
+
+| Claim below | Actual state |
+|---|---|
+| "NO MX records, hello@ bounces" (handoff 9, item 6, checklist 9) | **WRONG, now live.** Three `route*.mx.cloudflare.net` records answer for usecontraya.com. |
+| "`CRON_SECRET` — set it" (item 5) | **Already set** 2026-07-29. Checklist item 2 had this right; item 5 was never updated. |
+| "new app record" (checklist 8) | **Already created** as version 1.0, per commit `ba1a8ba`. |
+| "the site has never been deployed" (STORE_LISTING prerequisite 1) | **Live.** `/`, `/privacy`, `/terms`, `/support` all return 200. |
+| "live equals repo, byte-verified" (checklist 3) | **False as of 2026-07-31.** See below. |
+
+New findings from this audit, none of them previously recorded:
+
+- **The three `APNS_*` secrets and `INGEST_SECRET` are confirmed ABSENT** from
+  `supabase secrets list`. Only `CLAUDE_API_KEY` and `CRON_SECRET` are set;
+  everything else in that list is Supabase's own injection. Push and email-in
+  are not partly working, they are dead.
+- **The deployed edge functions are behind the repo.** All five last deployed
+  2026-07-31 07:40, which predates the `_shared/apns.ts` refactor and the
+  `max_tokens` guard. The byte-identical guarantee in checklist 3 is void until
+  they are redeployed.
+- **`eslint.config.js` matches only root `src/**/*.js`.** It lints the
+  marketing site and zero lines of the mobile app. A green lint is not coverage.
+- **`NSMicrophoneUsageDescription` is still expo-image-picker boilerplate**
+  ("Allow $(PRODUCT_NAME) to access your microphone"), a documented 5.1.1 flag.
+- **`MARKETING_VERSION` is 1.0 while the Info.plist literal is 1.0.0.** The
+  plist wins because `INFOPLIST_FILE` is set, so the binary is correct, but
+  Xcode's General tab lies and editing the version there changes nothing.
+- **No App Store screenshots exist anywhere on disk.**
+- **The per-subscription review screenshot** that ASC requires on a first
+  subscription submission is named in neither this file nor STORE_LISTING.md.
+- `PrivacyInfo.xcprivacy` is present **and** in the Resources build phase, so
+  it genuinely ships. Icon is 1024x1024 with no alpha. Export compliance is
+  declared. Those three are fine.
+
+**LEAN 1.0 decided by the owner 2026-08-09.** Ship with on-device local
+reminders only. APNs push, the daily cron, and email-in all move to 1.0.1.
+This takes the largest block of dashboard work off the critical path and makes
+finding 37 moot for this release, because there is no second channel to
+collide with. Email-in is hidden behind one constant rather than removed.
+Four findings get fixed first: 12, 7, 22, 6.
 
 **Session handoff (2026-07-30 — the biggest day this project has had).**
 What happened, in order, all committed and pushed:
@@ -38,10 +83,8 @@ What happened, in order, all committed and pushed:
 9. **THE LANDING IS LIVE at usecontraya.com** — verified from outside
    (latest build, sitemap/robots/og-image, CSP/HSTS). Search Console
    domain-verified, sitemap submitted, indexing requested. In-app legal
-   links now resolve (finding 16 closed). **Found: NO MX records —
-   hello@usecontraya.com bounces, so the landing's early-access CTA and
-   the support address are dead until Cloudflare Email Routing is enabled
-   (hello@ → info@prrenovatio.com).**
+   links now resolve (finding 16 closed). Found the same day: no MX records.
+   **That is now fixed — MX verified live 2026-08-09.**
 10. **Pricing DECIDED and codified: $9.99/mo, $69.99/yr, 3-day free trial
     on both; quotas 10 analyses + 40 Ask Contry questions/month** (priced
     against measured token cost; math in `mobile/src/lib/limits.ts`).
@@ -101,9 +144,11 @@ the remaining go/no-go; nothing below substitutes for it.
    dates are right. See "Device E2E smoke" below for the full sequence.
 4. **Logo** — DONE 2026-07-29. Real mark committed, all nine icons
    regenerated, brand navy aligned to `#04193E`. See blocker 12 below.
-5. **`CRON_SECRET`** — set it in Edge Functions → Secrets. Until it is,
-   `send-date-reminders` cannot run, so no push reminders. (`ANTHROPIC_API_KEY`
-   is already set, which is why analysis works and reminders do not.)
+5. **`CRON_SECRET`** — **DONE, set 2026-07-29** and re-verified in the secrets
+   list 2026-08-09. This item said "set it" for ten days after it was already
+   set; checklist item 2 had it right the whole time. What actually blocks
+   `send-date-reminders` is the three missing `APNS_*` secrets, and under the
+   lean-1.0 decision that is deferred to 1.0.1.
 6. **Deploy the landing. DONE, LIVE 2026-07-30** and verified from outside:
    usecontraya.com serves the LATEST build (v2 brand + SEO commit,
    new-string asserted per the deploy-verification rule), sitemap and
@@ -112,10 +157,9 @@ the remaining go/no-go; nothing below substitutes for it.
    in DNS), sitemap submitted, homepage indexing requested (owner,
    2026-07-30). This also un-404s the in-app Terms/Privacy/Help links
    (audit finding 16 resolved) and unblocks the App Review Privacy Policy
-   URL. **One hole found the same day: NO MX records, so
-   hello@usecontraya.com bounces — the landing's early-access CTA and the
-   app's support address are dead until Cloudflare Email Routing is
-   enabled (hello@ → info@prrenovatio.com, the standard pattern).**
+   URL. **The MX hole found the same day is CLOSED: verified 2026-08-09,
+   three `route*.mx.cloudflare.net` records answer for the domain, so
+   Cloudflare Email Routing is enabled and hello@usecontraya.com resolves.**
 7. **Attorney review** of Terms + Privacy (item 3b), **RevenueCat setup**,
    **screenshots**. All submission-time, none blocking a build today.
 
@@ -929,8 +973,12 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    StoreKit variables, never typed literals. Paywall footer links (a Warraya
    rejection vector): Terms to Apple's standard EULA URL, Privacy to
    `https://usecontraya.com/privacy`.
-8. **App Store Connect:** new app record, bundle id `com.contraya.app`,
-   name availability check for "Contraya". Review notes MUST say: summaries
+8. **App Store Connect:** the app record **already exists**, created as
+   version 1.0 (commit `ba1a8ba`), bundle id `com.contraya.app`. What is left
+   on this item is metadata, not creation. **Screenshots do not exist anywhere
+   on disk** (6.9-inch, 1320x2868, spec in STORE_LISTING.md §7), and a
+   **per-subscription review screenshot** is required on a first subscription
+   submission and is named nowhere else in this repo. Review notes MUST say: summaries
    are informational descriptions of the user's own documents, not legal
    advice; a disclaimer is shown on every analysis screen; demo-mode
    instructions + a sample contract PDF attached. Review notes must also say
@@ -952,8 +1000,10 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
    skipping it also avoids inheriting Warraya's 6-month secret-expiry chore.
    Still unverified on hardware: the Client IDs string itself is only proven
    by a real sign-in, where a typo surfaces as an audience mismatch.
-9. **Cloudflare:** point usecontraya.com at the worker (auto-deploys on push
-   like warraya.com), Email Routing for hello@usecontraya.com.
+9. **Cloudflare: DONE.** usecontraya.com points at the worker (auto-deploys on
+   push like warraya.com) and Email Routing for hello@usecontraya.com is live,
+   MX verified 2026-08-09. The inbound-ingest catch-all route is a separate
+   thing and is deferred to 1.0.1 with the rest of email-in.
 9b. **After the landing deploys: put it in front of Google (added by the
     2026-07-30 SEO audit).** The on-page work is DONE and launch-complete
     (per-route meta, robots.txt, sitemap.xml, SoftwareApplication schema
