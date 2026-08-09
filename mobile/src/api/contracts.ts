@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { supabase } from './supabase';
+import { toEdgeError } from './functionError';
 import {
   Contract, ContractBundle, ContractInsert,
   ContractDate, ContractDateInsert,
@@ -169,6 +170,9 @@ export async function analyzeContract(
   const { data, error } = await supabase.functions.invoke('analyze-contract', {
     body: { paths, kind },
   });
-  if (error) throw error;
+  // Not `throw error`: that loses the status, and the status is the whole
+  // difference between "try again" and "you are out of analyses this month".
+  // See src/api/functionError.ts.
+  if (error) throw await toEdgeError(error);
   return parseAnalysis((data as { analysis?: unknown })?.analysis);
 }

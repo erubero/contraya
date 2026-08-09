@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
-import { clearDeviceSchedules } from '@/lib/deviceSync';
-import { clearAllDrafts } from '@/lib/draftStore';
+import { releaseAccountState } from '@/lib/accountHandoff';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -47,14 +46,13 @@ export default function Settings() {
     // The device must not keep firing this account's reminders after it
     // leaves, or keep its contract titles sitting in the Calendar app where
     // the next person to hold this phone can read them. The next sign-in
-    // rebuilds both from that account's data.
-    await clearDeviceSchedules().catch(() => {});
-    // No userId argument on purpose: signOut() nulls it, so a per-account clear
-    // placed here would be a silent no-op depending on call order.
-    await clearAllDrafts();
-    if (isDemo) demo.reset();
-    await signOut();
-    queryClient.clear();
+    // rebuilds both from that account's data. releaseAccountState owns the
+    // order; the drafts clear takes no userId on purpose, because signOut()
+    // nulls it and a per-account clear would become a silent no-op.
+    await releaseAccountState(queryClient, async () => {
+      if (isDemo) demo.reset();
+      await signOut();
+    });
     router.replace('/signin');
   };
 

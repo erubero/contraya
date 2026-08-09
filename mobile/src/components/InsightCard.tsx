@@ -18,7 +18,7 @@ export default function InsightCard({
   label: string;
   icon?: keyof typeof Ionicons.glyphMap;
   children: ReactNode;
-  footer?: string;
+  footer?: ReactNode;
 }) {
   const theme = useTheme();
   return (
@@ -45,7 +45,11 @@ export default function InsightCard({
       )}
       {footer && (
         <View style={{ borderTopWidth: 1, borderTopColor: theme.border, paddingTop: 8, marginTop: 2 }}>
-          <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{footer}</Text>
+          {typeof footer === 'string' ? (
+            <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{footer}</Text>
+          ) : (
+            footer
+          )}
         </View>
       )}
     </View>

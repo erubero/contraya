@@ -36,7 +36,9 @@ import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES } from '@/lib/limits';
 import { analysisGate } from '@/lib/quotaGate';
-import { DISCLAIMER } from '@/lib/legal';
+import DisclaimerNote from '@/components/DisclaimerNote';
+import { statusOf } from '@/api/functionError';
+import { analysisErrorCopy } from '@/lib/edgeErrorCopy';
 import {
   ContractDraft, DRAFT_DEBOUNCE_MS, DRAFT_VERSION, isDraftWorthKeeping,
 } from '@/data/draft';
@@ -414,13 +416,8 @@ export default function AddContract() {
       const a = await analyzeContract(paths, kind);
       applyAnalysis(a);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '';
-      Alert.alert(
-        "Contry couldn't read this document",
-        msg.includes('422') || msg.toLowerCase().includes('contract')
-          ? "It doesn't look like a contract. You can still add the details yourself."
-          : 'Please try again, or add the details yourself.'
-      );
+      const { title, body } = analysisErrorCopy(statusOf(e));
+      Alert.alert(title, body);
       setStep('source');
     }
   };
@@ -663,13 +660,13 @@ export default function AddContract() {
               {analysis?.summary ? (
                 <Animated.View entering={FadeInDown.delay(120).duration(350)} style={{ position: 'relative' }}>
                   <GlowBackdrop size={240} style={{ position: 'absolute', top: -50, left: '50%', marginLeft: -120 }} />
-                  <InsightCard label="In plain English" icon="checkmark-circle" footer={DISCLAIMER}>
+                  <InsightCard label="In plain English" icon="checkmark-circle" footer={<DisclaimerNote />}>
                     {analysis.summary}
                   </InsightCard>
                 </Animated.View>
               ) : (
                 <Animated.View entering={FadeInDown.delay(120).duration(350)}>
-                  <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
+                  <DisclaimerNote />
                 </Animated.View>
               )}
             </>

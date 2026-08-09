@@ -6,8 +6,10 @@ import {
 import { useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/api/supabase';
 import { useAuth } from '@/lib/AuthContext';
+import { releaseAccountState } from '@/lib/accountHandoff';
 import { MIN_PASSWORD } from '@/lib/limits';
 import { parseRecoveryParams, isExpiredLinkError } from '@/lib/recoveryLink';
 import { useTheme, RADIUS } from '@/theme/colors';
@@ -18,6 +20,7 @@ export default function ResetPassword() {
   const theme = useTheme();
   const router = useRouter();
   const { completePasswordReset } = useAuth();
+  const queryClient = useQueryClient();
   const url = Linking.useURL();
 
   const [phase, setPhase] = useState<Phase>('verifying');
@@ -45,6 +48,13 @@ export default function ResetPassword() {
         return;
       }
       try {
+        // Who is signed in BEFORE the link takes effect. A recovery link is a
+        // sign-in, so opening one for account B while account A is signed in
+        // swaps the session underneath a cache, a set of scheduled reminders
+        // and a calendar that all still belong to A (audit finding 22).
+        const { data: before } = await supabase.auth.getSession();
+        const leaving = before.session?.user?.id ?? null;
+
         if (accessToken && refreshToken) {
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -58,6 +68,15 @@ export default function ResetPassword() {
           setProblem('This link is missing its sign-in details. Please request a new one.');
           setPhase('invalid');
           return;
+        }
+
+        // Only on a genuine handover. Resetting your own password is the
+        // common case by far, and wiping that user's draft and reminders for
+        // it would be a bug of its own.
+        const { data: after } = await supabase.auth.getSession();
+        const arriving = after.session?.user?.id ?? null;
+        if (leaving && arriving && leaving !== arriving) {
+          await releaseAccountState(queryClient);
         }
         setPhase('ready');
       } catch {

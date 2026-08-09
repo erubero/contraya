@@ -16,7 +16,7 @@ import { useTheme, RADIUS } from '@/theme/colors';
 import TypeIcon from '@/components/TypeIcon';
 import StatusBadge from '@/components/StatusBadge';
 import DocumentsSection from '@/components/DocumentsSection';
-import { DISCLAIMER } from '@/lib/legal';
+import DisclaimerNote from '@/components/DisclaimerNote';
 
 
 export default function ContractDetail() {
@@ -139,7 +139,7 @@ export default function ContractDetail() {
         }}
       >
         <Ionicons name="information-circle-outline" size={18} color={theme.mutedForeground} />
-        <Text style={{ flex: 1, color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER}</Text>
+        <DisclaimerNote style={{ flex: 1 }} />
       </View>
 
       {contract.summary && (

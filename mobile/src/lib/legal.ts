@@ -12,15 +12,33 @@
 // (1) is deliberate. The owner reversed the original "never say AI" rule on
 // 2026-07-29: on a legally sensitive product, telling people how it works
 // beats sounding magical.
+//
+// HOW "together" is satisfied, decided 2026-08-09 (audit finding 12). For ten
+// days the analysis surfaces shipped claims 1 and 2 and left claim 3 sitting
+// in a constant that nothing rendered, so this file's own rule was being
+// violated on the one screen where it matters most. Putting all three in the
+// footer turns a one-line note into a paragraph on three screens, and a
+// disclaimer nobody finishes reading is worse than a short one. So: 1 and 2
+// inline, 3 exactly one tap away, and the tap is not optional either. Render
+// the analysis footer through `components/DisclaimerNote`, never a bare
+// `<Text>{DISCLAIMER}</Text>` — the component is what guarantees the link is
+// there. Surfaces that explain the product at length (onboarding, About These
+// Summaries, support, Terms) keep all three inline, because there is room.
 
 // Rides on every analysis surface: the review screen and the contract detail.
+// Claims 1 and 2. DisclaimerNote appends the link that carries claim 3.
 export const DISCLAIMER =
   'Contry uses AI to explain what your contract says. This is not legal advice.';
 
-// The chat variant. Same three claims, phrased for a question-and-answer
-// surface where the user is actively asking Contry things.
+// The chat variant, phrased for a question-and-answer surface where the user
+// is actively asking Contry things. Same two claims, same link after it.
 export const DISCLAIMER_CHAT =
   'Contry uses AI to answer from your document. This is not legal advice.';
+
+// The tappable half of the analysis footer. Deliberately says what is on the
+// other side rather than "Learn more", so tapping is a choice about the legal
+// limits and not a mystery link.
+export const DISCLAIMER_MORE = 'What this is not.';
 
 // The sentence that has to appear wherever the product is explained at length:
 // onboarding, About These Summaries, Terms, and the store listing. Kept

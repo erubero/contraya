@@ -6,8 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { deleteAccount } from '@/api/account';
 import { isConfigured } from '@/api/supabase';
-import { clearDeviceSchedules } from '@/lib/deviceSync';
-import { clearAllDrafts } from '@/lib/draftStore';
+import { releaseAccountState } from '@/lib/accountHandoff';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import { settingsCard } from '@/components/SettingsRow';
@@ -41,10 +40,7 @@ export default function DeleteAccount() {
       // and neither does the Contraya calendar. Leaving that behind would be a
       // straight breach of the line above, and on an iCloud calendar the
       // contract titles would still be sitting on the user's Mac.
-      await clearDeviceSchedules().catch(() => {});
-      await clearAllDrafts();
-      await signOut();
-      queryClient.clear();
+      await releaseAccountState(queryClient, signOut);
       router.replace('/signin');
     } catch {
       setBusy(false);

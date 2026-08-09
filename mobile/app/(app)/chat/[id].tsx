@@ -17,7 +17,9 @@ import { useTheme, RADIUS } from '@/theme/colors';
 import ContryFace from '@/components/ContryFace';
 import InsightCard from '@/components/InsightCard';
 import { splitLeadIn } from '@/lib/textFormat';
-import { DISCLAIMER_CHAT } from '@/lib/legal';
+import DisclaimerNote from '@/components/DisclaimerNote';
+import { statusOf } from '@/api/functionError';
+import { chatErrorCopy } from '@/lib/edgeErrorCopy';
 
 
 export default function ContractChat() {
@@ -73,10 +75,11 @@ export default function ContractChat() {
       const answer = await askContract(id, question, history);
       setTurns((t) => [...t, { role: 'assistant', content: answer }]);
       setAsked((n) => n + 1);
-    } catch {
+    } catch (e) {
       setTurns((t) => t.slice(0, -1));
       setInput(question);
-      Alert.alert("Contry couldn't answer", 'Please try again.');
+      const { title, body } = chatErrorCopy(statusOf(e));
+      Alert.alert(title, body);
     } finally {
       setBusy(false);
     }
@@ -106,7 +109,7 @@ export default function ContractChat() {
         }}
       >
         <Ionicons name="information-circle-outline" size={16} color={theme.mutedForeground} />
-        <Text style={{ flex: 1, color: theme.mutedForeground, fontSize: 12 }}>{DISCLAIMER_CHAT}</Text>
+        <DisclaimerNote variant="chat" style={{ flex: 1 }} />
       </View>
 
       <ScrollView
