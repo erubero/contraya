@@ -83,14 +83,12 @@ Four findings get fixed first: 12, 7, 22, 6.
   calendar split correct, `PrivacyInfo.xcprivacy` present and in the Resources
   phase, entitlements carry Sign in with Apple and aps-environment.
 
-**One thing to confirm, owner:** migration `20260809000000` went from pending
-to applied between two `--dry-run` invocations here. Nothing in this session
-ran a real `db push`; only dry runs, `migration list`, and function deploys. If
-you ran `supabase db push` in Terminal around 11:50, that explains it and all
-is well. If you did not, the CLI applied a migration during a dry run, which is
-worth knowing before trusting `--dry-run` again. Either way the end state is
-verified correct: the function exists in production and `anon` cannot execute
-it (probe returns 42501, not a PGRST202 not-found).
+**Resolved:** migration `20260809000000` appeared to apply itself between two
+`--dry-run` invocations. The owner confirms they ran `supabase db push` in
+Terminal at that moment, which is the normal workflow. `--dry-run` behaved
+correctly and is still trustworthy. Independently verified either way: the
+function exists in production and `anon` cannot execute it (the probe returns
+42501, not a PGRST202 not-found).
 
 ### Still open before Submit, in order
 
