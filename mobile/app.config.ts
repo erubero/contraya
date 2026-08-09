@@ -55,6 +55,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         photosPermission: 'Contraya uses your photos so you can add the pages of a contract.',
         cameraPermission: 'Contraya uses the camera to photograph contracts and documents.',
+        // Contraya never records audio: the picker is images-only and nothing
+        // in the app touches AV. The key is here anyway because the plugin
+        // emits its stock "Allow $(PRODUCT_NAME) to access your microphone"
+        // when this is unset, and a template purpose string is a documented
+        // 5.1.1 rejection. Setting it to `false` is the wrong fix in the other
+        // direction: image-picker's native code still references the audio
+        // capture APIs, so deleting the key trades a review flag for an
+        // ITMS-90683 at upload. An honest sentence is the only option that
+        // fails neither way.
+        microphonePermission:
+          'Contraya does not record audio. iOS asks for this because the photo picker can also capture video.',
       },
     ],
     [

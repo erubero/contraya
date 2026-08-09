@@ -44,33 +44,32 @@ export async function getBundle(id: string): Promise<ContractBundle> {
   };
 }
 
-// Insert the contract first, then its children. A child insert failing does
-// not orphan silently: the error propagates and the caller keeps the review
-// state, so the user can retry the save.
+// One RPC, one transaction (audit finding 6). This used to be four sequential
+// inserts, and the comment here used to say that a child failure was safe
+// because "the user can retry the save". They can, but the parent row had
+// already committed, so the retry created a SECOND contract and left the first
+// in the list with no dates on it. Nothing about a partial save is visible to
+// the person looking at the review screen, which is a screen they may have
+// reached by spending one of two lifetime free analyses.
+//
+// create_contract_bundle rolls the parent back with the children. It is
+// SECURITY INVOKER, so RLS still decides what may be written, and it sets
+// contract_id on the children itself rather than trusting the payload.
 export async function createContract(
   contract: ContractInsert,
   dates: ContractDateInsert[],
   obligations: ContractObligationInsert[],
   riskFlags: ContractRiskFlagInsert[]
 ): Promise<ContractBundle> {
-  const { data, error } = await supabase.from('contracts').insert(contract).select().single();
+  const { data, error } = await supabase.rpc('create_contract_bundle', {
+    p_contract: contract,
+    p_dates: dates,
+    p_obligations: obligations,
+    p_risk_flags: riskFlags,
+  });
   if (error) throw error;
-  const row = data as Contract;
-
-  const withId = <T extends object>(items: T[]) => items.map((i) => ({ ...i, contract_id: row.id }));
-  if (dates.length > 0) {
-    const { error: e } = await supabase.from('contract_dates').insert(withId(dates));
-    if (e) throw e;
-  }
-  if (obligations.length > 0) {
-    const { error: e } = await supabase.from('contract_obligations').insert(withId(obligations));
-    if (e) throw e;
-  }
-  if (riskFlags.length > 0) {
-    const { error: e } = await supabase.from('contract_risk_flags').insert(withId(riskFlags));
-    if (e) throw e;
-  }
-  return getBundle(row.id);
+  // The RPC returns the new id; getBundle is the read that has to be right.
+  return getBundle(data as string);
 }
 
 export async function updateContract(id: string, patch: Partial<Contract>): Promise<Contract> {

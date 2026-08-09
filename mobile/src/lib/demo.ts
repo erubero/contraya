@@ -8,6 +8,7 @@ import {
 import { ContractDocument } from '@/data/documents';
 import { ContractAnalysis } from '@/data/analysis';
 import { InboxItem, ingestAddress } from '@/data/inbox';
+import { EMAIL_IN_ENABLED } from '@/lib/appMeta';
 import { ChatTurn } from '@/data/chat';
 import { AnalysisCounts } from '@/api/usage';
 import { DateWithContract, RiskFlagRef } from '@/api/contracts';
@@ -136,6 +137,11 @@ function seed(): { contracts: Contract[]; dates: ContractDate[]; obligations: Co
 }
 
 function seedInbox(): InboxItem[] {
+  // Empty while email-in is off. Demo mode is what the App Store screenshots
+  // are captured in, so a seeded inbox row would advertise a feature 1.0 does
+  // not ship, and the fake address below is the one audit finding 35 warned a
+  // reviewer might try to email.
+  if (!EMAIL_IN_ENABLED) return [];
   return [{
     id: 'demo-inbox-1',
     storage_path: 'demo/inbox-ironworks.pdf',

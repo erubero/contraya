@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
 import { releaseAccountState } from '@/lib/accountHandoff';
+import { EMAIL_IN_ENABLED } from '@/lib/appMeta';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -175,11 +176,15 @@ export default function Settings() {
               onPress={() => router.push('/calendar-sync')}
             />
           ) : null}
-          <SettingsRow
-            icon="mail-open-outline"
-            label="Email a contract in"
-            onPress={() => router.push('/email-in')}
-          />
+          {/* The only doorway to email-in. Off for 1.0 because the worker
+              that receives the mail is not deployed; see EMAIL_IN_ENABLED. */}
+          {EMAIL_IN_ENABLED ? (
+            <SettingsRow
+              icon="mail-open-outline"
+              label="Email a contract in"
+              onPress={() => router.push('/email-in')}
+            />
+          ) : null}
           <SettingsRow
             icon="color-palette-outline"
             label="Appearance"
