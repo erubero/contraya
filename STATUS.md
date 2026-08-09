@@ -47,6 +47,61 @@ finding 37 moot for this release, because there is no second channel to
 collide with. Email-in is hidden behind one constant rather than removed.
 Four findings get fixed first: 12, 7, 22, 6.
 
+### What this session shipped (all committed and pushed)
+
+`eea9430` the uncommitted slice, `b4267ca` the ledger corrections above,
+`5fb4717` findings 12/7/22, `278ebd5` finding 6 plus the lean-1.0 changes.
+**29 suites, 302 tests, tsc clean, deno check clean.**
+
+- **Finding 12 CLOSED.** Claims 1 and 2 inline, claim 3 one tap away in About
+  These Summaries, rendered through `components/DisclaimerNote` on all three
+  analysis surfaces. Never write `<Text>{DISCLAIMER}</Text>` again; the
+  component is what carries the link, and `disclaimer.test.ts` fails the build
+  if a fourth call site skips it.
+- **Finding 7 CLOSED.** `api/functionError.ts` recovers the status from the
+  Response that supabase-js throws unread; `lib/edgeErrorCopy.ts` maps it. The
+  rule the copy follows is that it never offers a retry for something retrying
+  cannot fix (429, 413, 422).
+- **Finding 22 CLOSED, and it was worse than written.** All three doorways now
+  go through `lib/accountHandoff.ts`. The cache clear must stay LAST: clearing
+  while the departing session is still valid just lets a refetch repopulate it.
+- **Finding 6 CLOSED.** `create_contract_bundle` RPC, migration
+  `20260809000000`. Verified on a throwaway Postgres 16 cluster: an invalid
+  child leaves zero orphans where the old path left one. **Do not rewrite the
+  explicit column lists as `.*`** — `jsonb_populate_record` NULLs absent keys
+  and an explicit NULL beats a column default, so `.*` writes `user_id = NULL`
+  and fails the not-null constraint instead of defaulting to `auth.uid()`.
+- **Finding 35 CLOSED** as a side effect: demo mode seeds no inbox row while
+  `EMAIL_IN_ENABLED` is false, so there is no fake ingest address to email.
+- **Both migrations are LIVE and the five functions are REDEPLOYED and
+  byte-verified** (downloaded from the project and diffed against the repo, all
+  five plus `_shared/apns.ts` identical). 401 probe passes on all five.
+  Checklist item 3's guarantee is restored as of 2026-08-09 11:52.
+- **Prebuild run, node pin restored** to `/opt/homebrew/opt/node@22/bin/node`
+  (prebuild rewrote it to a Cellar-versioned path, as always). Generated plist
+  confirmed: microphone string is real text, 1.0.0/1, encryption declared,
+  calendar split correct, `PrivacyInfo.xcprivacy` present and in the Resources
+  phase, entitlements carry Sign in with Apple and aps-environment.
+
+**One thing to confirm, owner:** migration `20260809000000` went from pending
+to applied between two `--dry-run` invocations here. Nothing in this session
+ran a real `db push`; only dry runs, `migration list`, and function deploys. If
+you ran `supabase db push` in Terminal around 11:50, that explains it and all
+is well. If you did not, the CLI applied a migration during a dry run, which is
+worth knowing before trusting `--dry-run` again. Either way the end state is
+verified correct: the function exists in production and `anon` cannot execute
+it (probe returns 42501, not a PGRST202 not-found).
+
+### Still open before Submit, in order
+
+1. **The first real analysis.** Unchanged and unsubstitutable.
+2. **Screenshots.** Still none. 6.9-inch, 1320x2868, demo mode, blank `.env`.
+3. **RevenueCat**: publish the paywall, enable Customer Center, footer links.
+4. **ASC**: attach both subscriptions to the version, per-subscription review
+   screenshot, EULA link inside the description, privacy labels, 4+, review
+   notes plus how to reach the paywall.
+5. **Attorney review**, the only item with external lead time. Start it first.
+
 **Session handoff (2026-07-30 — the biggest day this project has had).**
 What happened, in order, all committed and pushed:
 
