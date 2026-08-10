@@ -143,7 +143,13 @@ export function planCalendarEvents(
   const { date } = item;
   const title = titleFor(item, opts);
   const notes = notesFor(item, opts);
-  return nextOccurrences(date.due_date, date.recurrence, now).map((occ) => {
+  return nextOccurrences(
+    date.due_date,
+    date.recurrence,
+    now,
+    undefined,
+    date.last_completed_occurrence
+  ).map((occ) => {
     const day = isoDay(occ);
     return {
       key: `contract.${date.contract_id}.${date.id}.${day}`,

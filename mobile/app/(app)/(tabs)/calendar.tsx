@@ -68,13 +68,15 @@ export default function Calendar() {
   const occurrences: Occurrence[] = useMemo(() => {
     const now = new Date();
     return allDates.flatMap((d) =>
-      nextOccurrences(d.due_date, d.recurrence, now).map((occ) => ({
-        date: format(occ, 'yyyy-MM-dd'),
-        label: d.label,
-        typeLabel: DATE_TYPE_LABELS[d.date_type],
-        contractId: d.contract_id,
-        contractTitle: d.contracts.title,
-      }))
+      nextOccurrences(d.due_date, d.recurrence, now, undefined, d.last_completed_occurrence).map(
+        (occ) => ({
+          date: format(occ, 'yyyy-MM-dd'),
+          label: d.label,
+          typeLabel: DATE_TYPE_LABELS[d.date_type],
+          contractId: d.contract_id,
+          contractTitle: d.contracts.title,
+        })
+      )
     );
   }, [allDates]);
 

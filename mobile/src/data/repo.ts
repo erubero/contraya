@@ -8,7 +8,7 @@ import * as chatApi from '@/api/chat';
 import { demo } from '@/lib/demo';
 import { shareRemoteFile } from '@/lib/share';
 import {
-  Contract, ContractBundle, ContractInsert,
+  Contract, ContractBundle, ContractInsert, ContractDate,
   ContractDateInsert, ContractObligation, ContractObligationInsert, ContractRiskFlagInsert,
 } from './types';
 import { ContractDocument } from './documents';
@@ -52,6 +52,10 @@ export function deleteContract(contract: Contract): Promise<void> {
 
 export function setObligationCompleted(id: string, completed: boolean): Promise<ContractObligation> {
   return isConfigured ? live.setObligationCompleted(id, completed) : demo.setObligationCompleted(id, completed);
+}
+
+export function setDateCompleted(id: string, occurrence: string | null): Promise<ContractDate> {
+  return isConfigured ? live.setDateCompleted(id, occurrence) : demo.setDateCompleted(id, occurrence);
 }
 
 export function listAllDates(): Promise<live.DateWithContract[]> {

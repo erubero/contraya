@@ -1,4 +1,5 @@
 import {
+  addDays,
   addMonths,
   addYears,
   differenceInCalendarMonths,
@@ -42,20 +43,45 @@ function stepper(recurrence: Exclude<ContractDate['recurrence'], 'none'>) {
     : (d: Date, n: number) => addYears(d, n);
 }
 
+// The first day still outstanding given a `last_completed_occurrence`, or null
+// when nothing has been marked handled. Shared by nextOccurrences and
+// lastMissedOccurrence so the future and past views of a series cannot
+// disagree about where the completed part ends. A malformed value reads as
+// null: it must never be able to hide occurrences.
+function resumeAfter(completedThrough: string | null): Date | null {
+  if (!completedThrough) return null;
+  const done = startOfDay(new Date(`${completedThrough}T00:00:00`));
+  if (Number.isNaN(done.getTime())) return null;
+  return addDays(done, 1);
+}
+
 // Occurrences of a date row on or after `from`, capped at the horizon. A
 // non-recurring date is its own single occurrence (skipped once past).
 // date-fns addMonths clamps month-end (Jan 31 + 1mo = Feb 28), which is the
 // behavior people expect from "due on the 31st".
+//
+// `completedThrough` is contract_dates.last_completed_occurrence: every
+// occurrence on or before it has been handled, so the series resumes the day
+// after. It MOVES THE FLOOR rather than filtering the output, and that is the
+// whole trick — see the comment block on lastMissedOccurrence for why a filter
+// here would be a bug. A floor can only ever move forward, so "never yields a
+// past date" stays true by construction. A completion in the past (the normal
+// case) leaves the floor at `from`, untouched.
 export function nextOccurrences(
   dueDate: string,
   recurrence: ContractDate['recurrence'],
   from: Date,
-  horizonMonths: number = HORIZON_MONTHS
+  horizonMonths: number = HORIZON_MONTHS,
+  completedThrough: string | null = null
 ): Date[] {
   const first = startOfDay(new Date(`${dueDate}T00:00:00`));
   if (Number.isNaN(first.getTime())) return [];
-  const floor = startOfDay(from);
-  const horizon = addMonths(floor, horizonMonths);
+  const requested = startOfDay(from);
+  const resume = resumeAfter(completedThrough);
+  const floor = resume && resume > requested ? resume : requested;
+  // Horizon is measured from the caller's `from`, not the floor: completing a
+  // date must not extend how far ahead the app plans.
+  const horizon = addMonths(requested, horizonMonths);
 
   if (recurrence === 'none') {
     return first >= floor && first <= horizon ? [first] : [];
@@ -90,12 +116,18 @@ export function nextOccurrences(
 //
 // Returns a single Date rather than an array on purpose: one overdue task per
 // row. A monthly rent row twelve months late is one unpaid rent, not twelve
-// tasks, and contract_dates has no completion column so a longer list could
-// never be cleared.
+// tasks. `completedThrough` is what makes that tractable: clearing the task
+// records the miss, and the month before it surfaces next, so a backlog drains
+// one step at a time instead of arriving as twelve rows nobody will read.
+//
+// `completedThrough` must be the same value handed to nextOccurrences. Both
+// route it through resumeAfter, so the newest miss is by definition one step
+// behind the next occurrence no matter where the completion sits.
 export function lastMissedOccurrence(
   dueDate: string,
   recurrence: ContractDate['recurrence'],
-  now: Date = new Date()
+  now: Date = new Date(),
+  completedThrough: string | null = null
 ): Date | null {
   const first = startOfDay(new Date(`${dueDate}T00:00:00`));
   if (Number.isNaN(first.getTime())) return null;
@@ -104,7 +136,10 @@ export function lastMissedOccurrence(
   // statusKind in data/status.ts.
   if (first >= today) return null;
 
-  if (recurrence === 'none') return first;
+  // Everything up to here is handled, so nothing before it can be outstanding.
+  const resume = resumeAfter(completedThrough);
+
+  if (recurrence === 'none') return resume && first < resume ? null : first;
 
   const step = stepper(recurrence);
   // Jump straight to the occurrence in today's own month/year, then walk back
@@ -115,7 +150,29 @@ export function lastMissedOccurrence(
       : differenceInCalendarYears(today, first);
   let i = approx;
   while (i >= 0 && step(first, i) >= today) i -= 1;
-  return i < 0 ? null : step(first, i);
+  if (i < 0) return null;
+
+  const missed = step(first, i);
+  return resume && missed < resume ? null : missed;
+}
+
+// The one occurrence a row is currently asking about: the miss if it has one,
+// otherwise the next one due. Null once a non-recurring date is handled, or
+// once a series runs past the horizon.
+//
+// This is what a "mark done" control acts on, and it is why the control needs
+// no notion of which occurrence the user meant. Ticking it records THIS one,
+// the floor moves a step, and the row starts asking about the next.
+export function currentOccurrence(
+  dueDate: string,
+  recurrence: ContractDate['recurrence'],
+  now: Date = new Date(),
+  completedThrough: string | null = null
+): Date | null {
+  const missed = lastMissedOccurrence(dueDate, recurrence, now, completedThrough);
+  if (missed) return missed;
+  const [next] = nextOccurrences(dueDate, recurrence, now, HORIZON_MONTHS, completedThrough);
+  return next ?? null;
 }
 
 const TITLES: Record<DateType, string> = {
@@ -147,7 +204,13 @@ export function planReminders(item: PlannableDate, now: Date = new Date()): Plan
   // Occurrences still ahead of us; a window whose fire date already passed is
   // skipped below, so an occurrence 10 days out gets its 7d reminder but not
   // its 30d one.
-  for (const occ of nextOccurrences(date.due_date, date.recurrence, now)) {
+  for (const occ of nextOccurrences(
+    date.due_date,
+    date.recurrence,
+    now,
+    undefined,
+    date.last_completed_occurrence
+  )) {
     for (const days of [...date.reminder_windows].sort((a, b) => b - a)) {
       if (days <= 0 || days > 365) continue;
       const fireDate = set(subDays(occ, days), {

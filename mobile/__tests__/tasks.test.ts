@@ -13,6 +13,7 @@ const row = (partial: Partial<TaskSource>, title = 'Apartment lease'): TaskSourc
   due_date: iso(addDays(now, -3)),
   recurrence: 'none',
   reminder_windows: [30, 7],
+  last_completed_occurrence: null,
   created_at: '2026-01-01T00:00:00Z',
   contracts: { title },
   ...partial,
@@ -36,9 +37,10 @@ describe('overdueTasks', () => {
   });
 
   it('a monthly row overdue by a year is ONE task, not twelve', () => {
-    // The headline rule. An unpaid rent is one thing to deal with, and since
-    // contract_dates has no completion column a longer list could never be
-    // cleared.
+    // The headline rule. An unpaid rent is one thing to deal with, and a
+    // twelve-row backlog is one nobody reads. Marking it done advances the row
+    // by a step (see the completion tests below), so the arrears drain one at
+    // a time rather than arriving all at once.
     const out = overdueTasks(
       [row({ due_date: iso(addMonths(now, -12)), recurrence: 'monthly' })],
       now
@@ -46,6 +48,69 @@ describe('overdueTasks', () => {
     expect(out).toHaveLength(1);
     expect(out[0].date).toBe(iso(addMonths(now, -1)));
     expect(out[0].recurring).toBe(true);
+  });
+
+  // The reason last_completed_occurrence exists. Everything above derives from
+  // the dates alone; these pin the one piece of user state that can clear a row.
+  describe('last_completed_occurrence', () => {
+    it('clears a one-off date once it is marked handled', () => {
+      const due = iso(addDays(now, -3));
+      expect(overdueTasks([row({ due_date: due })], now)).toHaveLength(1);
+      expect(
+        overdueTasks([row({ due_date: due, last_completed_occurrence: due })], now)
+      ).toEqual([]);
+    });
+
+    it('a recurring row can finally leave the list, which is the whole point', () => {
+      // Before this column a monthly rent was permanently past due: there is
+      // always an occurrence behind today, so the badge never cleared.
+      const base = { due_date: iso(addMonths(now, -12)), recurrence: 'monthly' as const };
+      const missed = iso(addMonths(now, -1));
+      expect(
+        overdueTasks([row({ ...base, last_completed_occurrence: missed })], now)
+      ).toEqual([]);
+    });
+
+    it('clearing one month surfaces the month before it, not nothing', () => {
+      // Handled through two months back, so last month is still outstanding.
+      const out = overdueTasks(
+        [
+          row({
+            due_date: iso(addMonths(now, -12)),
+            recurrence: 'monthly',
+            last_completed_occurrence: iso(addMonths(now, -2)),
+          }),
+        ],
+        now
+      );
+      expect(out).toHaveLength(1);
+      expect(out[0].date).toBe(iso(addMonths(now, -1)));
+    });
+
+    it('a completion in the future hides the row entirely', () => {
+      // Paying ahead is allowed; nothing is outstanding until the series
+      // passes the completed day.
+      expect(
+        overdueTasks(
+          [
+            row({
+              due_date: iso(addMonths(now, -12)),
+              recurrence: 'monthly',
+              last_completed_occurrence: iso(addMonths(now, 2)),
+            }),
+          ],
+          now
+        )
+      ).toEqual([]);
+    });
+
+    it('a malformed completion is ignored rather than hiding the task', () => {
+      const out = overdueTasks(
+        [row({ due_date: iso(addDays(now, -3)), last_completed_occurrence: 'not-a-date' })],
+        now
+      );
+      expect(out).toHaveLength(1);
+    });
   });
 
   it('drops a miss older than the lookback, at the exact boundary', () => {

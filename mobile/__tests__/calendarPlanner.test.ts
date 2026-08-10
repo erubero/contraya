@@ -12,7 +12,8 @@ const iso = (d: Date) => format(d, 'yyyy-MM-dd');
 const cd = (partial: Partial<ContractDate>): ContractDate => ({
   id: 'date-1', contract_id: 'contract-1', label: 'Rent payment',
   date_type: 'payment', due_date: iso(addDays(now, 45)), recurrence: 'none',
-  reminder_windows: [7, 1], created_at: '2026-01-01T00:00:00Z',
+  reminder_windows: [7, 1], last_completed_occurrence: null,
+  created_at: '2026-01-01T00:00:00Z',
   ...partial,
 });
 

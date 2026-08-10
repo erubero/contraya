@@ -70,24 +70,42 @@ export default function Dashboard() {
   const occurrences = useMemo(() => {
     const now = new Date();
     return allDates.flatMap((d) =>
-      nextOccurrences(d.due_date, d.recurrence, now).map((occ) => ({
-        date: format(occ, 'yyyy-MM-dd'),
-        label: d.label,
-        contractId: d.contract_id,
-        contractTitle: d.contracts.title,
-      }))
+      nextOccurrences(d.due_date, d.recurrence, now, undefined, d.last_completed_occurrence).map(
+        (occ) => ({
+          date: format(occ, 'yyyy-MM-dd'),
+          label: d.label,
+          dateId: d.id,
+          contractId: d.contract_id,
+          contractTitle: d.contracts.title,
+        })
+      )
     );
   }, [allDates]);
 
-  // The next three things on the calendar, soonest first.
-  const comingUp = useMemo(
-    () =>
-      [...occurrences]
-        .filter((o) => daysUntil(o.date) >= 0)
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(0, 3),
-    [occurrences]
-  );
+  // The next three things on the calendar, soonest first, at most ONE per date
+  // row. A monthly rent otherwise fills every slot with the same words: the
+  // list took the soonest three occurrences, and a recurring row contributes
+  // one per month. What a person wants here is their next three commitments,
+  // not their next three payments of the same commitment.
+  //
+  // Deduped HERE and deliberately not in `occurrences` above: that array also
+  // feeds StatsOverview, whose "Next 30 days" tile is a count of occurrences,
+  // so thinning it would quietly make that number wrong.
+  const comingUp = useMemo(() => {
+    const sorted = [...occurrences]
+      .filter((o) => daysUntil(o.date) >= 0)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Sorted first, so the one kept per row is always its soonest.
+    const seen = new Set<string>();
+    const firstPerRow = [];
+    for (const o of sorted) {
+      if (seen.has(o.dateId)) continue;
+      seen.add(o.dateId);
+      firstPerRow.push(o);
+    }
+    return firstPerRow.slice(0, 3);
+  }, [occurrences]);
 
   // What is waiting on the user: dates already gone by, plus documents emailed
   // in and never added. Drives both the Past due tile and the avatar badge, so

@@ -4,11 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getBundle, deleteContract, updateContract, setObligationCompleted,
+  getBundle, deleteContract, updateContract, setObligationCompleted, setDateCompleted,
 } from '@/data/repo';
 import { CONTRACT_TYPE_LABELS, DATE_TYPE_LABELS, SEVERITY_LABELS } from '@/data/types';
 import { severityColor } from '@/theme/severity';
 import { refreshDeviceSchedules } from '@/lib/deviceSync';
+import { currentOccurrence, isoDay } from '@/lib/reminderPlanner';
 import { useAuth } from '@/lib/AuthContext';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { Linking } from 'react-native';
@@ -57,6 +58,21 @@ export default function ContractDetail() {
       await updateContract(bundle!.contract.id, { status });
       // Ended contracts drop out of the reminder query, which is also what
       // removes their events from the device calendar; reschedule now.
+      await refreshSchedules();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract', id] });
+      invalidateLists();
+    },
+    onError: () => Alert.alert("Couldn't update", 'Please try again.'),
+  });
+
+  // Unlike toggleObligation below, this reschedules. A date the user has
+  // handled must stop firing its reminders, and the calendar mirror has to
+  // drop any event for an occurrence that is no longer outstanding.
+  const markDone = useMutation({
+    mutationFn: async ({ dateId, occurrence }: { dateId: string; occurrence: string | null }) => {
+      await setDateCompleted(dateId, occurrence);
       await refreshSchedules();
     },
     onSuccess: () => {
@@ -226,32 +242,74 @@ export default function ContractDetail() {
             Dates
           </Text>
           <View style={{ gap: 10 }}>
-            {dates.map((d) => (
-              <View
-                key={d.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  backgroundColor: theme.card,
-                  borderColor: theme.border,
-                  borderWidth: 1,
-                  borderRadius: RADIUS,
-                  padding: 14,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }}>{d.label}</Text>
-                  <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }}>
-                    {format(parseISO(d.due_date), 'MMMM d, yyyy')}
-                    {' · '}
-                    {DATE_TYPE_LABELS[d.date_type]}
-                    {d.recurrence !== 'none' ? ` · repeats ${d.recurrence}` : ''}
-                  </Text>
+            {dates.map((d) => {
+              // The occurrence this row is currently asking about, which for a
+              // recurring row is rarely due_date: due_date is the FIRST
+              // occurrence and may be years back. Showing it would have the
+              // screen name a date the app is not actually tracking.
+              const current = currentOccurrence(
+                d.due_date,
+                d.recurrence,
+                new Date(),
+                d.last_completed_occurrence
+              );
+              const shown = current ?? parseISO(d.due_date);
+              return (
+                <View
+                  key={d.id}
+                  style={{
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                    borderWidth: 1,
+                    borderRadius: RADIUS,
+                    padding: 14,
+                    gap: 8,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: theme.foreground, fontSize: 15, fontWeight: '600' }}>{d.label}</Text>
+                      <Text style={{ color: theme.mutedForeground, fontSize: 13, marginTop: 2 }}>
+                        {format(shown, 'MMMM d, yyyy')}
+                        {' · '}
+                        {DATE_TYPE_LABELS[d.date_type]}
+                        {d.recurrence !== 'none' ? ` · repeats ${d.recurrence}` : ''}
+                      </Text>
+                    </View>
+                    {current ? <StatusBadge date={isoDay(current)} /> : null}
+                    {current ? (
+                      <Pressable
+                        onPress={() => markDone.mutate({ dateId: d.id, occurrence: isoDay(current) })}
+                        disabled={markDone.isPending}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Mark ${d.label} done`}
+                        style={{ opacity: markDone.isPending ? 0.4 : 1 }}
+                      >
+                        <Ionicons name="checkmark-circle-outline" size={26} color={theme.statusActive} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  {d.last_completed_occurrence && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="checkmark-circle" size={14} color={theme.statusActive} />
+                      <Text style={{ color: theme.mutedForeground, fontSize: 12, flex: 1 }}>
+                        Handled through {format(parseISO(d.last_completed_occurrence), 'MMMM d, yyyy')}
+                      </Text>
+                      <Pressable
+                        onPress={() => markDone.mutate({ dateId: d.id, occurrence: null })}
+                        disabled={markDone.isPending}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Undo done for ${d.label}`}
+                      >
+                        <Text style={{ color: theme.brandText, fontSize: 12, fontWeight: '600' }}>Undo</Text>
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
-                <StatusBadge date={d.due_date} />
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       )}

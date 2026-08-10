@@ -67,27 +67,32 @@ function seed(): { contracts: Contract[]; dates: ContractDate[]; obligations: Co
     {
       id: 'demo-date-1', contract_id: lease.id, label: 'Rent payment',
       date_type: 'payment', due_date: iso(startOfMonth(addMonths(now, 1))),
-      recurrence: 'monthly', reminder_windows: [7, 1], created_at: ts(3),
+      recurrence: 'monthly', reminder_windows: [7, 1],
+      last_completed_occurrence: null, created_at: ts(3),
     },
     {
       id: 'demo-date-2', contract_id: lease.id, label: 'Renewal notice deadline',
       date_type: 'termination_notice', due_date: iso(addDays(addMonths(now, 9), -60)),
-      recurrence: 'none', reminder_windows: [60, 30, 7], created_at: ts(4),
+      recurrence: 'none', reminder_windows: [60, 30, 7],
+      last_completed_occurrence: null, created_at: ts(4),
     },
     {
       id: 'demo-date-3', contract_id: lease.id, label: 'Lease ends',
       date_type: 'expiry', due_date: lease.end_date as string,
-      recurrence: 'none', reminder_windows: [30, 7], created_at: ts(5),
+      recurrence: 'none', reminder_windows: [30, 7],
+      last_completed_occurrence: null, created_at: ts(5),
     },
     {
       id: 'demo-date-4', contract_id: wedding.id, label: 'Final balance due',
       date_type: 'payment', due_date: iso(addDays(now, 45)),
-      recurrence: 'none', reminder_windows: [7, 1], created_at: ts(6),
+      recurrence: 'none', reminder_windows: [7, 1],
+      last_completed_occurrence: null, created_at: ts(6),
     },
     {
       id: 'demo-date-5', contract_id: wedding.id, label: 'Confirm final guest count',
       date_type: 'custom', due_date: iso(addDays(now, 61)),
-      recurrence: 'none', reminder_windows: [7], created_at: ts(7),
+      recurrence: 'none', reminder_windows: [7],
+      last_completed_occurrence: null, created_at: ts(7),
     },
   ];
 
@@ -199,7 +204,8 @@ export const demo = {
     db.dates = [
       ...db.dates,
       ...dates.map((d, i) => ({
-        ...d, id: `demo-date-${now}-${i}`, contract_id: row.id, created_at: new Date().toISOString(),
+        ...d, id: `demo-date-${now}-${i}`, contract_id: row.id,
+        last_completed_occurrence: null, created_at: new Date().toISOString(),
       })),
     ];
     db.obligations = [
@@ -235,6 +241,14 @@ export const demo = {
     const o = db.obligations.find((x) => x.id === id);
     if (!o) throw new Error('Not found');
     return o;
+  },
+  async setDateCompleted(id: string, occurrence: string | null): Promise<ContractDate> {
+    db.dates = db.dates.map((d) =>
+      d.id === id ? { ...d, last_completed_occurrence: occurrence } : d
+    );
+    const d = db.dates.find((x) => x.id === id);
+    if (!d) throw new Error('Not found');
+    return d;
   },
   async listAllDates(): Promise<DateWithContract[]> {
     const out: DateWithContract[] = [];

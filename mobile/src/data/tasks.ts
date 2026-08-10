@@ -1,6 +1,9 @@
 // What is past due, as a list the Tasks screen can render and the dashboard
-// avatar can count. Pure: no Expo, no Supabase, no React. Everything here is
-// derived at read time, because contract_dates carries no per-row user state.
+// avatar can count. Pure: no Expo, no Supabase, no React. Derived at read time
+// from the row's dates plus its one piece of user state,
+// last_completed_occurrence, which is what lets a recurring row leave this
+// list at all: a monthly rent always has an occurrence behind it, so before
+// that column existed such a row was permanently, unclearably past due.
 import { differenceInCalendarDays, startOfDay } from 'date-fns';
 
 import { ContractDate, DATE_TYPE_LABELS } from './types';
@@ -51,7 +54,12 @@ export function overdueTasks(
   const out: Task[] = [];
 
   for (const row of dates) {
-    const missed = lastMissedOccurrence(row.due_date, row.recurrence, today);
+    const missed = lastMissedOccurrence(
+      row.due_date,
+      row.recurrence,
+      today,
+      row.last_completed_occurrence
+    );
     if (!missed) continue;
 
     const daysOverdue = differenceInCalendarDays(today, missed);

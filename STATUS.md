@@ -1,6 +1,65 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-08-09, submission-readiness audit. Read this first.
+Updated: 2026-08-10. Read this first.
+
+## 2026-08-10 — it is on TestFlight, and dates can now be marked done
+
+**Corrections to what this file implied.** Both were inferences from its own
+silence, and both were wrong:
+
+| Claim | Actual state |
+|---|---|
+| RevenueCat paywall "not published" | **Published and working.** The owner completed a real sandbox purchase in TestFlight. |
+| "the first real analysis has never been run" | **Run, and judged good** by the owner, on a real PDF. That was the standing go/no-go. |
+| Nothing here implied a build had shipped | **Builds are in ASC, currently at 5.** Five archives sit in `~/Library/Developer/Xcode/Archives` (7-30 to 8-10), every one stamped `1.0.0 (1)`, because Xcode's "Manage Version and Build Number" increments at **Distribute**, not at archive, and never writes back to the repo. `app.config.ts` is now `'6'` and `ios/Contraya/Info.plist` `CFBundleVersion` is `6`. Do not infer "not uploaded" from this file; check the Archives folder or ask. |
+
+**Shipped today, all three into 1.0 at the owner's call:**
+
+1. **A date occurrence can be marked done.** New nullable column
+   `contract_dates.last_completed_occurrence` (migration
+   `20260810000000_date_completion.sql`), meaning "every occurrence on or
+   before this day is handled". This closes a defect rather than adding a
+   nicety: a monthly rent row ALWAYS has an occurrence behind today, so it was
+   permanently past due and the task-bell badge could never be cleared. The
+   comments in `tasks.ts` and `reminderPlanner.ts` that named this as a known
+   limitation are rewritten.
+   - The math **moves the floor** inside `nextOccurrences` rather than
+     filtering its output. Deliberate and load-bearing: a filter would
+     reintroduce the `MAX_OCCURRENCES` starvation trap that file warns about at
+     length. A floor only moves forward, so "never yields a past date" stays
+     true by construction. `resumeAfter()` is shared by `nextOccurrences` and
+     `lastMissedOccurrence` so the past and future views cannot disagree.
+   - `currentOccurrence()` is new: the miss if there is one, else the next due.
+     It is what the Done control acts on, and why that control needs no notion
+     of which occurrence the user meant.
+   - Done sits on the Tasks rows and in the contract detail Dates section. Undo
+     lives on contract detail ("Handled through <date>"), because `Toast` is
+     `pointerEvents: none` and cannot carry an action.
+   - **`send-date-reminders` was updated too.** It re-implements occurrence math
+     independently in UTC behind an explicit column list, so without that edit
+     the server would have kept pushing about rent already ticked off in the
+     app. Sharpest edge in the feature.
+2. **Dashboard "Coming up" shows one row per commitment.** It took the soonest
+   three occurrences across all rows, so a monthly rent filled every slot.
+   Deduped in `comingUp` only: the `occurrences` array it derives from also
+   feeds `StatsOverview`, whose "Next 30 days" tile is a count and would have
+   gone quietly wrong. The Calendar agenda is untouched on purpose.
+3. Build number corrected as above.
+
+Gates: typecheck clean, **317 tests / 29 suites** green (was 302), `deno check`
+clean on all five functions, `db push --dry-run` shows exactly the one new
+migration and no drift. Lint is not evidence here — see the 2026-08-09 note
+that `eslint.config.js` matches only the marketing site. **Not yet done:**
+`supabase db push` (owner's job), and the app has not been rebuilt or exercised
+on a device.
+
+**Also found: there is no sample contract PDF in this repo**, yet the App Review
+notes in `mobile/STORE_LISTING.md` §6 tell the reviewer one "is attached to this
+submission". Contraya does nothing without a document, so that is a 2.1 waiting
+to happen. One was written to
+`~/Desktop/Contraya-Screenshots/Sample-Lease-Agreement.pdf` (4 pages, fictional)
+and must be attached at submission. Four store screenshots were rendered to the
+same folder for the owner to frame in AppScreens.
 
 ## 2026-08-09 — submission-readiness audit, and the LEAN 1.0 decision
 

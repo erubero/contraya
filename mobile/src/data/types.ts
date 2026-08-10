@@ -92,6 +92,10 @@ export type ContractDate = {
   due_date: string;
   recurrence: Recurrence;
   reminder_windows: number[];
+  // Every occurrence on or before this day has been handled; null means none
+  // have. The only per-row user state this table carries, and what lets a
+  // recurring row ever stop being past due.
+  last_completed_occurrence: string | null;
   created_at: string;
 };
 
@@ -119,7 +123,13 @@ export type ContractRiskFlag = {
 
 // Fields we send on insert (server fills id/user_id/created_at).
 export type ContractInsert = Omit<Contract, 'id' | 'user_id' | 'created_at'>;
-export type ContractDateInsert = Omit<ContractDate, 'id' | 'user_id' | 'created_at' | 'contract_id'>;
+// last_completed_occurrence is omitted deliberately: create_contract_bundle
+// names its columns explicitly and does not accept it, and a contract being
+// saved for the first time has nothing completed.
+export type ContractDateInsert = Omit<
+  ContractDate,
+  'id' | 'user_id' | 'created_at' | 'contract_id' | 'last_completed_occurrence'
+>;
 export type ContractObligationInsert = Omit<
   ContractObligation,
   'id' | 'user_id' | 'created_at' | 'contract_id' | 'completed_at'

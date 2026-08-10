@@ -40,13 +40,38 @@ type DateRow = {
   due_date: string;
   recurrence: 'none' | 'monthly' | 'yearly';
   reminder_windows: number[];
+  last_completed_occurrence: string | null;
   contracts: { title: string; status: string };
 };
+
+// The day after `completedThrough`, or null. Mirrors resumeAfter() in the
+// on-device planner: everything on or before that day is handled, so the
+// series resumes the next day. UTC to match the rest of this file.
+function resumeAfter(completedThrough: string | null): string | null {
+  if (!completedThrough) return null;
+  const done = new Date(`${completedThrough}T00:00:00Z`);
+  if (Number.isNaN(done.getTime())) return null;
+  done.setUTCDate(done.getUTCDate() + 1);
+  return done.toISOString().slice(0, 10);
+}
 
 // Next occurrence of a date row on or after `fromStr` (both yyyy-MM-dd).
 // Mirrors the on-device planner's month-end clamping (Jan 31 + 1mo = Feb 28);
 // the two must agree or users get double or missing reminders.
-function nextOccurrence(dueDate: string, recurrence: DateRow['recurrence'], fromStr: string): string | null {
+//
+// `completedThrough` moves the floor forward exactly as nextOccurrences does on
+// the device. Without it this function would keep pushing and emailing about a
+// rent the user already ticked off in the app: the two occurrence engines are
+// entirely separate implementations, so a filter added on one side reaches the
+// other only by being written here too.
+function nextOccurrence(
+  dueDate: string,
+  recurrence: DateRow['recurrence'],
+  todayStr: string,
+  completedThrough: string | null = null,
+): string | null {
+  const resume = resumeAfter(completedThrough);
+  const fromStr = resume && resume > todayStr ? resume : todayStr;
   if (recurrence === 'none') {
     return dueDate >= fromStr ? dueDate : null;
   }
@@ -156,7 +181,17 @@ Deno.serve(async (req) => {
 
     // Non-recurring dates can be bounded in SQL; recurring rows must all be
     // fetched because their next occurrence isn't in the due_date column.
-    const select = 'id, contract_id, user_id, label, date_type, due_date, recurrence, reminder_windows, contracts!inner(title, status)';
+    //
+    // The one-shot branch deliberately does NOT filter on
+    // last_completed_occurrence: a handled one-off still satisfies the due_date
+    // bounds, so it is fetched and then dropped below when nextOccurrence
+    // returns null for it. Cheaper to reject a handful of rows in TS than to
+    // express the comparison as a PostgREST filter.
+    //
+    // This column list is explicit, so anything added to contract_dates is
+    // invisible here until it is named. That is how a completed date would
+    // silently keep getting pushed.
+    const select = 'id, contract_id, user_id, label, date_type, due_date, recurrence, reminder_windows, last_completed_occurrence, contracts!inner(title, status)';
     const [oneShot, recurring] = await Promise.all([
       supabase.from('contract_dates').select(select)
         .eq('contracts.status', 'active')
@@ -175,7 +210,12 @@ Deno.serve(async (req) => {
     type Due = { row: DateRow; occurrence: string; window: number; daysLeft: number };
     const due: Due[] = [];
     for (const row of rows) {
-      const occurrence = nextOccurrence(row.due_date, row.recurrence, todayStr);
+      const occurrence = nextOccurrence(
+        row.due_date,
+        row.recurrence,
+        todayStr,
+        row.last_completed_occurrence,
+      );
       if (!occurrence) continue;
       const daysLeft = Math.round(
         (new Date(`${occurrence}T00:00:00Z`).getTime() - new Date(`${todayStr}T00:00:00Z`).getTime()) / DAY_MS,

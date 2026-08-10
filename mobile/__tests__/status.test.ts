@@ -8,6 +8,7 @@ const iso = (d: Date) => format(d, 'yyyy-MM-dd');
 const cd = (due: string, partial: Partial<ContractDate> = {}): ContractDate => ({
   id: `d-${due}`, contract_id: 'c1', label: 'Date', date_type: 'custom',
   due_date: due, recurrence: 'none', reminder_windows: [7],
+  last_completed_occurrence: null,
   created_at: '2026-01-01T00:00:00Z',
   ...partial,
 });

@@ -108,6 +108,29 @@ export async function setObligationCompleted(
   return data as ContractObligation;
 }
 
+// Mark a date row handled up to and including `occurrence`, or clear it with
+// null. The value is a yyyy-MM-dd day, not a timestamp: it names an occurrence
+// of the series, and the whole point is that it can be compared to one.
+//
+// The patch carries ONLY this column on purpose. contract_dates is the one
+// child table with a table-wide update grant, and the freeze_date_parent
+// trigger raises on any update that touches contract_id or user_id; supabase-js
+// sends exactly the keys given, so a wider patch spread from a row object would
+// throw.
+export async function setDateCompleted(
+  id: string,
+  occurrence: string | null
+): Promise<ContractDate> {
+  const { data, error } = await supabase
+    .from('contract_dates')
+    .update({ last_completed_occurrence: occurrence })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ContractDate;
+}
+
 // Every date row across the user's active contracts, with the contract title
 // the calendar and the reminder planner both need.
 export type DateWithContract = ContractDate & { contracts: { title: string; status: string } };

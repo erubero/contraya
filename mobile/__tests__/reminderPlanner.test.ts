@@ -2,7 +2,7 @@ import {
   addDays, addMonths, differenceInCalendarMonths, differenceInCalendarYears, format,
 } from 'date-fns';
 import {
-  nextOccurrences, lastMissedOccurrence, planReminders, planAll,
+  nextOccurrences, lastMissedOccurrence, currentOccurrence, planReminders, planAll,
   contractIdFromNotificationId, PlannableDate,
 } from '@/lib/reminderPlanner';
 import { ContractDate } from '@/data/types';
@@ -13,7 +13,8 @@ const iso = (d: Date) => format(d, 'yyyy-MM-dd');
 const cd = (partial: Partial<ContractDate>): ContractDate => ({
   id: 'date-1', contract_id: 'contract-1', label: 'Rent payment',
   date_type: 'payment', due_date: iso(addDays(now, 45)), recurrence: 'none',
-  reminder_windows: [30, 7], created_at: '2026-01-01T00:00:00Z',
+  reminder_windows: [30, 7], last_completed_occurrence: null,
+  created_at: '2026-01-01T00:00:00Z',
   ...partial,
 });
 
@@ -174,6 +175,58 @@ describe('the scheduler never looks backwards', () => {
       }
     }
   });
+
+  it('a completion in the past cannot drag the floor backwards', () => {
+    // completedThrough moves the floor, and the whole safety argument is that
+    // a floor only ever moves FORWARD. A stale completion (the normal case,
+    // since people tick off dates that have already passed) must leave the
+    // series starting at today, not reopen the months behind it.
+    const today = new Date('2026-07-10T00:00:00').getTime();
+    for (const due of OLD_DATES) {
+      for (const recurrence of RECURRENCES) {
+        const occs = nextOccurrences(due, recurrence, now, undefined, '2020-03-31');
+        for (const occ of occs) {
+          expect(occ.getTime()).toBeGreaterThanOrEqual(today);
+        }
+        // And it must not have cost the row its schedule either.
+        expect(occs).toEqual(nextOccurrences(due, recurrence, now));
+      }
+    }
+  });
+
+  it('an ancient monthly row with an old completion still plans a full horizon', () => {
+    // The starvation regression again, this time via the new parameter: if
+    // completion were a post-filter instead of a floor, the cap would fill
+    // with skipped occurrences and this would collapse to zero.
+    const out = planReminders(
+      item({
+        due_date: '2019-01-15',
+        recurrence: 'monthly',
+        reminder_windows: [7],
+        last_completed_occurrence: '2019-06-15',
+      }),
+      now
+    );
+    expect(out.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('plans nothing for an occurrence already marked handled', () => {
+    const due = iso(addDays(now, 10));
+    expect(
+      planReminders(item({ due_date: due, recurrence: 'none', reminder_windows: [7] }), now)
+    ).toHaveLength(1);
+    expect(
+      planReminders(
+        item({
+          due_date: due,
+          recurrence: 'none',
+          reminder_windows: [7],
+          last_completed_occurrence: due,
+        }),
+        now
+      )
+    ).toEqual([]);
+  });
 });
 
 describe('lastMissedOccurrence', () => {
@@ -221,5 +274,53 @@ describe('lastMissedOccurrence', () => {
     const nextYear = nextOccurrences('2020-02-29', 'yearly', now)[0];
     const missedYear = lastMissedOccurrence('2020-02-29', 'yearly', now)!;
     expect(differenceInCalendarYears(nextYear, missedYear)).toBe(1);
+  });
+
+  it('still sits one step behind once a completion moves the floor', () => {
+    // The same drift guard with the new parameter in play. Both functions read
+    // completedThrough through resumeAfter, so a completion anywhere in the
+    // series must shift the past and future views together. If only one of
+    // them honoured it, the Tasks screen and the scheduler would disagree
+    // about which occurrence is outstanding.
+    for (const completed of ['2026-05-31', '2026-06-30', '2026-08-31']) {
+      const next = nextOccurrences('2026-01-31', 'monthly', now, undefined, completed)[0];
+      const missed = lastMissedOccurrence('2026-01-31', 'monthly', now, completed);
+      if (!missed) continue;
+      expect(differenceInCalendarMonths(next, missed)).toBe(1);
+    }
+  });
+
+  it('a handled miss is not a miss', () => {
+    const missed = lastMissedOccurrence('2026-01-31', 'monthly', now)!;
+    expect(lastMissedOccurrence('2026-01-31', 'monthly', now, iso(missed))).toBeNull();
+  });
+
+  it('ignores a malformed completion rather than hiding the miss', () => {
+    expect(lastMissedOccurrence(iso(addDays(now, -1)), 'none', now, 'nonsense')).not.toBeNull();
+  });
+});
+
+describe('currentOccurrence', () => {
+  it('is the miss when there is one', () => {
+    const due = iso(addDays(now, -3));
+    expect(iso(currentOccurrence(due, 'none', now)!)).toBe(due);
+  });
+
+  it('is the next one due when nothing has been missed', () => {
+    const due = iso(addDays(now, 10));
+    expect(iso(currentOccurrence(due, 'none', now)!)).toBe(due);
+  });
+
+  it('advances a step once the current one is marked handled', () => {
+    // What the Done control relies on: tick the row and it starts asking
+    // about the following occurrence rather than the same one again.
+    const first = currentOccurrence('2026-01-31', 'monthly', now)!;
+    const second = currentOccurrence('2026-01-31', 'monthly', now, iso(first))!;
+    expect(differenceInCalendarMonths(second, first)).toBe(1);
+  });
+
+  it('is null once a one-off date is handled', () => {
+    const due = iso(addDays(now, -3));
+    expect(currentOccurrence(due, 'none', now, due)).toBeNull();
   });
 });
