@@ -14,7 +14,7 @@ expected_tables(name) as (
   values ('contracts'), ('contract_dates'), ('contract_obligations'),
          ('contract_risk_flags'), ('contract_documents'), ('push_tokens'),
          ('contract_date_reminders'), ('analysis_usage'), ('chat_usage'),
-         ('email_ingest_addresses'), ('inbox_items')
+         ('email_ingest_addresses'), ('inbox_items'), ('chat_messages')
 ),
 table_check as (
   select
@@ -47,7 +47,7 @@ expected_fns(name) as (
   values ('try_consume_analysis'), ('refund_analysis'), ('try_consume_chat'),
          ('refund_chat'), ('get_or_create_email_token'), ('register_push_token'),
          ('enforce_contract_cap'), ('enforce_child_cap'), ('enforce_inbox_cap'),
-         ('freeze_date_parent')
+         ('enforce_chat_messages_cap'), ('freeze_date_parent')
 ),
 fn_check as (
   select
@@ -78,7 +78,7 @@ rpc_grant_check as (
 expected_triggers(name) as (
   values ('contracts_cap'), ('contract_dates_cap'), ('contract_obligations_cap'),
          ('contract_risk_flags_cap'), ('contract_documents_cap'),
-         ('inbox_items_cap'), ('contract_dates_freeze_parent')
+         ('inbox_items_cap'), ('chat_messages_cap'), ('contract_dates_freeze_parent')
 ),
 trigger_check as (
   select

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from './AuthContext';
 import { isConfigured } from '@/api/supabase';
@@ -21,12 +21,15 @@ export function PurchasesProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [offeringReady, setOfferingReady] = useState(false);
 
-  const refresh = async () => {
+  // Stable identity on purpose: consumers put this in effect dep arrays (the
+  // chat paywall gate does), and an unmemoized closure re-armed those effects
+  // on every provider render.
+  const refresh = useCallback(async () => {
     const [pro, offering] = await Promise.all([fetchProStatus(), hasSellableOffering()]);
     setIsPro(pro);
     setOfferingReady(offering);
     setReady(true);
-  };
+  }, []);
 
   // Configure + bind to the user on sign-in, then resolve status. In demo mode
   // or signed out, mark ready without gating so nothing is blocked.
@@ -56,11 +59,14 @@ export function PurchasesProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [status]);
 
-  return (
-    <PurchasesContext.Provider value={{ isPro, ready, offeringReady, refresh }}>
-      {children}
-    </PurchasesContext.Provider>
+  // Memoized so a provider render with unchanged state does not re-render
+  // every consumer (and re-run their effects) via a fresh object literal.
+  const value = useMemo(
+    () => ({ isPro, ready, offeringReady, refresh }),
+    [isPro, ready, offeringReady, refresh]
   );
+
+  return <PurchasesContext.Provider value={value}>{children}</PurchasesContext.Provider>;
 }
 
 export function usePurchases(): PurchasesValue {

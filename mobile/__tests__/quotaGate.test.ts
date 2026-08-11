@@ -52,16 +52,24 @@ describe('analysisGate', () => {
 });
 
 describe('chat gates', () => {
+  // chatOpenGate also requires `ready`: the first entitlement read must have
+  // completed before a paywall decision is allowed to exist at all.
   it('paywalls any non-premium user on open', () => {
-    expect(chatOpenGate(free)).toBe('paywall');
+    expect(chatOpenGate({ ...free, ready: true })).toBe('paywall');
   });
 
   it('fails open on chat when no offering is sellable', () => {
-    expect(chatOpenGate({ isPro: false, offeringReady: false })).toBe('allow');
+    expect(chatOpenGate({ isPro: false, offeringReady: false, ready: true })).toBe('allow');
   });
 
   it('lets a premium user in', () => {
-    expect(chatOpenGate(pro)).toBe('allow');
+    expect(chatOpenGate({ ...pro, ready: true })).toBe('allow');
+  });
+
+  it('never paywalls before the entitlement has resolved', () => {
+    // Cold start: isPro is useState(false), which is a default rather than an
+    // answer. A subscribed user navigating fast used to hit the paywall here.
+    expect(chatOpenGate({ isPro: false, offeringReady: true, ready: false })).toBe('allow');
   });
 
   it('blocks a premium user at the monthly question quota', () => {

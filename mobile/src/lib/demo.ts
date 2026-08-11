@@ -9,7 +9,7 @@ import { ContractDocument } from '@/data/documents';
 import { ContractAnalysis } from '@/data/analysis';
 import { InboxItem, ingestAddress } from '@/data/inbox';
 import { EMAIL_IN_ENABLED } from '@/lib/appMeta';
-import { ChatTurn } from '@/data/chat';
+import { ChatMessage, ChatTurn } from '@/data/chat';
 import { AnalysisCounts } from '@/api/usage';
 import { DateWithContract, RiskFlagRef } from '@/api/contracts';
 
@@ -162,6 +162,10 @@ let db = seed();
 let inbox: InboxItem[] = seedInbox();
 const files: Record<string, string> = {};
 let documents: ContractDocument[] = [];
+// Conversations persist for the session, mirroring the server table, so
+// leaving and reopening a chat behaves the same in demo mode as live.
+let chatMessages: ChatMessage[] = [];
+let chatSeq = 0;
 let profile: { displayName: string | null; avatarUri: string | null } = {
   displayName: null,
   avatarUri: null,
@@ -179,6 +183,8 @@ export const demo = {
     db = seed();
     inbox = seedInbox();
     documents = [];
+    chatMessages = [];
+    chatSeq = 0;
     profile = { displayName: null, avatarUri: null };
   },
   async list(): Promise<Contract[]> {
@@ -350,6 +356,25 @@ export const demo = {
       }
     }
     return 'The contract does not answer that directly. The closest thing it covers is described in the summary on the contract screen.';
+  },
+  async listChatMessages(contractId: string): Promise<ChatMessage[]> {
+    return chatMessages.filter((m) => m.contract_id === contractId);
+  },
+  async saveChatExchange(contractId: string, question: string, answer: string): Promise<void> {
+    for (const [role, content] of [['user', question], ['assistant', answer]] as const) {
+      chatSeq += 1;
+      chatMessages.push({
+        id: `demo-msg-${chatSeq}`,
+        contract_id: contractId,
+        seq: chatSeq,
+        role,
+        content,
+        created_at: new Date().toISOString(),
+      });
+    }
+  },
+  async clearChatMessages(contractId: string): Promise<void> {
+    chatMessages = chatMessages.filter((m) => m.contract_id !== contractId);
   },
   async ingestAddress(): Promise<string> {
     return ingestAddress('deadbeefdeadbeefdeadbeefdeadbeef');

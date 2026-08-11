@@ -3,12 +3,17 @@ import {
   View, Text, TextInput, Pressable, ScrollView, ActivityIndicator, Alert,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
-import { getContract, askContract, getChatCount } from '@/data/repo';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  getContract, askContract, getChatCount,
+  listChatMessages, saveChatExchange, clearChatMessages,
+} from '@/data/repo';
 import { isConfigured } from '@/api/supabase';
-import { ChatTurn, SUGGESTED_QUESTIONS, MAX_QUESTION_CHARS } from '@/data/chat';
+import {
+  ChatTurn, turnsFromRows, SUGGESTED_QUESTIONS, MAX_QUESTION_CHARS, MAX_HISTORY_TURNS,
+} from '@/data/chat';
 import { usePurchases } from '@/lib/PurchasesContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_CHATS } from '@/lib/limits';
@@ -26,32 +31,57 @@ export default function ContractChat() {
   const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isPro, offeringReady, refresh: refreshPro } = usePurchases();
+  const { isPro, offeringReady, ready, refresh: refreshPro } = usePurchases();
 
+  const queryClient = useQueryClient();
   const { data: contract } = useQuery({ queryKey: ['contract-row', id], queryFn: () => getContract(id) });
 
-  // Session-only transcript; persistence is a roadmap item.
+  // The transcript. Local state stays the working copy (the optimistic append
+  // and rollback in send() need it); chat_messages is the record it restores
+  // from, seeded once per mount below.
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  // This mount's sends only — NEVER seeded from the restored transcript. The
+  // send gate charges monthCount + asked, and the server counter behind
+  // monthCount already includes every restored turn; seeding would double-
+  // count them against the monthly limit.
   const [asked, setAsked] = useState(0);
   const [monthCount, setMonthCount] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
+  const { data: stored } = useQuery({
+    queryKey: ['chat-messages', id],
+    queryFn: () => listChatMessages(id),
+  });
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || !stored) return;
+    seededRef.current = true;
+    // Guarded on emptiness: if the user managed to send before the fetch
+    // resolved, their live transcript wins over the restore.
+    if (stored.length > 0) {
+      setTurns((t) => (t.length === 0 ? turnsFromRows(stored) : t));
+    }
+  }, [stored]);
+
   // Chat is premium-only (fail-open when no offering exists, like every other
-  // gate). Asked once on open; declining returns to the contract.
+  // gate). Asked once on open; declining returns to the contract. The gate
+  // waits for `ready` — before the first entitlement read, isPro is a default,
+  // not an answer — and presentPaywall itself re-checks with RevenueCat, so a
+  // subscribed user with stale local state gets no sheet at all.
   const gated = useRef(false);
   useEffect(() => {
     if (gated.current || !isConfigured) return;
-    if (chatOpenGate({ isPro, offeringReady }) === 'paywall') {
+    if (chatOpenGate({ isPro, offeringReady, ready }) === 'paywall') {
       gated.current = true;
       (async () => {
-        const bought = await presentPaywall();
+        const hasAccess = await presentPaywall();
         await refreshPro();
-        if (!bought) router.back();
+        if (!hasAccess) router.back();
       })();
     }
-  }, [isPro, offeringReady, refreshPro, router]);
+  }, [isPro, offeringReady, ready, refreshPro, router]);
 
   useEffect(() => {
     getChatCount().then(setMonthCount).catch(() => {});
@@ -75,6 +105,12 @@ export default function ContractChat() {
       const answer = await askContract(id, question, history);
       setTurns((t) => [...t, { role: 'assistant', content: answer }]);
       setAsked((n) => n + 1);
+      // Persist only completed exchanges, fire-and-forget: a failed question
+      // rolls back on screen and stores nothing (matching the quota refund),
+      // and a failed save must not disturb a conversation that DID happen.
+      saveChatExchange(id, question, answer)
+        .then(() => queryClient.invalidateQueries({ queryKey: ['chat-messages', id] }))
+        .catch(() => {});
     } catch (e) {
       setTurns((t) => t.slice(0, -1));
       setInput(question);
@@ -91,12 +127,45 @@ export default function ContractChat() {
     return () => clearTimeout(t);
   }, [turns.length, busy]);
 
+  // The old ephemeral behavior gave "start fresh" away for free; now that the
+  // transcript survives, this is the only way to get it.
+  const confirmClear = () =>
+    Alert.alert('Clear this conversation?', 'The messages will be deleted. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          clearChatMessages(id)
+            .then(() => {
+              setTurns([]);
+              queryClient.invalidateQueries({ queryKey: ['chat-messages', id] });
+            })
+            .catch(() => Alert.alert("Couldn't clear", 'Please try again.'));
+        },
+      },
+    ]);
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: theme.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
+      {/* Clear only renders once there is something to clear; an empty chat
+          with a trash can in the header would read as a bug. Same glyph and
+          color as the contract screen's delete. */}
+      <Stack.Screen
+        options={{
+          headerRight: () =>
+            turns.length > 0 ? (
+              <Pressable onPress={confirmClear} accessibilityRole="button" accessibilityLabel="Clear conversation">
+                <Ionicons name="trash-outline" size={22} color={theme.destructive} />
+              </Pressable>
+            ) : null,
+        }}
+      />
+
       {/* Pinned disclaimer: every chat surface carries it, always visible. */}
       <View
         style={{
@@ -230,6 +299,23 @@ export default function ContractChat() {
           </View>
         )}
       </ScrollView>
+
+      {/* Restored transcripts can outgrow what is replayed to the model
+          (boundHistory caps at MAX_HISTORY_TURNS). Saying so once here keeps
+          long-history amnesia reading as design rather than as a bug. */}
+      {turns.length > MAX_HISTORY_TURNS && (
+        <Text
+          style={{
+            color: theme.mutedForeground,
+            fontSize: 12,
+            textAlign: 'center',
+            paddingHorizontal: 16,
+            paddingTop: 6,
+          }}
+        >
+          Contry reads your document and the last few messages.
+        </Text>
+      )}
 
       <View
         style={{

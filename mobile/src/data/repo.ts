@@ -14,7 +14,7 @@ import {
 import { ContractDocument } from './documents';
 import { ContractAnalysis } from './analysis';
 import { InboxItem } from './inbox';
-import { ChatTurn } from './chat';
+import { ChatMessage, ChatTurn } from './chat';
 
 // One entry point the screens use; dispatches to the live Supabase repository
 // or the in-memory demo store depending on whether a backend is configured.
@@ -141,6 +141,20 @@ export function askContract(
 
 export function getChatCount(): Promise<number> {
   return isConfigured ? usage.getChatCount() : demo.chatCount();
+}
+
+export function listChatMessages(contractId: string): Promise<ChatMessage[]> {
+  return isConfigured ? chatApi.listChatMessages(contractId) : demo.listChatMessages(contractId);
+}
+
+export function saveChatExchange(contractId: string, question: string, answer: string): Promise<void> {
+  return isConfigured
+    ? chatApi.saveChatExchange(contractId, question, answer)
+    : demo.saveChatExchange(contractId, question, answer);
+}
+
+export function clearChatMessages(contractId: string): Promise<void> {
+  return isConfigured ? chatApi.clearChatMessages(contractId) : demo.clearChatMessages(contractId);
 }
 
 export function getIngestAddress(): Promise<string> {

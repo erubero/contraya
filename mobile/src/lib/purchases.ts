@@ -93,11 +93,25 @@ export async function hasSellableOffering(): Promise<boolean> {
   }
 }
 
+// Returns whether the user has access, not whether a sheet was shown.
+//
+// presentPaywallIfNeeded, not presentPaywall: RevenueCat re-checks the
+// entitlement itself and skips the sheet when 'premium' is already active.
+// That is the safety net for a stale local isPro — a subscribed user whose
+// cached status lagged used to get the full paywall (and chat would
+// router.back() them when they declined to re-buy). NOT_PRESENTED therefore
+// counts as access: it is RevenueCat saying the entitlement is already there.
 export async function presentPaywall(): Promise<boolean> {
   if (!purchasesConfigured) return false;
   try {
-    const result = await RevenueCatUI.presentPaywall();
-    return result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED;
+    const result = await RevenueCatUI.presentPaywallIfNeeded({
+      requiredEntitlementIdentifier: ENTITLEMENT,
+    });
+    return (
+      result === PAYWALL_RESULT.NOT_PRESENTED ||
+      result === PAYWALL_RESULT.PURCHASED ||
+      result === PAYWALL_RESULT.RESTORED
+    );
   } catch (err) {
     trace('presentPaywall', err);
     return false;

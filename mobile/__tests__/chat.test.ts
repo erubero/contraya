@@ -1,4 +1,7 @@
-import { boundHistory, SUGGESTED_QUESTIONS, MAX_HISTORY_TURNS, MAX_TURN_CHARS, ChatTurn } from '@/data/chat';
+import {
+  boundHistory, turnsFromRows, SUGGESTED_QUESTIONS,
+  MAX_HISTORY_TURNS, MAX_TURN_CHARS, ChatTurn, ChatMessage,
+} from '@/data/chat';
 
 const turn = (role: ChatTurn['role'], content: string): ChatTurn => ({ role, content });
 
@@ -41,5 +44,37 @@ describe('suggested questions', () => {
     for (const q of SUGGESTED_QUESTIONS) {
       expect(q.toLowerCase()).not.toContain('should');
     }
+  });
+});
+
+describe('turnsFromRows', () => {
+  const row = (seq: number, role: 'user' | 'assistant', content: string): ChatMessage => ({
+    id: `m-${seq}`,
+    contract_id: 'demo-1',
+    seq,
+    role,
+    content,
+    created_at: '2026-08-11T00:00:00Z',
+  });
+
+  it('restores a conversation in seq order regardless of array order', () => {
+    // Stored data is still input: the API asks for seq order, but the mapping
+    // must not depend on getting it.
+    const out = turnsFromRows([row(3, 'user', 'q2'), row(1, 'user', 'q1'), row(2, 'assistant', 'a1')]);
+    expect(out.map((t) => t.content)).toEqual(['q1', 'a1', 'q2']);
+  });
+
+  it('drops blank rows rather than rendering empty bubbles', () => {
+    const out = turnsFromRows([row(1, 'user', '  '), row(2, 'assistant', 'a')]);
+    expect(out).toEqual([{ role: 'assistant', content: 'a' }]);
+  });
+
+  it('round-trips through boundHistory with the first turn a user turn', () => {
+    // A restored transcript feeds the same replay path as a live one; the
+    // server folds turn 0 into the document message, so it must be a user turn
+    // even when the stored window starts on an assistant row.
+    const rows = [row(1, 'assistant', 'orphan'), row(2, 'user', 'q'), row(3, 'assistant', 'a')];
+    const bounded = boundHistory(turnsFromRows(rows));
+    expect(bounded[0].role).toBe('user');
   });
 });

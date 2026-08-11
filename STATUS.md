@@ -1,6 +1,64 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-08-10. Read this first.
+Updated: 2026-08-11. Read this first.
+
+## 2026-08-11 — the chat paywall misfire, and conversations that survive
+
+Two owner reports from TestFlight, both closed today.
+
+**1. "Every time I use Contry, the paywall appears" — despite an active
+purchase.** Root cause: `isPro` resolving false while `offeringReady` stayed
+true. On the owner's device that is either sandbox expiry (a sandbox monthly
+renews every ~5 min, six times, then DIES ~30 min after purchase — TestFlight
+"active" rarely means active) or a RevenueCat App User ID mismatch after a
+reinstall/re-auth (Settings → Restore purchases fixes that one). **Run the
+diagnostic before assuming the code was the whole story.** But the code had
+four real defects, all fixed:
+   - `presentPaywall()` now uses `presentPaywallIfNeeded({
+     requiredEntitlementIdentifier: 'premium' })` and treats NOT_PRESENTED as
+     access. RevenueCat re-checks the entitlement itself, so a stale local
+     `isPro` no longer produces a sheet, and chat no longer `router.back()`s a
+     subscribed user for declining to re-buy.
+   - `chatOpenGate` now requires `ready` (first entitlement read completed)
+     before it may paywall. Chat was the ONE paywall caller skipping that
+     guard; before `ready`, isPro is `useState(false)` — a default, not an
+     answer.
+   - `PurchasesContext` memoizes `refresh` (useCallback) and the provider
+     value (useMemo). The unmemoized pair re-armed the chat gate effect on
+     every provider render, so any one-render `isPro` dip popped the paywall
+     mid-session.
+   - Free users still paywall on open. Chat is premium-only; that is design.
+
+**2. "Conversations restart from scratch."** They did: the transcript was
+`useState` only (the "session-only transcript; persistence is a roadmap item"
+comment — roadmap item 4, now shipped). New table `chat_messages` (migration
+`20260811000000`), append-only like contract_documents — select/insert/delete,
+NO update grant — with `seq bigint generated always as identity` as the sort
+key (an exchange's two rows share one `now()`, so created_at ties exactly
+where order matters; identity is insert-ordered and client-unforgeable). Its
+own cap fn `enforce_chat_messages_cap` at 1000 rows/contract (the generic
+child cap raises at 100 = 50 exchanges ever). verify.sql knows the table, the
+function, and the trigger.
+   - **The wire protocol did not change and chat-contract was NOT touched.**
+     History is still client-supplied and still untrusted by the server (its
+     system prompt says so). The five deployed functions stay byte-identical.
+     The table is the client's record, not a new model input.
+   - Screen: transcript seeds once per mount from `['chat-messages', id]`;
+     exchanges persist fire-and-forget ONLY on success (a failed question
+     rolls back and stores nothing, matching the quota refund); `asked` is
+     never seeded from restored turns (the server counter already includes
+     them — seeding would double-charge the send gate); trash-can headerRight
+     = Clear conversation (delete grant exists for exactly this); a muted
+     one-liner appears past 10 turns because `boundHistory` replays only the
+     last `MAX_HISTORY_TURNS` and long-history amnesia should read as design.
+   - Demo mode has a full in-memory twin, so a demo conversation now survives
+     leaving the screen too — which is what App Review sees.
+
+Gates: typecheck clean, **321 tests / 29 suites** (was 317; new: gate waits
+for ready, turnsFromRows order/blank/round-trip), `db push --dry-run` shows
+exactly the one new migration (and confirms yesterday's date_completion is
+applied). **Owed: owner runs `supabase db push`** for chat_messages; app not
+yet rebuilt on device.
 
 ## 2026-08-10 — it is on TestFlight, and dates can now be marked done
 
@@ -759,10 +817,13 @@ describe-never-advise). claude-sonnet-5 via the Claude API stays.
   `cache_control` on the notes block, so follow-up questions cost ~10% —
   verify `cache_read_input_tokens > 0` in the logs on question 2).
   `chat_usage` migration `20260728000500` (atomic consume/refund,
-  CHAT_CEILING=60/mo server (tightened 2026-07-28), PRO_MONTHLY_CHATS=50 client). Screen
-  `/chat/[id]`: pinned disclaimer, suggestion chips, session-only transcript
-  (persistence = roadmap), paywall on open for non-premium. Entry button on
-  the contract detail. Demo mode answers canned lease questions offline.
+  CHAT_CEILING=60/mo server (tightened 2026-07-28), PRO_MONTHLY_CHATS=40
+  client — this note said 50 until 2026-08-11; `limits.ts` was always the
+  authority, and the stale comment in the edge function still says 50). Screen
+  `/chat/[id]`: pinned disclaimer, suggestion chips, transcript persisted to
+  `chat_messages` since 2026-08-11, paywall on open for non-premium. Entry
+  button on the contract detail. Demo mode answers canned lease questions
+  offline.
   Also added (migration `20260728000600`): `total_value` +
   `party_other_contact` extraction (schema + prompt + decoder + detail rows,
   contact row taps to mailto/tel) and the derived "ends soon" badge on

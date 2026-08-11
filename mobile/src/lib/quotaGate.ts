@@ -38,9 +38,23 @@ export function analysisGate(input: {
   return 'allow';
 }
 
-/** Ask Contry is premium-only, so the gate is on opening the screen at all. */
-export function chatOpenGate(input: { isPro: boolean; offeringReady: boolean }): GateDecision {
-  const { isPro, offeringReady } = input;
+/**
+ * Ask Contry is premium-only, so the gate is on opening the screen at all.
+ *
+ * `ready` means the first entitlement read has completed. Until it has, isPro
+ * is just useState(false) — cold start assumes not-pro — so a paywall decision
+ * before `ready` would be made on a default, not on an answer. This was the
+ * one paywall caller that skipped the guard (deviceCalendar checks `ready` at
+ * its own gate), and it showed: navigating to chat could beat the resolve and
+ * flash the paywall at a subscribed user.
+ */
+export function chatOpenGate(input: {
+  isPro: boolean;
+  offeringReady: boolean;
+  ready: boolean;
+}): GateDecision {
+  const { isPro, offeringReady, ready } = input;
+  if (!ready) return 'allow';
   if (!isPro && offeringReady) return 'paywall';
   return 'allow';
 }
