@@ -1,6 +1,76 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-08-11. Read this first.
+Updated: 2026-08-11 (evening). Read this first.
+
+## 2026-08-11 evening — the paywall bug was DEEPER, and the record below is corrected
+
+Build 6 (with yesterday's presentPaywallIfNeeded fix) still paywalled the
+owner, and this time the screenshots were decisive: Apple's own StoreKit sheet
+said "You're currently subscribed" (yearly, renews Aug 12) while the paywall
+stood behind it, and Settings → Restore said "nothing to restore". Two
+investigation agents traced the whole identity plumbing. Corrections to the
+section below, which the next session must not re-learn wrong:
+
+- **"Sandbox expiry" is RULED OUT** for this device: StoreKit reported the sub
+  active and renewing. Also the Aug 12 renewal (calendar-dated, not
+  minutes-compressed) reads like the 3-day trial at PRODUCTION speed — check
+  which environment the transaction sits in on the RevenueCat dashboard; if
+  production, STATUS's "sandbox purchase" framing on the earlier session was
+  wrong and this bug had real money behind it.
+- **"Reinstall/re-auth mismatch" was HALF wrong.** Reinstall alone cannot
+  strand anything: the App User ID is the Supabase UUID, recomputed from the
+  restored session every cold start. What strands is DELETION or RE-AUTH into
+  a different Supabase user — and the E2E script in this very file
+  (purchase → account deletion, in that order) is the likeliest way the
+  owner's receipt got orphaned onto a dead UUID. `configure({appUserID})` is a
+  hard identity switch with no aliasing; `logOut` was never called anywhere;
+  nothing could ever reattach the receipt.
+- **"Settings → Restore purchases fixes that one" was UNRELIABLE ADVICE.**
+  `restore()` collapsed "receipt bound to another account" (SDK codes 7/13),
+  network failure, and genuinely-nothing into one false, and the alert then
+  said "no subscription exists" — a lie for the stranded case.
+- **The native paywall bridge collapses every failure into CANCELLED** (result
+  seeded at presentation, `didFailPurchasingWith` never updates it, no error
+  case exists in the native enum). So "tapped buy, Apple said already
+  subscribed, dismissed" was indistinguishable from "changed my mind", and
+  chat backed the subscribed owner out. Also: if the bridge's own pre-check
+  throws, its result handler never fires and the JS promise NEVER SETTLES.
+
+**Shipped in response (build 7):** `presentPaywall()` does its own entitlement
+read before the sheet (kills the hang, fails OPEN on a dead store per the
+file's contract) and re-reads CustomerInfo after any non-success result — the
+enum is never trusted for failure. `initPurchases` now configures WITHOUT an
+appUserID and always routes identity through `logIn()` (the aliasing path), so
+cross-cold-start account switches stop hard-switching. `releaseAccountState`
+calls the new `logOutPurchases()` (order pinned in accountHandoff.test.ts).
+`restore()` returns a four-way outcome via pure `data/restoreOutcome.ts`
+(tested), and Settings says the truth per case, including "attached to a
+different Contraya account". Settings grew a diagnostics footer: version,
+build, and the RevenueCat App User ID — the variable this whole bug turned on,
+previously unobservable on device. Delete-account copy now says the
+subscription stays with the Apple ID.
+
+**Still owner-side (Fix 0, likely the actual unlock for the device):** in the
+RevenueCat dashboard — (1) Entitlements → premium: BOTH products attached?
+(2) Customers: which App User ID holds the yearly purchase vs the current
+Supabase UUID? (3) Project settings → Restore Behavior (transfer vs block).
+(4) Which environment the transaction is in. Then Restore purchases in-app.
+
+**Also in build 7: the stale profile picture.** Changing the photo only showed
+after an app restart. Cause: `uploadAvatar` wrote a FIXED key
+(`{uid}/avatar.jpg`, upsert), and avatar_path doubles as the UI's only change
+signal — the re-written metadata string was identical, `setAvatarPath` bailed
+under Object.is, and none of the three `[avatarPath]` display effects re-ran
+(tab screens stay mounted all session). The Supabase CDN (default max-age
+3600, keyed on the unchanged object path) and RN's URL-keyed image cache
+compounded it. Fix: the path IS now the change signal —
+`{uid}/avatar-<timestamp>.jpg` per upload, then a best-effort sweep deletes
+every other object in the folder (also heals the legacy fixed key and the
+orphan Remove Photo used to leave; Remove Photo now sweeps too). The three
+display effects were already correct and are UNTOUCHED; demo mode versions the
+same way (`demo-avatar-N`) and the property "second upload returns a different
+path" is pinned in demoProfile.test.ts. No migration: avatars-bucket RLS gates
+on the folder, not the filename. 329 tests / 30 suites.
 
 ## 2026-08-11 — the chat paywall misfire, and conversations that survive
 

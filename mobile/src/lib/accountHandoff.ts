@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { clearDeviceSchedules } from './deviceSync';
 import { clearAllDrafts } from './draftStore';
+import { logOutPurchases } from './purchases';
 
 // Everything this device is holding on behalf of the account that is leaving.
 //
@@ -23,12 +24,18 @@ import { clearAllDrafts } from './draftStore';
 //  3. `queryClient.clear()` LAST, never earlier. Clearing while the old
 //     session is still valid just invites every mounted useQuery to refetch
 //     and repopulate the cache with the departing account's data.
+//
+// RevenueCat identity is released here too, fire-and-forget. Without it the
+// SDK stays bound to the departing account's App User ID, and the next
+// sign-in inherits an identity it never owned — entitlement checks then
+// answer for the wrong person until a warm logIn happens to run.
 export async function releaseAccountState(
   queryClient: QueryClient,
   handOff?: () => Promise<void>
 ): Promise<void> {
   await clearDeviceSchedules().catch(() => {});
   await clearAllDrafts();
+  logOutPurchases();
   if (handOff) await handOff();
   queryClient.clear();
 }

@@ -6,7 +6,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/AuthContext';
-import { uploadAvatar, getAvatarUrl } from '@/data/repo';
+import { uploadAvatar, getAvatarUrl, removeAvatarObjects } from '@/data/repo';
 import { downscaleAvatar } from '@/lib/downscale';
 import { useTheme, RADIUS } from '@/theme/colors';
 import AvatarCropper from '@/components/AvatarCropper';
@@ -95,6 +95,11 @@ export default function Account() {
         style: 'destructive',
         onPress: async () => {
           await updateProfile({ avatarPath: null });
+          // The stored image goes too, not just the reference: a photo of the
+          // user left orphaned in the bucket after they removed it is exactly
+          // what "remove" promises not to leave. Best-effort; the profile
+          // update above is what the UI keys off.
+          if (userId) removeAvatarObjects(userId).catch(() => {});
           setToast('Photo removed');
         },
       });

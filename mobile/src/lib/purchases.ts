@@ -1,6 +1,9 @@
 import { Platform, Linking } from 'react-native';
 import Purchases, { LOG_LEVEL, type CustomerInfo } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import {
+  RestoreOutcome, restoreErrorOutcome, restoreResultOutcome,
+} from '@/data/restoreOutcome';
 
 // Thin wrapper around RevenueCat. The public SDK keys are safe to embed (like
 // the Supabase anon key). Everything no-ops when no key is set for the platform,
@@ -30,6 +33,17 @@ function trace(where: string, err: unknown): void {
 
 // Configure once, then bind purchases to the signed-in user so they restore
 // across devices and stay tied to the account.
+//
+// configure() carries no appUserID ON PURPOSE, and identity always goes
+// through logIn(). configure with an explicit id is a hard identity switch:
+// the SDK adopts it without aliasing, so a purchase made under the previous
+// account's UUID simply stops existing as far as this install can see. That
+// is not hypothetical: the owner bought the annual, deleted the account (the
+// E2E script said to), re-signed-in as a fresh UUID, and every cold start
+// after that hard-configured onto the new id while StoreKit kept insisting
+// the Apple ID was subscribed. logIn() is the aliasing path; running it on
+// every start costs one network call and makes cross-account cold starts
+// behave like the in-session account switches that were already correct.
 export async function initPurchases(appUserId: string | null): Promise<void> {
   if (!purchasesConfigured) return;
   try {
@@ -38,13 +52,36 @@ export async function initPurchases(appUserId: string | null): Promise<void> {
       // configuration errors (bad key, bundle mismatch, unfetchable products)
       // actually surface. Native logs land in the Xcode console.
       if (__DEV__) await Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
-      Purchases.configure({ apiKey: KEY, appUserID: appUserId ?? null });
+      Purchases.configure({ apiKey: KEY });
       started = true;
-    } else if (appUserId) {
+    }
+    if (appUserId) {
       await Purchases.logIn(appUserId);
     }
   } catch (err) {
     trace('initPurchases', err);
+  }
+}
+
+// Detach the SDK from the account at sign-out or deletion, so the next
+// sign-in starts from a neutral identity instead of silently inheriting the
+// previous user's. Fire-and-forget by design: the account handoff must never
+// hang on a store call.
+export function logOutPurchases(): void {
+  if (!purchasesConfigured || !started) return;
+  Purchases.logOut().catch((err) => trace('logOutPurchases', err));
+}
+
+// The identity every entitlement check is scoped to. Surfaced in Settings
+// because this bug class (Apple says subscribed, RevenueCat says no) turns
+// entirely on WHICH App User ID is live, and that was unobservable on device.
+export async function getAppUserId(): Promise<string | null> {
+  if (!purchasesConfigured || !started) return null;
+  try {
+    return await Purchases.getAppUserID();
+  } catch (err) {
+    trace('getAppUserId', err);
+    return null;
   }
 }
 
@@ -95,23 +132,44 @@ export async function hasSellableOffering(): Promise<boolean> {
 
 // Returns whether the user has access, not whether a sheet was shown.
 //
-// presentPaywallIfNeeded, not presentPaywall: RevenueCat re-checks the
-// entitlement itself and skips the sheet when 'premium' is already active.
-// That is the safety net for a stale local isPro — a subscribed user whose
-// cached status lagged used to get the full paywall (and chat would
-// router.back() them when they declined to re-buy). NOT_PRESENTED therefore
-// counts as access: it is RevenueCat saying the entitlement is already there.
+// Runs its own entitlement read BEFORE the sheet, for two reasons. First, the
+// native bridge's internal pre-check is a hang: if its CustomerInfo fetch
+// throws (offline), it logs and never calls the result handler, and the JS
+// promise never settles — a gate that awaits it wedges forever. Doing the
+// same read here first means the bridge's identical re-read runs against a
+// warm cache and cannot realistically be the first failure. Second, a dead
+// store FAILS OPEN, per this file's contract: a network blip must never
+// sheet, trap, or eject a paying user. The server ceilings are what guard
+// spend; this gate only ever guards the doorway.
+//
+// After the sheet, the result enum alone is NOT trusted for failure. The
+// bridge seeds its result to CANCELLED at presentation and the purchase-
+// failure delegate never updates it (the native enum has no error case), so
+// "tapped buy, Apple said 'you're currently subscribed', dismissed the
+// alert" comes back indistinguishable from "changed my mind". CustomerInfo
+// is the truth, so on any non-success result the entitlement is re-read
+// before this reports no-access — otherwise chat backs a subscribed user
+// out of the screen, which is exactly the bug report this rewrite came from.
 export async function presentPaywall(): Promise<boolean> {
   if (!purchasesConfigured) return false;
+  try {
+    if (entitled(await Purchases.getCustomerInfo())) return true;
+  } catch (err) {
+    trace('presentPaywall preflight', err);
+    return true;
+  }
   try {
     const result = await RevenueCatUI.presentPaywallIfNeeded({
       requiredEntitlementIdentifier: ENTITLEMENT,
     });
-    return (
+    if (
       result === PAYWALL_RESULT.NOT_PRESENTED ||
       result === PAYWALL_RESULT.PURCHASED ||
       result === PAYWALL_RESULT.RESTORED
-    );
+    ) {
+      return true;
+    }
+    return entitled(await Purchases.getCustomerInfo());
   } catch (err) {
     trace('presentPaywall', err);
     return false;
@@ -134,13 +192,17 @@ export async function presentCustomerCenter(): Promise<void> {
   }
 }
 
-export async function restore(): Promise<boolean> {
-  if (!purchasesConfigured) return false;
+// An outcome, not a boolean. "The receipt belongs to another account", "the
+// store was unreachable" and "there is genuinely nothing" demand different
+// copy, and collapsing them told the owner "no subscription exists" while
+// Apple was simultaneously showing their active one. See data/restoreOutcome.
+export async function restore(): Promise<RestoreOutcome> {
+  if (!purchasesConfigured) return 'none';
   try {
-    return entitled(await Purchases.restorePurchases());
+    return restoreResultOutcome(entitled(await Purchases.restorePurchases()));
   } catch (err) {
     trace('restore', err);
-    return false;
+    return restoreErrorOutcome(err);
   }
 }
 

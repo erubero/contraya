@@ -181,6 +181,10 @@ export function uploadAvatar(base64: string, userId: string): Promise<string> {
   return isConfigured ? profileApi.uploadAvatar(base64, userId) : demo.uploadAvatar(base64);
 }
 
+export function removeAvatarObjects(userId: string): Promise<void> {
+  return isConfigured ? profileApi.removeAvatarObjects(userId) : demo.removeAvatarObjects();
+}
+
 export function getAvatarUrl(path: string): Promise<string> {
   return isConfigured ? profileApi.getAvatarUrl(path) : demo.avatarUrl();
 }

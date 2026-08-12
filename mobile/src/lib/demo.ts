@@ -166,9 +166,14 @@ let documents: ContractDocument[] = [];
 // leaving and reopening a chat behaves the same in demo mode as live.
 let chatMessages: ChatMessage[] = [];
 let chatSeq = 0;
-let profile: { displayName: string | null; avatarUri: string | null } = {
+// avatarPath is versioned exactly like the live bucket key. The constant
+// 'demo-avatar' used to reproduce the real bug here: an unchanged path is an
+// unchanged change-signal, and no screen refreshes.
+let avatarSeq = 0;
+let profile: { displayName: string | null; avatarUri: string | null; avatarPath: string | null } = {
   displayName: null,
   avatarUri: null,
+  avatarPath: null,
 };
 
 const bundleOf = (c: Contract): ContractBundle => ({
@@ -185,7 +190,8 @@ export const demo = {
     documents = [];
     chatMessages = [];
     chatSeq = 0;
-    profile = { displayName: null, avatarUri: null };
+    avatarSeq = 0;
+    profile = { displayName: null, avatarUri: null, avatarPath: null };
   },
   async list(): Promise<Contract[]> {
     return [...db.contracts].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
@@ -314,17 +320,29 @@ export const demo = {
     delete files[doc.storage_path];
   },
   profile(): { displayName: string | null; avatarPath: string | null } {
-    return { displayName: profile.displayName, avatarPath: profile.avatarUri ? 'demo-avatar' : null };
+    return { displayName: profile.displayName, avatarPath: profile.avatarPath };
   },
   async updateProfile(patch: { displayName?: string; avatarPath?: string | null }): Promise<void> {
     if (patch.displayName !== undefined) profile.displayName = patch.displayName;
     // Clearing the path is how "Remove Photo" lands; uploads set avatarUri
     // directly in uploadAvatar, so only the null case matters here.
-    if (patch.avatarPath === null) profile.avatarUri = null;
+    if (patch.avatarPath === null) {
+      profile.avatarUri = null;
+      profile.avatarPath = null;
+    }
   },
   async uploadAvatar(base64: string): Promise<string> {
+    avatarSeq += 1;
     profile.avatarUri = `data:image/jpeg;base64,${base64}`;
-    return 'demo-avatar';
+    profile.avatarPath = `demo-avatar-${avatarSeq}`;
+    return profile.avatarPath;
+  },
+  // Mirror of the live sweep: dropping every stored object except `keep`.
+  // Demo holds at most one, so this only matters for the Remove Photo flow.
+  async removeAvatarObjects(keep?: string): Promise<void> {
+    if (keep === undefined || keep !== profile.avatarPath) {
+      profile.avatarUri = null;
+    }
   },
   async avatarUrl(): Promise<string> {
     return profile.avatarUri ?? '';

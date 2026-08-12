@@ -28,6 +28,7 @@ export default function DeleteAccount() {
     'Your private email-in address stops working immediately.',
     'This cannot be undone. There is no backup to restore from.',
     'If you want to use Contraya again, you will start over with a new account.',
+    'An active subscription stays with your Apple ID, not this account. On a new account, use Restore Purchases in Settings to link it again.',
   ];
 
   const onDelete = async () => {

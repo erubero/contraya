@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Image, Pressable, Alert, ScrollView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
@@ -12,7 +13,9 @@ import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
 import { useTabBarClearance } from '@/components/TabBar';
 import { usePurchases } from '@/lib/PurchasesContext';
-import { purchasesConfigured, presentPaywall, restore, presentCustomerCenter } from '@/lib/purchases';
+import {
+  purchasesConfigured, presentPaywall, restore, presentCustomerCenter, getAppUserId,
+} from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES, PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { SectionTitle, SettingsGroup, SettingsRow, settingsCard } from '@/components/SettingsRow';
 
@@ -28,6 +31,15 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { email, displayName, avatarPath, isDemo, signOut } = useAuth();
   const { isPro, refresh: refreshPro } = usePurchases();
+
+  // For the diagnostics footer. Re-read when entitlement state moves, since
+  // that is exactly when an identity switch would have happened.
+  const [appUserId, setAppUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getAppUserId().then((id) => { if (!cancelled) setAppUserId(id); });
+    return () => { cancelled = true; };
+  }, [isPro]);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -58,13 +70,24 @@ export default function Settings() {
   };
 
   const onUpgrade = async () => { await presentPaywall(); await refreshPro(); };
+  // Four outcomes, four honest messages. The old boolean told a user whose
+  // receipt is bound to a DIFFERENT account that no subscription exists,
+  // which is false, and it is precisely the user who most needs the truth.
   const onRestore = async () => {
-    const ok = await restore();
+    const outcome = await restore();
     await refreshPro();
-    Alert.alert(
-      ok ? 'Purchases restored' : 'Nothing to restore',
-      ok ? 'Your Contraya Premium access is active.' : 'We could not find an active subscription for this account.',
-    );
+    if (outcome === 'restored') {
+      Alert.alert('Purchases restored', 'Your Contraya Premium access is active.');
+    } else if (outcome === 'other-account') {
+      Alert.alert(
+        'Subscription found, but on another account',
+        'This purchase is attached to a different Contraya account. Sign in with the account you subscribed on, or write to hello@usecontraya.com and we will sort it out.',
+      );
+    } else if (outcome === 'error') {
+      Alert.alert("Couldn't reach the App Store", 'Please try again in a moment.');
+    } else {
+      Alert.alert('Nothing to restore', 'We could not find an active subscription for this account.');
+    }
   };
 
   const initial = (displayName || email || '?').trim().charAt(0).toUpperCase();
@@ -226,6 +249,22 @@ export default function Settings() {
         <Ionicons name="log-out-outline" size={20} color={theme.destructive} />
         <Text style={{ color: theme.destructive, fontSize: 15, fontWeight: '600' }}>Sign Out</Text>
       </Pressable>
+
+      {/* Diagnostics footer. The store identity line exists because the last
+          billing bug turned entirely on WHICH App User ID was live, and there
+          was no way to see it without a debugger: Apple said subscribed,
+          RevenueCat said no, and the difference was invisible on device. The
+          id is the user's own account id, not a secret. */}
+      <View style={{ alignItems: 'center', gap: 2, paddingTop: 4 }}>
+        <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
+          {`Contraya ${Constants.expoConfig?.version ?? ''} (${Constants.expoConfig?.ios?.buildNumber ?? ''})`}
+        </Text>
+        {appUserId ? (
+          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} numberOfLines={1}>
+            {`Store identity: ${appUserId}`}
+          </Text>
+        ) : null}
+      </View>
     </ScrollView>
   );
 }

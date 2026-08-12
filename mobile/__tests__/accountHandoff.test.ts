@@ -13,6 +13,12 @@ jest.mock('@/lib/draftStore', () => ({
     calls.push('drafts');
   }),
 }));
+jest.mock('@/lib/purchases', () => ({
+  // Synchronous like the real one: the handoff must never await a store call.
+  logOutPurchases: jest.fn(() => {
+    calls.push('purchases');
+  }),
+}));
 
 import { releaseAccountState } from '@/lib/accountHandoff';
 import { clearDeviceSchedules } from '@/lib/deviceSync';
@@ -40,7 +46,7 @@ describe('releaseAccountState', () => {
   it('clears device state before the cache', async () => {
     const qc = fakeQueryClient();
     await releaseAccountState(qc as never);
-    expect(calls).toEqual(['schedules', 'drafts', 'clear']);
+    expect(calls).toEqual(['schedules', 'drafts', 'purchases', 'clear']);
   });
 
   it('clears the cache AFTER the session ends, never before', async () => {
@@ -51,7 +57,7 @@ describe('releaseAccountState', () => {
     await releaseAccountState(qc as never, async () => {
       calls.push('signOut');
     });
-    expect(calls).toEqual(['schedules', 'drafts', 'signOut', 'clear']);
+    expect(calls).toEqual(['schedules', 'drafts', 'purchases', 'signOut', 'clear']);
     expect(calls.indexOf('clear')).toBeGreaterThan(calls.indexOf('signOut'));
   });
 

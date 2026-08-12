@@ -27,10 +27,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     //
     // Builds 1-5 shipped to TestFlight while this still said '1', because the
     // auto-increment happens at Distribute and never writes back here. Set to
-    // 6 on 2026-08-10 to match reality. ios/Contraya/Info.plist carries the
+    // match reality since 2026-08-10. ios/Contraya/Info.plist carries the
     // literal that actually ships, so change CFBundleVersion there too rather
     // than running prebuild for it.
-    buildNumber: '6',
+    buildNumber: '7',
     // Renovatio, LLC — bakes DEVELOPMENT_TEAM into the generated project so
     // Xcode never shows "requires a development team" after a prebuild.
     appleTeamId: 'DYR4YB9FVL',
