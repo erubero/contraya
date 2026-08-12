@@ -131,9 +131,6 @@ Anything that locks you in, charges you extra, or takes away an option gets flag
 ASK CONTRY
 Can I have a cat? What happens if I pay late? Contry answers from your document and quotes the lines the answer came from. Ask Contry is part of Contraya Premium, the paid subscription described below.
 
-FORWARD IT FROM YOUR EMAIL
-Contracts arrive by email. Contraya gives you a private forwarding address, and the PDF lands in the app ready to read.
-
 WHAT PEOPLE KEEP IN CONTRAYA
 Apartment leases, phone and internet plans, gym memberships, wedding and event vendors, freelance client contracts, contractors and home repairs, storage units, auto loans. If you signed it, it belongs here.
 
@@ -155,7 +152,15 @@ Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/st
 Privacy Policy: https://usecontraya.com/privacy
 
 **What's New in this version (1.0.0):**
-Say hello to Contraya. Add a contract as a photo, a PDF, or a forwarded email, get it explained in plain English, and let Contry remind you before every payment, renewal, and notice deadline.
+Say hello to Contraya. Add a contract as a photo or a PDF, get it explained in plain English, and let Contry remind you before every payment, renewal, and notice deadline.
+
+> **Email-in is cut from the description above on purpose.** `EMAIL_IN_ENABLED`
+> is `false` in `src/lib/appMeta.ts` and the worker that receives the mail was
+> never deployed, so 1.0 has no forwarding address. Describing it would be a
+> 2.3.1 rejection (the app does not do what the listing says) and would send
+> every reader hunting for a feature that is not there. Restore the "FORWARD IT
+> FROM YOUR EMAIL" paragraph in the same release that flips the flag and
+> deploys the worker, not before.
 
 ---
 
