@@ -117,7 +117,7 @@ lease,agreement,renewal,deadline,reminder,vendor,wedding,freelance,gym,landlord,
 
 You signed it. Contraya makes sure you know what it says.
 
-Every lease, phone plan, gym membership, and vendor agreement is full of dates, obligations, and clauses that cost real money when they catch you off guard. Contraya uses AI to read the contract, explain it in plain English, and remind you before every deadline. Built by a lawyer, for everyday people.
+Every lease, phone plan, gym membership, and vendor agreement is full of dates, obligations, and clauses that cost real money when they catch you off guard. Contraya uses AI to read the contract, explain it in plain English, and remind you before every deadline. Built by lawyers, for everyday people.
 
 IN PLAIN ENGLISH
 Add a contract as a photo or a PDF and Contry uses AI to read the whole thing. You get a short summary of what you are agreeing to, what you pay, and what happens if you want out, in words you would use with a friend.

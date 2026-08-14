@@ -420,7 +420,7 @@ export default function Landing() {
             <p>© {new Date().getFullYear()} Contraya. All rights reserved.</p>
           </div>
           <p className="text-center text-xs text-slate-400">
-            Built by a lawyer, for everyday people. Contry uses AI to explain what your contracts
+            Built by lawyers, for everyday people. Contry uses AI to explain what your contracts
             say. It is not legal advice, and using Contraya does not create an attorney-client
             relationship or attorney-client privilege.
           </p>
