@@ -33,6 +33,7 @@ import ContryFace from '@/components/ContryFace';
 import InsightCard from '@/components/InsightCard';
 import GlowBackdrop from '@/components/GlowBackdrop';
 import { usePurchases } from '@/lib/PurchasesContext';
+import { useAiConsent } from '@/lib/AiConsentContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES } from '@/lib/limits';
 import { analysisGate } from '@/lib/quotaGate';
@@ -67,6 +68,7 @@ export default function AddContract() {
   const queryClient = useQueryClient();
   const { userId } = useAuth();
   const { isPro, offeringReady, ready, refresh: refreshPro } = usePurchases();
+  const { ensureAiConsent } = useAiConsent();
   const params = useLocalSearchParams<{ inbox?: string; draft?: string }>();
 
   const [step, setStep] = useState<Step>('source');
@@ -137,6 +139,12 @@ export default function AddContract() {
         const item = await getInboxItem(id);
         if (cancelled) return;
         setInboxItem(item);
+        // Consent first, and before the quota gate: never sell somebody a
+        // subscription for a thing they have not agreed to let happen.
+        if (!(await ensureAiConsent())) {
+          router.back();
+          return;
+        }
         if (!(await passQuotaGate())) {
           router.back();
           return;
@@ -321,6 +329,10 @@ export default function AddContract() {
   };
 
   const pickPdf = async () => {
+    // Guideline 5.1.2(i). Gating at the PICKER rather than at runAnalysis is
+    // deliberate: the upload to storage happens inside runAnalysis, so asking
+    // here means a declined document is never even chosen, let alone sent.
+    if (!(await ensureAiConsent())) return;
     if (!(await passQuotaGate())) return;
     const result = await DocumentPicker.getDocumentAsync({
       type: 'application/pdf',
@@ -368,6 +380,7 @@ export default function AddContract() {
   };
 
   const startPages = async (from: 'camera' | 'library') => {
+    if (!(await ensureAiConsent())) return;
     if (!(await passQuotaGate())) return;
     await addPage(null, from);
   };

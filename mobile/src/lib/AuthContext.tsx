@@ -10,6 +10,7 @@ import {
   backfillOnboardingComplete,
   OnboardingAnswers,
 } from '@/lib/onboarding';
+import { hasAiConsent } from '@/lib/aiConsent';
 import type { ProfilePatch } from '@/api/profile';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -23,6 +24,12 @@ type AuthValue = {
   onboardingAnswers: OnboardingAnswers | null;
   needsOnboarding: boolean;
   isDemo: boolean;
+  // Guideline 5.1.2(i): whether this account has agreed to have its documents
+  // sent to the AI provider. Read here rather than from the session directly
+  // because the cached session's user_metadata lags a write until the next
+  // refresh, and the sheet must not re-ask somebody who just said yes.
+  aiConsentGranted: boolean;
+  setAiConsentGranted: (granted: boolean) => void;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -47,6 +54,7 @@ function metaOf(session: { user: { user_metadata?: Record<string, unknown> } } |
       typeof meta.onboarding_answers === 'object' && meta.onboarding_answers !== null
         ? (meta.onboarding_answers as OnboardingAnswers)
         : null,
+    aiConsentGranted: hasAiConsent(meta),
   };
 }
 
@@ -59,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [onboardingAnswers, setOnboardingAnswers] = useState<OnboardingAnswers | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [aiConsentGranted, setAiConsentGranted] = useState(false);
   const [localPending, setLocalPending] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -78,6 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAvatarPath(meta.avatarPath);
       setOnboardingAnswers(meta.onboardingAnswers);
       setOnboardingComplete(meta.onboardingComplete);
+      // Supabase emits USER_UPDATED after updateUser, so a grant or a revoke
+      // lands here on its own. The consent sheet also sets it directly, so the
+      // gate never waits on an event to stop re-asking.
+      setAiConsentGranted(meta.aiConsentGranted);
       setStatus(session ? 'signedIn' : 'signedOut');
     };
     supabase.auth.getSession().then(({ data: { session } }) => apply(session));
@@ -116,6 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       onboardingAnswers,
       needsOnboarding,
       isDemo: !isConfigured,
+      aiConsentGranted,
+      setAiConsentGranted,
       signUp: async (addr, password) => {
         if (!isConfigured) {
           setStatus('signedIn');
@@ -230,9 +245,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOnboardingAnswers(null);
         setOnboardingComplete(false);
         setCreatedAt(null);
+        setAiConsentGranted(false);
       },
     }),
-    [status, email, userId, displayName, avatarPath, onboardingAnswers, needsOnboarding, localPending]
+    [status, email, userId, displayName, avatarPath, onboardingAnswers, needsOnboarding, localPending, aiConsentGranted]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

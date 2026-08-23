@@ -8,6 +8,7 @@
 // try again", including the two (429, 413) where trying again is guaranteed to
 // fail the same way.
 import { PRO_MONTHLY_ANALYSES, PRO_MONTHLY_CHATS } from './limits';
+import { AI_DATA_SCREEN_TITLE } from './legal';
 
 export type ErrorCopy = { title: string; body: string; retryable: boolean };
 
@@ -21,6 +22,12 @@ export function analysisErrorCopy(status: number | null): ErrorCopy {
       return {
         title: 'Monthly limit reached',
         body: `Your plan covers ${PRO_MONTHLY_ANALYSES} analyses a month. The counter resets on the 1st.`,
+        retryable: false,
+      };
+    case 403:
+      return {
+        title: 'Contry needs your permission first',
+        body: `Turn on ${AI_DATA_SCREEN_TITLE} in Settings to let Contry send this document to be read.`,
         retryable: false,
       };
     case 413:
@@ -63,6 +70,12 @@ export function chatErrorCopy(status: number | null): ErrorCopy {
       return {
         title: 'Monthly limit reached',
         body: `Your plan covers ${PRO_MONTHLY_CHATS} questions a month. The counter resets on the 1st.`,
+        retryable: false,
+      };
+    case 403:
+      return {
+        title: 'Contry needs your permission first',
+        body: `Turn on ${AI_DATA_SCREEN_TITLE} in Settings to let Contry send this document to be read.`,
         retryable: false,
       };
     case 422:

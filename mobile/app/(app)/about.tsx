@@ -2,6 +2,7 @@ import { View, Text, Linking, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/colors';
 import { APP_VERSION, TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
+import { AI_PROVIDER, AI_DATA_SCREEN_TITLE } from '@/lib/legal';
 import { SectionTitle, SettingsGroup, SettingsRow, SettingsNote, settingsCard } from '@/components/SettingsRow';
 
 export default function About() {
@@ -49,11 +50,17 @@ export default function About() {
 
       <View>
         <SectionTitle>Your data</SectionTitle>
-        <View style={[settingsCard(theme), { padding: 14 }]}>
+        <SettingsGroup>
+          <SettingsRow
+            icon="cloud-upload-outline"
+            label={AI_DATA_SCREEN_TITLE}
+            subtitle={`What gets sent to ${AI_PROVIDER}, and how to stop it.`}
+            onPress={() => router.push('/ai-data')}
+          />
+        </SettingsGroup>
+        <View style={[settingsCard(theme), { padding: 14, marginTop: 10 }]}>
           <Text style={{ color: theme.mutedForeground, fontSize: 13, lineHeight: 19 }}>
-            Your contracts sit in private storage that only your account can reach, encrypted in
-            transit and at rest. They are never sold and never shared. You can delete your account
-            and everything in it at any time, from Account.
+            {`Your contracts sit in private storage that only your account can reach, encrypted in transit and at rest. They are never sold, and the only place a copy ever goes is ${AI_PROVIDER}, the AI provider that reads them for you. You can delete your account and everything in it at any time, from Account.`}
           </Text>
         </View>
       </View>

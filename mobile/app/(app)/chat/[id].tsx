@@ -15,6 +15,7 @@ import {
   ChatTurn, turnsFromRows, SUGGESTED_QUESTIONS, MAX_QUESTION_CHARS, MAX_HISTORY_TURNS,
 } from '@/data/chat';
 import { usePurchases } from '@/lib/PurchasesContext';
+import { useAiConsent } from '@/lib/AiConsentContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { chatOpenGate, chatSendGate } from '@/lib/quotaGate';
@@ -32,6 +33,7 @@ export default function ContractChat() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isPro, offeringReady, ready, refresh: refreshPro } = usePurchases();
+  const { ensureAiConsent } = useAiConsent();
 
   const queryClient = useQueryClient();
   const { data: contract } = useQuery({ queryKey: ['contract-row', id], queryFn: () => getContract(id) });
@@ -90,6 +92,11 @@ export default function ContractChat() {
   const send = async (raw: string) => {
     const question = raw.trim().slice(0, MAX_QUESTION_CHARS);
     if (!question || busy) return;
+    // Guideline 5.1.2(i). Ask Contry sends MORE than the analysis does: the
+    // document again, the details already extracted from it, and the question
+    // itself. Placed before the input is cleared, so a decline leaves what
+    // they typed exactly where they left it.
+    if (!(await ensureAiConsent())) return;
     if (chatSendGate({ isPro, used: monthCount + asked }) === 'quota') {
       Alert.alert(
         'Monthly limit reached',

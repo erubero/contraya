@@ -1,6 +1,82 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-08-11 (evening). Read this first.
+Updated: 2026-08-23. Read this first.
+
+## 2026-08-23 — REJECTED 5.1.1(i) + 5.1.2(i): the app never asked before sending documents to Anthropic
+
+Submission `f6cd4f14-4661-4dde-b03e-1db566b4a518`, version 1.0 (6), reviewed on
+an iPad Air 11-inch (M3). The finding is correct and was not a reviewer
+misunderstanding. Apple added the third-party-AI clause to 5.1.2(i) on
+2025-11-13: "You must clearly disclose where personal data will be shared with
+third parties, **including with third-party AI**, and obtain explicit
+permission before doing so." Build 6 did none of it.
+
+What was actually wrong, all four of Apple's requirements:
+
+- **What is sent:** never stated. `DISCLAIMER` says Contry "uses AI" and stops
+  there, which reads as on-device to a normal person.
+- **Who it goes to:** Anthropic was named NOWHERE. Not in the app, not in the
+  privacy policy ("a third-party AI provider we use"), not in STORE_LISTING,
+  which called it "a third-party document-processing service provider". That
+  euphemism was the single biggest self-inflicted wound here.
+- **Permission:** none. "By continuing you agree to the Terms" on welcome and
+  signin was the only thing, and the rejection letter names that pattern as
+  insufficient in as many words.
+- **Privacy policy:** described the flow but named no one and never made the
+  equal-protection confirmation 5.1.1(i) asks for verbatim.
+
+**Shipped in response (goes out as the next build):**
+
+- `lib/aiConsent.ts` + `lib/AiConsentContext.tsx` + `components/AiConsentSheet`
+  + `components/AiDisclosure`. One awaitable `ensureAiConsent()` in front of
+  all four paths that can send a document: pickPdf, startPages, the emailed-PDF
+  inbox branch, and chat send. Gated at the PICKER, not at runAnalysis, so a
+  declined document is never uploaded to storage either.
+- Consent is stored in `user_metadata` (`ai_consent_at`, `ai_consent_version`),
+  same mechanism as the onboarding flags, so no migration and the edge
+  functions can read it off the authenticated user.
+- `app/(app)/ai-data.tsx` ("AI and Your Data"), linked from Settings and About,
+  renders the SAME disclosure through the same component and revokes.
+- **Server enforcement:** analyze-contract and chat-contract 403 without a
+  consent record, placed before payload validation and the quota consume so a
+  refusal never costs a slot. The order comment at the top of both files now
+  reads auth 401 -> AI consent 403 -> validate -> quota -> model.
+- Privacy policy rewritten: Anthropic PBC named in §1 and §4, a new §5 on
+  consent and withdrawal, equal-protection confirmation added, revocation
+  described in §6. Terms §2 names Anthropic. Both LAST_UPDATED bumped by hand
+  to August 23, 2026. STORE_LISTING §3 and §6 rewritten, and §6b is the
+  Resolution Center reply, ready to paste.
+- `__tests__/aiConsentGate.test.ts` scans `app/` and fails if any file calling
+  `analyzeContract` or `askContract` does not also call `ensureAiConsent`. That
+  is the test that survives the next feature; a behavioural test cannot see a
+  screen nobody has written yet.
+
+**Gotchas this session bought:**
+
+- **The About screen was claiming contracts are "never shared".** It said so
+  under a heading called "Your data" while every analysis shipped a copy to
+  Anthropic. Fixed. Grep for absolute claims before the next submission, not
+  after.
+- `auth.getUser()` in an edge function round-trips to the auth server, so
+  consent written seconds earlier on the device is visible immediately with no
+  token refresh. The CLIENT's cached session is the stale one, which is why
+  `AuthContext` carries `aiConsentGranted` as state and the sheet sets it
+  directly rather than waiting for `USER_UPDATED`.
+- `grantAiConsent` deliberately does NOT swallow write errors, unlike its
+  sibling `completeOnboarding`. A consent the server never received is one the
+  edge functions will 403 on, so failing closed is what keeps the two honest.
+- The typed-routes gotcha bit again, exactly as documented: `ai-data.tsx` is a
+  new route, `npm run typecheck` failed with "not assignable" on
+  `router.push('/ai-data')`, and `npx expo start` for four seconds fixed it.
+
+**Still open, and it is an owner decision:** `app.config.ts` says
+`buildNumber: '7'` while Apple reviewed 1.0 (6). Check App Store Connect for
+the highest build already uploaded before archiving. Xcode auto-increments at
+export and never writes back here, so confirm what actually shipped and set
+this above it. **Do not send the Resolution Center reply without the new build
+attached** — build 6 genuinely did not ask, so a reply alone earns the same
+rejection back.
+
 
 ## 2026-08-11 evening — the paywall bug was DEEPER, and the record below is corrected
 

@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { usePurchases } from '@/lib/PurchasesContext';
+import { AiConsentProvider } from '@/lib/AiConsentContext';
 import { refreshDeviceSchedules } from '@/lib/deviceSync';
 import { syncPushToken } from '@/lib/pushToken';
 import { contractIdFromResponse } from '@/lib/reminderPlanner';
@@ -77,19 +78,24 @@ export default function AppLayout() {
   if (status === 'signedOut') return <Redirect href="/signin" />;
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.background },
-        headerTintColor: theme.foreground,
-        headerShadowVisible: false,
-        headerBackButtonDisplayMode: 'minimal',
-        contentStyle: { backgroundColor: theme.background },
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="add" options={{ title: 'Add Contract', presentation: 'modal' }} />
-      <Stack.Screen name="contract/[id]" options={{ title: 'Contract' }} />
-      <Stack.Screen name="chat/[id]" options={{ title: 'Ask Contry' }} />
-    </Stack>
+    // Wraps the whole signed-in app so the guideline 5.1.2(i) consent sheet is
+    // reachable from every screen that can send a document, and so there is
+    // exactly one of it.
+    <AiConsentProvider>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.foreground,
+          headerShadowVisible: false,
+          headerBackButtonDisplayMode: 'minimal',
+          contentStyle: { backgroundColor: theme.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="add" options={{ title: 'Add Contract', presentation: 'modal' }} />
+        <Stack.Screen name="contract/[id]" options={{ title: 'Contract' }} />
+        <Stack.Screen name="chat/[id]" options={{ title: 'Ask Contry' }} />
+      </Stack>
+    </AiConsentProvider>
   );
 }

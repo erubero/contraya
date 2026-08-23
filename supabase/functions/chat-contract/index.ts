@@ -1,8 +1,8 @@
 // Ask Contry: answers a question about ONE of the caller's contracts, grounded
 // in the stored analysis and the original document. Same security skeleton as
-// analyze-contract: auth 401 -> validate -> atomic quota consume -> model ->
-// refund ONLY pre-billing failures (never a billed outcome) -> never leak
-// upstream errors.
+// analyze-contract: auth 401 -> AI consent 403 -> validate -> atomic quota
+// consume -> model -> refund ONLY pre-billing failures (never a billed
+// outcome) -> never leak upstream errors.
 //
 // Info, never advice: the system prompt forces answers that state what the
 // contract SAYS (with the clause quoted and concrete dates computed), and the
@@ -103,6 +103,21 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
+    }
+
+    // Guideline 5.1.2(i). The client asks before it uploads, but a permission
+    // enforced only in the UI is not a permission, so the refusal lives here
+    // too: nothing reaches api.anthropic.com without a consent record on the
+    // account. Mirrors `mobile/src/lib/aiConsent.ts`; bump both together.
+    //
+    // Placed BEFORE payload validation and the quota consume on purpose, so a
+    // refused call can never spend a slot the user then has to be refunded.
+    // getUser() round-trips to the auth server, so a consent written seconds
+    // ago on the device is already visible here without a token refresh.
+    const consentAt = user.user_metadata?.ai_consent_at;
+    const consentVersion = user.user_metadata?.ai_consent_version;
+    if (typeof consentAt !== 'string' || !consentAt || typeof consentVersion !== 'number' || consentVersion < 1) {
+      return Response.json({ error: 'AI consent required' }, { status: 403, headers: corsHeaders });
     }
 
     const body = await req.json();

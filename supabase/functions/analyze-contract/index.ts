@@ -2,12 +2,13 @@
 // caller's own storage folder) and returns a structured plain-English
 // analysis: summary, parties, key dates, obligations, and clauses worth a
 // close look. Requires the caller to be signed in so the Anthropic key can't
-// be abused by anonymous requests, and validates everything before spending
-// tokens.
+// be abused by anonymous requests, requires a recorded consent to send the
+// document to Anthropic at all (App Store guideline 5.1.2(i)), and validates
+// everything before spending tokens.
 //
 // Order of operations (the security skeleton, carried over from Warraya):
-// auth 401 -> validate payload -> download + validate files -> atomic quota
-// consume -> model call -> refund ONLY pre-billing failures (upstream non-2xx,
+// auth 401 -> AI consent 403 -> validate payload -> download + validate files
+// -> atomic quota consume -> model call -> refund ONLY pre-billing failures (upstream non-2xx,
 // pre-response timeout) -> 422 on refusal or not-a-contract WITHOUT refund (the
 // read was billed) -> never leak upstream error bodies.
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -265,6 +266,21 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
+    }
+
+    // Guideline 5.1.2(i). The client asks before it uploads, but a permission
+    // enforced only in the UI is not a permission, so the refusal lives here
+    // too: nothing reaches api.anthropic.com without a consent record on the
+    // account. Mirrors `mobile/src/lib/aiConsent.ts`; bump both together.
+    //
+    // Placed BEFORE payload validation and the quota consume on purpose, so a
+    // refused call can never spend a slot the user then has to be refunded.
+    // getUser() round-trips to the auth server, so a consent written seconds
+    // ago on the device is already visible here without a token refresh.
+    const consentAt = user.user_metadata?.ai_consent_at;
+    const consentVersion = user.user_metadata?.ai_consent_version;
+    if (typeof consentAt !== 'string' || !consentAt || typeof consentVersion !== 'number' || consentVersion < 1) {
+      return Response.json({ error: 'AI consent required' }, { status: 403, headers: corsHeaders });
     }
 
     // Validate the payload BEFORE any download or quota spend.

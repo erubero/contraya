@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { getAvatarUrl } from '@/data/repo';
 import { releaseAccountState } from '@/lib/accountHandoff';
 import { EMAIL_IN_ENABLED } from '@/lib/appMeta';
+import { AI_DATA_SCREEN_TITLE } from '@/lib/legal';
 import { demo } from '@/lib/demo';
 import { useTheme, RADIUS } from '@/theme/colors';
 import ScreenHeader from '@/components/ScreenHeader';
@@ -188,6 +189,14 @@ export default function Settings() {
             icon="notifications-outline"
             label="Notifications"
             onPress={() => router.push('/notifications')}
+          />
+          {/* Guideline 5.1.2(i): consent given in the analysis sheet has to be
+              revocable somewhere findable, and the privacy policy names this
+              exact path. */}
+          <SettingsRow
+            icon="cloud-upload-outline"
+            label={AI_DATA_SCREEN_TITLE}
+            onPress={() => router.push('/ai-data')}
           />
           {/* iOS only (EventKit), and hidden in demo mode: the sample
               contracts are fabricated, and writing them into somebody's real

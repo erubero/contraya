@@ -1,6 +1,7 @@
 import { EdgeFunctionError, toEdgeError, statusOf } from '@/api/functionError';
 import { analysisErrorCopy, chatErrorCopy } from '@/lib/edgeErrorCopy';
 import { PRO_MONTHLY_ANALYSES, PRO_MONTHLY_CHATS } from '@/lib/limits';
+import { AI_DATA_SCREEN_TITLE } from '@/lib/legal';
 
 // Audit finding 7. supabase-js throws FunctionsHttpError with a CONSTANT
 // message and the real status hidden on .context, so `msg.includes('422')`
@@ -87,11 +88,23 @@ describe('error copy', () => {
   it('never suggests retrying a failure that retrying cannot fix', () => {
     // The whole point of the finding: these three are permanent for this
     // input, so offering a retry is offering a guaranteed second failure.
-    for (const status of [429, 413, 422]) {
+    for (const status of [429, 413, 422, 403]) {
       expect(analysisErrorCopy(status).retryable).toBe(false);
     }
-    for (const status of [429, 422]) {
+    for (const status of [429, 422, 403]) {
       expect(chatErrorCopy(status).retryable).toBe(false);
+    }
+  });
+
+  it('sends a 403 to the screen that can actually fix it', () => {
+    // 403 is the edge function refusing for want of a recorded AI consent
+    // (guideline 5.1.2(i)). The client gates before it ever calls, so landing
+    // here means the consent was revoked on another device mid-flight. Telling
+    // that user to "try again" would be telling them to fail again.
+    for (const copy of [analysisErrorCopy(403), chatErrorCopy(403)]) {
+      expect(copy.retryable).toBe(false);
+      expect(copy.body).toContain(AI_DATA_SCREEN_TITLE);
+      expect(copy.body).not.toMatch(/try again/i);
     }
   });
 
