@@ -54,7 +54,7 @@ export default function About() {
           <SettingsRow
             icon="cloud-upload-outline"
             label={AI_DATA_SCREEN_TITLE}
-            subtitle={`What gets sent to ${AI_PROVIDER}, and how to stop it.`}
+            subtitle="What gets sent when Contry reads, and how to stop it."
             onPress={() => router.push('/ai-data')}
           />
         </SettingsGroup>

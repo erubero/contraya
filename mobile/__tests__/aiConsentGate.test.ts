@@ -1,5 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  AI_PROVIDER,
+  AI_CONSENT_WHO,
+  AI_CONSENT_SENT,
+  AI_CONSENT_NOT_SENT,
+  AI_CONSENT_HANDLING,
+} from '@/lib/legal';
 
 // Source-level assertions, in the idiom of disclaimer.test.ts, and for the
 // same reason: the failure mode is not a wrong branch, it is a NEW call site
@@ -54,6 +61,34 @@ describe('every path to the AI provider passes the consent gate', () => {
     const settings = read(mobile('app', '(app)', '(tabs)', 'settings.tsx'));
     expect(settings).toMatch(/ai-data/);
     expect(fs.existsSync(mobile('app', '(app)', 'ai-data.tsx'))).toBe(true);
+  });
+});
+
+// The provider name was demoted out of the sheet title and the Settings toggle
+// on 2026-08-24, because naming a vendor in a headline reads as co-branding.
+// That is a presentation choice and it is fine. Removing the name from the
+// DISCLOSURE is not fine, it is the 5.1.2(i) rejection, and after the demotion
+// there is no heading left to notice its absence. So this asserts the floor:
+// wherever the copy is arranged, the body a user reads before consenting still
+// says who receives their document.
+describe('the disclosure names the provider even though no heading does', () => {
+  it('names it in the consent body', () => {
+    const body = [
+      AI_CONSENT_WHO,
+      ...AI_CONSENT_SENT,
+      ...AI_CONSENT_NOT_SENT,
+      AI_CONSENT_HANDLING,
+    ].join(' ');
+    expect(body).toContain(AI_PROVIDER);
+  });
+
+  it('renders that body on both the consent sheet and the Settings screen', () => {
+    for (const file of [
+      path.join(__dirname, '..', 'src', 'components', 'AiConsentSheet.tsx'),
+      mobile('app', '(app)', 'ai-data.tsx'),
+    ]) {
+      expect(read(file)).toMatch(/import AiDisclosure from '@\/components\/AiDisclosure'/);
+    }
   });
 });
 

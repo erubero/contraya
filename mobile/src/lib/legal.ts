@@ -86,12 +86,15 @@ export const ABOUT_SUMMARIES_PARAGRAPHS = [
 // Settings screen, About These Summaries, the privacy policy, and the store
 // listing. It is one word and it is not optional.
 
-export const AI_CONSENT_TITLE = `Contry sends your document to ${AI_PROVIDER}`;
+export const AI_CONSENT_TITLE = 'Before Contry reads your contract';
 
-// Who, in one sentence, before any list. The first clause is there because the
-// mascot makes people assume the reading happens on their phone.
+// Who, in one sentence, before any list. It leads with Contry and puts the
+// provider in a subordinate clause on purpose: the disclosure has to be plain,
+// and it also has to not read as a partnership announcement. The "not on your
+// phone" clause stays, because the mascot makes people assume the reading
+// happens locally and that is the assumption this screen exists to break.
 export const AI_CONSENT_WHO =
-  `Contraya does not read your contract by itself. It uses an AI model made by ${AI_PROVIDER}, and to write your summary it sends your document to ${AI_PROVIDER} over an encrypted connection.`;
+  `Contry does the reading with an AI model built by ${AI_PROVIDER}, not on your phone. To write your summary, your document is sent to ${AI_PROVIDER} over an encrypted connection.`;
 
 // What leaves the device. Concrete on purpose: "some of your data" is the other
 // phrasing the guideline was written against.
@@ -120,10 +123,10 @@ export const AI_CONSENT_DECLINE = 'Not now';
 // review later cannot drift apart.
 export const AI_CONSENT_SENT_HEADING = 'What gets sent';
 export const AI_CONSENT_NOT_SENT_HEADING = 'What does not';
-export const AI_CONSENT_HANDLING_HEADING = `What ${AI_PROVIDER} does with it`;
+export const AI_CONSENT_HANDLING_HEADING = 'How it is handled';
 
 export const AI_DATA_SCREEN_TITLE = 'AI and Your Data';
-export const AI_DATA_TOGGLE_LABEL = `Send documents to ${AI_PROVIDER}`;
+export const AI_DATA_TOGGLE_LABEL = 'Let Contry read your contracts';
 export const AI_DATA_TOGGLE_OFF_NOTE =
   'Contry cannot read a contract with this off. Adding contracts by hand still works, and everything you have already saved stays exactly where it is.';
 
