@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Image, Alert, Linking,
+  KeyboardAvoidingView, Platform, Image, Alert,
 } from 'react-native';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '@/lib/AuthContext';
-import { TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
 import { MIN_PASSWORD } from '@/lib/limits';
 import { useTheme, RADIUS } from '@/theme/colors';
 import { useThemeScheme } from '@/theme/ThemeContext';
+import TermsAgreement, { useTermsAcceptance } from '@/components/TermsAgreement';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -24,6 +24,9 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
+  // Reached directly on every launch after the first, so an install that
+  // passed welcome before this screen existed still gets asked exactly once.
+  const terms = useTermsAcceptance();
 
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
@@ -37,7 +40,20 @@ export default function SignIn() {
   // No explicit navigation in any of these handlers: on success they flip
   // status to 'signedIn' in AuthContext, which re-renders this component
   // into the <Redirect> above.
+  // Every entry point runs this first. Apple's button is native and cannot be
+  // disabled, so the check has to live inside the handler rather than in a
+  // `disabled` prop, and it must be here: Apple sign-in CREATES accounts.
+  const passTerms = async (): Promise<boolean> => {
+    if (terms.blocked) {
+      terms.flagBlocked();
+      return false;
+    }
+    await terms.accept();
+    return true;
+  };
+
   const onApple = async () => {
+    if (!(await passTerms())) return;
     setBusy(true);
     try {
       await signInWithApple();
@@ -49,6 +65,7 @@ export default function SignIn() {
   };
 
   const onDemo = async () => {
+    if (!(await passTerms())) return;
     setBusy(true);
     try {
       await signIn(email, password);
@@ -81,6 +98,7 @@ export default function SignIn() {
 
   const onSubmit = async () => {
     if (isDemo) return onDemo();
+    if (!(await passTerms())) return;
     if (!email.trim() || !password) return;
     // Sign-up only: existing accounts with shorter passwords must still get in.
     if (mode === 'signUp' && password.length < MIN_PASSWORD) {
@@ -159,6 +177,10 @@ export default function SignIn() {
           </View>
         )}
 
+        <View style={{ marginBottom: 16 }}>
+          <TermsAgreement state={terms} />
+        </View>
+
         {appleAvailable && (
           <View style={{ marginBottom: 16, gap: 14 }}>
             <AppleAuthentication.AppleAuthenticationButton
@@ -204,6 +226,7 @@ export default function SignIn() {
           <Button
             label={isDemo ? 'Continue' : mode === 'signUp' ? 'Create Account' : 'Sign In'}
             busy={busy}
+            dimmed={terms.blocked}
             onPress={onSubmit}
           />
           {!isDemo && mode === 'signIn' && (
@@ -224,24 +247,25 @@ export default function SignIn() {
               </Text>
             </Pressable>
           )}
-          <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
-            By continuing you agree to the{' '}
-            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(TERMS_URL)}>
-              Terms of Service
-            </Text>{' '}
-            and{' '}
-            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(PRIVACY_URL)}>
-              Privacy Policy
-            </Text>
-            .
-          </Text>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-function Button({ label, busy, onPress }: { label: string; busy: boolean; onPress: () => void }) {
+// `dimmed` is not `disabled`. A blocked tap still runs onPress so the terms
+// error can explain itself; a dead button would only leave the user guessing.
+function Button({
+  label,
+  busy,
+  dimmed = false,
+  onPress,
+}: {
+  label: string;
+  busy: boolean;
+  dimmed?: boolean;
+  onPress: () => void;
+}) {
   const theme = useTheme();
   return (
     <Pressable
@@ -252,7 +276,7 @@ function Button({ label, busy, onPress }: { label: string; busy: boolean; onPres
         borderRadius: RADIUS,
         padding: 15,
         alignItems: 'center',
-        opacity: busy ? 0.6 : 1,
+        opacity: busy || dimmed ? 0.6 : 1,
       }}
     >
       {busy ? (

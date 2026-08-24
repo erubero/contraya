@@ -1,12 +1,12 @@
-import { View, Text, Image, Pressable, Linking } from 'react-native';
+import { View, Text, Image, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { markWelcomeSeen } from '@/lib/onboarding';
-import { TERMS_URL, PRIVACY_URL } from '@/lib/appMeta';
 import { useTheme, RADIUS } from '@/theme/colors';
 import GlowBackdrop from '@/components/GlowBackdrop';
+import TermsAgreement, { useTermsAcceptance } from '@/components/TermsAgreement';
 import { BUILT_BY, DISCLAIMER } from '@/lib/legal';
 
 // First-open pitch. Shown once per install; both CTAs mark it seen and
@@ -15,13 +15,27 @@ export default function Welcome() {
   const theme = useTheme();
   const router = useRouter();
 
-  const start = async () => {
+  const terms = useTermsAcceptance();
+
+  // Both CTAs run this first. A blocked tap is not swallowed: it surfaces the
+  // inline error under the box, which teaches the gate better than a dead
+  // button does. Acceptance is written as the user PROCEEDS, not as they tick,
+  // so a tick they then back away from records nothing.
+  const passTerms = async (): Promise<boolean> => {
+    if (terms.blocked) {
+      terms.flagBlocked();
+      return false;
+    }
+    await terms.accept();
     await markWelcomeSeen();
-    router.replace('/signin?mode=signUp');
+    return true;
+  };
+
+  const start = async () => {
+    if (await passTerms()) router.replace('/signin?mode=signUp');
   };
   const signIn = async () => {
-    await markWelcomeSeen();
-    router.replace('/signin');
+    if (await passTerms()) router.replace('/signin');
   };
 
   return (
@@ -105,9 +119,16 @@ export default function Welcome() {
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(400).duration(350)} style={{ gap: 12 }}>
+          <TermsAgreement state={terms} />
           <Pressable
             onPress={start}
-            style={{ backgroundColor: theme.primary, borderRadius: RADIUS, padding: 16, alignItems: 'center' }}
+            style={{
+              backgroundColor: theme.primary,
+              borderRadius: RADIUS,
+              padding: 16,
+              alignItems: 'center',
+              opacity: terms.blocked ? 0.5 : 1,
+            }}
           >
             <Text style={{ color: theme.primaryForeground, fontSize: 16, fontWeight: '700' }}>Start free</Text>
           </Pressable>
@@ -123,17 +144,6 @@ export default function Welcome() {
               <Text style={{ color: theme.brandText, fontWeight: '600' }}>Sign in</Text>
             </Text>
           </Pressable>
-          <Text style={{ color: theme.mutedForeground, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
-            By continuing you agree to the{' '}
-            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(TERMS_URL)}>
-              Terms of Service
-            </Text>{' '}
-            and{' '}
-            <Text style={{ color: theme.brandText }} onPress={() => Linking.openURL(PRIVACY_URL)}>
-              Privacy Policy
-            </Text>
-            .
-          </Text>
         </Animated.View>
       </View>
     </SafeAreaView>

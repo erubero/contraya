@@ -11,6 +11,8 @@ import {
   OnboardingAnswers,
 } from '@/lib/onboarding';
 import { hasAiConsent } from '@/lib/aiConsent';
+import { hasAcceptedTerms, getLocalTermsAcceptance, stampTermsAcceptance } from '@/lib/terms';
+import { TERMS_VERSION } from '@/lib/legal';
 import type { ProfilePatch } from '@/api/profile';
 
 export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
@@ -55,6 +57,7 @@ function metaOf(session: { user: { user_metadata?: Record<string, unknown> } } |
         ? (meta.onboarding_answers as OnboardingAnswers)
         : null,
     aiConsentGranted: hasAiConsent(meta),
+    termsAccepted: hasAcceptedTerms(meta),
   };
 }
 
@@ -68,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [aiConsentGranted, setAiConsentGranted] = useState(false);
+  // Deliberately NOT on the context value. The only screens that care are
+  // welcome and signin, both of which are signed out, so the account's stamp
+  // could not answer them anyway; they read the local record instead. This
+  // state exists purely so the stamping effect below runs once.
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [localPending, setLocalPending] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -91,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // lands here on its own. The consent sheet also sets it directly, so the
       // gate never waits on an event to stop re-asking.
       setAiConsentGranted(meta.aiConsentGranted);
+      setTermsAccepted(meta.termsAccepted);
       setStatus(session ? 'signedIn' : 'signedOut');
     };
     supabase.auth.getSession().then(({ data: { session } }) => apply(session));
@@ -106,6 +115,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accountCreatedAt: createdAt,
       localPending: localPending === true,
     });
+
+  // The terms tick happens BEFORE an account exists (the user accepts on
+  // welcome, then creates the account), so it lands in AsyncStorage first and
+  // is stamped onto the account here, on the first signed-in render. Gated on
+  // the LOCAL record so signing in on a device that never accepted stamps
+  // nothing. Fire and forget, like the onboarding backfill below: the next
+  // launch retries, and no metadata write is worth blocking someone's account.
+  useEffect(() => {
+    if (status !== 'signedIn' || termsAccepted) return;
+    let cancelled = false;
+    getLocalTermsAcceptance().then((version) => {
+      if (cancelled || version === null || version < TERMS_VERSION) return;
+      stampTermsAcceptance();
+      setTermsAccepted(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [status, termsAccepted]);
 
   // Old accounts skip onboarding; stamp them complete so the gate is
   // consistent forever after (fire and forget).
@@ -246,6 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOnboardingComplete(false);
         setCreatedAt(null);
         setAiConsentGranted(false);
+        setTermsAccepted(false);
       },
     }),
     [status, email, userId, displayName, avatarPath, onboardingAnswers, needsOnboarding, localPending, aiConsentGranted]

@@ -2,6 +2,37 @@
 
 Updated: 2026-08-23. Read this first.
 
+## 2026-08-23 later — terms acceptance is explicit now, and deliberately NOT the AI consent
+
+Owner's call, made after the fix below shipped: the passive "By continuing you
+agree to the Terms" line on welcome and signin became a real tick.
+
+- `lib/terms.ts` + `components/TermsAgreement.tsx` (component owns both states)
+  + `TERMS_VERSION` and the copy in `legal.ts`. One rule decides what renders:
+  **checkbox wherever acceptance is not on file, passive line once it is.** That
+  covers fresh installs, upgrades that already passed welcome, and returning
+  signed-out users with no second flow.
+- The tick is remembered by NOT RENDERING the box, never by pre-ticking it. A
+  pre-checked box is a rejected consent pattern on its own.
+- Acceptance happens before an account exists, so it goes to AsyncStorage first
+  and `AuthContext` stamps `terms_accepted_at` + `terms_version` onto the
+  account on the first signed-in render, gated on the local record so signing in
+  on a device that never accepted stamps nothing. Fire and forget, like the
+  onboarding backfill: nothing server-side reads it.
+- Apple's sign-in button is native and cannot be disabled, and it CREATES
+  accounts, so the check lives inside `onApple` rather than in a `disabled`
+  prop. Same for the demo path. The email button is `dimmed`, not `disabled`, so
+  a blocked tap still explains itself instead of doing nothing.
+- The agreement sits ABOVE the Apple button on signin, not by the submit button,
+  because a checkbox below one of the two ways to create an account would put
+  its error message below it too.
+
+**The boundary, which is the whole point:** this is a TERMS acceptance. It does
+not cover sending documents to Anthropic, that consent keeps its own sheet, its
+own record and its own 403, and `__tests__/termsGate.test.ts` fails if the terms
+copy even contains the word "AI". A future diff merging the two would look
+entirely reasonable and would put the app back where build 6 was.
+
 ## 2026-08-23 — REJECTED 5.1.1(i) + 5.1.2(i): the app never asked before sending documents to Anthropic
 
 Submission `f6cd4f14-4661-4dde-b03e-1db566b4a518`, version 1.0 (6), reviewed on

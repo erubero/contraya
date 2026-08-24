@@ -126,3 +126,33 @@ export const AI_DATA_SCREEN_TITLE = 'AI and Your Data';
 export const AI_DATA_TOGGLE_LABEL = `Send documents to ${AI_PROVIDER}`;
 export const AI_DATA_TOGGLE_OFF_NOTE =
   'Contry cannot read a contract with this off. Adding contracts by hand still works, and everything you have already saved stays exactly where it is.';
+
+// ---------------------------------------------------------------------------
+// Terms acceptance. SEPARATE from the AI consent above, and the separation is
+// the point.
+//
+// The passive "By continuing you agree to the Terms" line that used to sit on
+// welcome and signin is exactly the pattern App Review rejected on 2026-08-23,
+// and implied consent from continued use is a documented 5.1.2(i) rejection
+// pattern. Making the terms acceptance explicit is an improvement to the TERMS
+// acceptance and nothing more: it does not cover sending documents to
+// Anthropic, and nothing here may be reworded to suggest it does. That
+// permission has its own sheet, its own record, and its own server check.
+//
+// Two consents, two surfaces, on purpose. If a future change makes one of them
+// stand in for the other, the app is back where build 6 was.
+
+// Bump when the Terms or the Privacy Policy change materially. An older stored
+// version reads as unaccepted and the box comes back.
+export const TERMS_VERSION = 1;
+
+export const TERMS_ACCEPT_LEAD = 'I have read and agree to the';
+export const TERMS_LINK_TERMS = 'Terms of Service';
+export const TERMS_LINK_PRIVACY = 'Privacy Policy';
+
+// The reminder shown once acceptance is already on file. Same words the app has
+// always used; it is a reminder now rather than the acceptance itself.
+export const TERMS_NOTE_LEAD = 'By continuing you agree to the';
+
+export const TERMS_REQUIRED_ERROR =
+  'Please accept the Terms of Service and Privacy Policy to continue.';
