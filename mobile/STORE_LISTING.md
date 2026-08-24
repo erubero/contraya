@@ -236,69 +236,27 @@ questions. No documents required.
 
 ## 6. App Review notes (paste into the Review Notes field)
 
-> THIRD-PARTY AI DISCLOSURE AND CONSENT (guidelines 5.1.1(i) and 5.1.2(i))
+
+> Contraya reads contract documents the user uploads and describes what they say in plain English: a summary, key dates, obligations, and clauses worth attention, each quoted from the document. These are informational descriptions of the user's own documents, not legal advice.
 >
-> Contraya sends documents to one third-party AI provider: Anthropic PBC, via
-> its commercial API at api.anthropic.com. Nothing is sent to any other AI
-> service.
+> THIRD-PARTY AI (guidelines 5.1.1(i) and 5.1.2(i))
 >
-> Before the first document is ever transmitted, the app shows a full-screen
-> consent sheet that names Anthropic, lists exactly what is sent (the PDF or
-> page photos the user selected, including every name, address, amount, and
-> date written in them; and for Ask Contry, the question and the contract
-> details already extracted), lists what is not sent (the user's email address,
-> name, and account identifier, none of which reach Anthropic), states that
-> Anthropic does not use the content for training and deletes it after a
-> limited retention period, and links both privacy policies. The user must tap
-> "Allow and continue". Tapping "Not now" cancels, and the app still works for
-> adding contracts by hand and tracking dates.
+> The only AI provider is Anthropic PBC, via api.anthropic.com. Before any document leaves the device, a full-screen sheet names Anthropic, lists what is sent (the PDF or photos the user selects; for Ask Contry, the question and the details already extracted) and what is not (email address, name, account identifier), and requires a tap on "Allow and continue".
 >
-> To see it: sign in, tap the + button, then Upload a PDF or Take photos. The
-> sheet appears before the document picker, so no file is uploaded or
-> transmitted before the answer is given. Ask Contry shows it too, before the
-> first question is sent.
+> To see it: sign in, tap the + button, then Upload a PDF or Take photos. The sheet appears before the file picker, so nothing is transmitted before the user answers. Declining leaves manual contract entry and date reminders working. It is revocable at Settings, AI and Your Data, and our server returns 403 for any account with no consent recorded.
 >
-> The consent is revocable at any time in Settings, AI and Your Data, which
-> also re-displays the same disclosure. Revoking stops all sending. The server
-> enforces this as well: the analyze-contract and chat-contract functions
-> return 403 for any account with no consent on record, so a modified client
-> cannot bypass it.
+> The privacy policy at https://usecontraya.com/privacy names Anthropic, itemizes what is collected and shared, confirms every provider gives equal protection, and describes revoking consent.
 >
-> The privacy policy at https://usecontraya.com/privacy names Anthropic in
-> Section 1 (Uploaded Files) and Section 4 (Data Sharing), confirms that every
-> provider gives the same or equal protection of user data, and describes
-> revoking consent and requesting deletion in Sections 5 and 6.
+> DISCLAIMERS
 >
-> WHAT THE APP DOES
->
-> Contraya uses AI to read contract documents the user uploads and produce
-> plain English descriptions of what those documents say: a summary, key
-> dates, obligations, and clauses worth attention, each quoted from the
-> document. These are informational descriptions of the user's own documents,
-> not legal advice.
->
-> The disclaimer "Contry uses AI to explain what your contract says. This is
-> not legal advice." is shown on the analysis review screen and on every
-> contract detail screen. The chat carries the same disclaimer worded for
-> that surface. The full version, including that using Contraya creates no
-> attorney-client relationship and no attorney-client privilege, appears at
-> the end of onboarding and in a long form page at Settings, About, About
-> These Summaries. The chat also declines to answer questions that ask for
-> legal conclusions (for example "can I sue?") and refers the user to a
-> licensed attorney.
+> "Contry uses AI to explain what your contract says. This is not legal advice." appears on every analysis and contract screen. The full version, including that no attorney-client relationship or privilege is created, is one tap away at Settings, About, About These Summaries. Ask Contry declines legal-conclusion questions and refers the user to a licensed attorney.
 >
 > TO TEST
 >
-> Create an account with any email and password (no confirmation email, you are
-> signed in right away). Tap +, choose Upload a PDF, and the AI consent sheet
-> appears. Allow it, pick the attached sample PDF, review the dates it found,
-> and save. A sample contract PDF is attached to this submission for that
-> purpose. To see the consent being withdrawn, go to Settings, AI and Your
-> Data, and turn the switch off; the sheet returns on the next analysis.
+> Create an account with any email and password. You are signed in immediately, with no confirmation email. Tap +, choose Upload a PDF, allow the AI sheet, and use the sample contract PDF attached to this submission. Ask Contry sits behind the subscription paywall.
 
 Attach a sample contract PDF (a fictional 2-3 page lease works) to the
 review notes. Do not attach a real contract.
-
 ---
 
 ## 6b. Reply to the 5.1.1(i) / 5.1.2(i) rejection (Resolution Center)
@@ -308,63 +266,22 @@ version 1.0 (6). **This reply only works alongside a NEW build.** 1.0 (6) is
 what was reviewed and it genuinely did not ask; replying without uploading
 1.0 (7) invites the same rejection back. Paste below the line:
 
-> Thank you for the review. You are right that build 6 sent user documents to a
-> third-party AI service without asking first. Build 7 fixes it.
+
+> Thank you for the review. You are right that build 6 sent user documents to a third-party AI service without asking first. Build 7 fixes it.
 >
-> WHO THE DATA GOES TO
+> WHO: Anthropic PBC, via api.anthropic.com. No other AI service is used, and no other third party receives document contents.
 >
-> One provider: Anthropic PBC, through its commercial API at
-> api.anthropic.com. No other AI service is used, and no other third party
-> receives document contents.
+> WHAT IS SENT: the PDF or page photos the user selects. For Ask Contry, also their question and the contract details already extracted from that document.
 >
-> WHAT IS SENT
+> WHAT IS NOT SENT: the user's email address, name, and account identifier. Anthropic is not told whose document it is.
 >
-> The PDF or the page photos the user selects, exactly as they are, including
-> every name, address, amount and date written in them. When the user asks a
-> question in Ask Contry, we also send that question and the contract details
-> previously extracted from the same document.
+> PERMISSION: a full-screen sheet now appears before any document leaves the device. It names Anthropic, lists what is and is not sent, states that Anthropic does not train on the content and deletes it after a limited retention period, and requires a tap on "Allow and continue". To see it: sign in, tap the + button, then Upload a PDF. The sheet appears before the file picker. "Not now" cancels, and the app still works for adding contracts by hand.
 >
-> WHAT IS NOT SENT
+> WITHDRAWAL: Settings, AI and Your Data, which shows the same disclosure and a switch. Our server enforces it too, returning 403 for any account with no consent recorded, so a modified client cannot bypass it.
 >
-> The user's email address, display name, and account identifier are never
-> transmitted to Anthropic. The request carries document content and a date
-> only, so Anthropic is not told whose document it is.
+> PRIVACY POLICY: https://usecontraya.com/privacy now names Anthropic in Sections 1 and 4, itemizes what is collected and how, confirms every provider gives the same or equal protection, and describes withdrawing consent and requesting deletion in Sections 5 and 6. The Terms name Anthropic as well.
 >
-> HOW PERMISSION IS OBTAINED
->
-> Build 7 adds a full-screen consent sheet that appears before any document
-> leaves the device. It names Anthropic, lists what is sent and what is not,
-> states that Anthropic does not use the content for training and deletes it
-> after a limited retention period, and links both our privacy policy and
-> Anthropic's. The user must tap "Allow and continue". "Not now" cancels, and
-> the app remains fully usable for adding contracts by hand and tracking dates.
->
-> To see it: sign in, tap the + button, then "Upload a PDF" or "Take photos".
-> The sheet appears before the file picker, so nothing is uploaded or
-> transmitted before the user answers. Ask Contry presents it as well, before
-> the first question is sent.
->
-> HOW IT IS WITHDRAWN
->
-> Settings, AI and Your Data shows the same disclosure and a switch that
-> revokes consent. Revoking stops all transmission immediately. Our server
-> enforces this too: the analysis and chat endpoints return 403 for any account
-> with no consent recorded, so the permission cannot be bypassed by a modified
-> client.
->
-> PRIVACY POLICY
->
-> https://usecontraya.com/privacy has been updated. Section 1 (Uploaded Files)
-> names Anthropic and itemizes what is and is not sent, and how it is
-> collected. Section 3 lists all uses. Section 4 (Data Sharing) names every
-> provider we share data with and confirms that each provides the same or equal
-> protection of user data as our policy states. Section 5 explains how consent
-> is obtained and withdrawn, and Section 6 covers retention, revocation and
-> deletion. The Terms of Service at https://usecontraya.com/terms names
-> Anthropic as well.
->
-> We understand that carrying this only in the policy is not sufficient, which
-> is why the consent sheet and the Settings control are both in the app.
+> We understand that carrying this in the policy alone is not sufficient, which is why the consent sheet and the Settings control are both in the app.
 
 ---
 
