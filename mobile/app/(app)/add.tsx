@@ -33,7 +33,7 @@ import ContryFace from '@/components/ContryFace';
 import InsightCard from '@/components/InsightCard';
 import GlowBackdrop from '@/components/GlowBackdrop';
 import { usePurchases } from '@/lib/PurchasesContext';
-import { useAiConsent } from '@/lib/AiConsentContext';
+import { AiConsentHost, useAiConsent } from '@/lib/AiConsentContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES } from '@/lib/limits';
 import { analysisGate } from '@/lib/quotaGate';
@@ -561,6 +561,7 @@ export default function AddContract() {
   if (showSuccess) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <AiConsentHost />
         <SuccessCheck size={140} onDone={() => router.back()} />
         <Text style={{ color: theme.foreground, fontSize: 18, fontWeight: '700' }}>Saved</Text>
       </View>
@@ -582,6 +583,7 @@ export default function AddContract() {
         <Text style={{ color: theme.mutedForeground, fontSize: 13, textAlign: 'center' }}>
           Encrypted in transit and at rest. Only you can see what's here.
         </Text>
+        <AiConsentHost />
       </View>
     );
   }
@@ -592,6 +594,7 @@ export default function AddContract() {
       contentContainerStyle={{ padding: 16, gap: 16 }}
       keyboardShouldPersistTaps="handled"
     >
+      <AiConsentHost />
       {/* Held until the draft lookup returns, so the resume card cannot appear a
           frame late and shove the source cards down. The modal is still
           animating in, so this reads as nothing at all. */}

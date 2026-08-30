@@ -46,10 +46,36 @@ describe('every path to the AI provider passes the consent gate', () => {
     '%s asks before it sends',
     (_name, file) => {
       const source = read(file);
-      expect(source).toMatch(/import { useAiConsent } from '@\/lib\/AiConsentContext'/);
+      expect(source).toMatch(/import {[^}]*\buseAiConsent\b[^}]*} from '@\/lib\/AiConsentContext'/);
       expect(source).toMatch(/ensureAiConsent\(\)/);
     }
   );
+
+  // 1.0 (7) was rejected under 2.1(a) because the sheet was mounted beside the
+  // navigator instead of inside the screen that asks. React Native presents a
+  // <Modal> from the controller that owns where it is MOUNTED, so on the `add`
+  // route -- itself a `presentation: 'modal'` screen -- UIKit was asked to
+  // present a second controller on one that was already presenting, refused,
+  // and the tap vanished. A screen that asks for consent without hosting the
+  // sheet is that bug, so it is a build failure and not a code review note.
+  it.each(senders.map((f) => [path.relative(mobile(), f), f]))(
+    '%s hosts the sheet it asks with',
+    (_name, file) => {
+      const source = read(file);
+      expect(source).toMatch(/import {[^}]*\bAiConsentHost\b[^}]*} from '@\/lib\/AiConsentContext'/);
+      expect(source).toMatch(/<AiConsentHost\s*\/>/);
+    }
+  );
+
+  // The counterpart to the rule above: the provider must NOT render the sheet
+  // itself, which is where it was when Apple found it.
+  it('leaves the sheet to the screens and does not render one itself', () => {
+    const provider = read(mobile('src', 'lib', 'AiConsentContext.tsx'));
+    const host = provider.slice(provider.indexOf('export function AiConsentHost'));
+    const outsideHost = provider.slice(0, provider.indexOf('export function AiConsentHost'));
+    expect(host).toMatch(/<AiConsentSheet/);
+    expect(outsideHost).not.toMatch(/<AiConsentSheet/);
+  });
 
   it('mounts one consent provider over the whole signed-in app', () => {
     const layout = read(mobile('app', '(app)', '_layout.tsx'));

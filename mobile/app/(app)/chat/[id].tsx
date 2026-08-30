@@ -15,7 +15,7 @@ import {
   ChatTurn, turnsFromRows, SUGGESTED_QUESTIONS, MAX_QUESTION_CHARS, MAX_HISTORY_TURNS,
 } from '@/data/chat';
 import { usePurchases } from '@/lib/PurchasesContext';
-import { useAiConsent } from '@/lib/AiConsentContext';
+import { AiConsentHost, useAiConsent } from '@/lib/AiConsentContext';
 import { presentPaywall } from '@/lib/purchases';
 import { PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { chatOpenGate, chatSendGate } from '@/lib/quotaGate';
@@ -159,6 +159,7 @@ export default function ContractChat() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
+      <AiConsentHost />
       {/* Clear only renders once there is something to clear; an empty chat
           with a trash can in the header would read as a bug. Same glyph and
           color as the contract screen's delete. */}
