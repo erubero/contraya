@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // match reality since 2026-08-10. ios/Contraya/Info.plist carries the
     // literal that actually ships, so change CFBundleVersion there too rather
     // than running prebuild for it.
-    buildNumber: '7',
+    buildNumber: '8',
     // Renovatio, LLC — bakes DEVELOPMENT_TEAM into the generated project so
     // Xcode never shows "requires a development team" after a prebuild.
     appleTeamId: 'DYR4YB9FVL',
