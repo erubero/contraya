@@ -9,13 +9,13 @@ import { usePageMeta } from '@/lib/usePageTitle';
 const LOGO = "/icons/icon-192.png";
 
 const faqs = [
-  { q: "How does Contraya work?", a: "Add a contract as a photo or a PDF, or forward the email it arrived in. Contry uses AI to read it and give you a plain-English summary, every key date, and any clauses worth a second look, each one quoted straight from the document. You confirm the dates, and Contraya reminds you before each one." },
+  { q: "How does Contraya work?", a: "Add a contract as a photo or a PDF. Contry uses AI to read it and give you a plain-English summary, every key date, and any clauses worth a second look, each one quoted straight from the document. You confirm the dates, and Contraya reminds you before each one." },
   { q: "Is this legal advice?", a: "No. Contraya describes what is written in your document and quotes the lines it came from, so you can check every word yourself. It never tells you whether something is legal, whether you would win a dispute, or what you should do. Using Contraya does not create an attorney-client relationship, and nothing you put here is protected by attorney-client privilege. Those are questions for a licensed attorney of your own." },
   { q: "Who built this?", a: "A lawyer, for people who are not lawyers. Contraya exists because the person who built it kept watching friends sign things they had not read. That is who designed it, not an offer of legal services, and nobody at Contraya becomes your attorney." },
   { q: "Does AI read my contract?", a: "Yes. An AI model reads the document and writes the summary, and no person reviews it before you see it. That is why every clause it flags is quoted word for word: so you can check it against the original yourself. AI can miss things and can get a date wrong, so the original document is always the one that counts." },
   { q: "What kinds of contracts can it read?", a: "Apartment leases, phone and internet plans, gym memberships, wedding and event vendor agreements, freelance client contracts, loans, storage units, contractor bids. If it is a PDF or a clear photo of a document, Contry can read it." },
   { q: "When will I hear about a deadline?", a: "Every date you confirm gets reminders before it arrives, with enough lead time to actually act on it: give the notice, make the payment, or cancel before the renewal locks in. Recurring dates, like monthly rent, repeat on their own." },
-  { q: "Is my information private?", a: "Your contracts are stored in private storage only you can access, encrypted in transit and at rest, and never sold or shared. You can delete your account and everything in it whenever you like." },
+  { q: "Is my information private?", a: "Your contracts are stored in private storage only you can access, encrypted in transit and at rest, and never sold or used for advertising. To write your summary, Contry sends the document to an outside company whose AI model reads it, over an encrypted connection and under terms that do not allow it to be used for training. Contraya asks your permission before the first one is ever sent, and you can withdraw it at any time in Settings. You can delete your account and everything in it whenever you like." },
   { q: "Can I use it on my phone?", a: "Contraya is an iPhone app, currently in early access. Email hello@usecontraya.com and you will be first in line when it launches. Android is next." },
 ];
 
@@ -278,7 +278,7 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step: '01', icon: Upload, title: 'Add the contract', desc: 'Snap a photo, upload the PDF, or forward the email it came in. Signed yesterday or three years ago, it all works.' },
+              { step: '01', icon: Upload, title: 'Add the contract', desc: 'Snap a photo or upload the PDF. Signed yesterday or three years ago, it all works.' },
               { step: '02', icon: FileSearch, title: 'Contry reads it', desc: 'You get a plain-English summary, every key date, and the clauses worth a second look, each one quoted from the document. You confirm the dates before anything is saved.' },
               { step: '03', icon: Bell, title: 'We tap you on the shoulder', desc: 'Before every deadline, a reminder taps you on the shoulder. Give the notice, make the payment, or cancel in time, and keep your money.' },
             ].map(({ step, icon: Icon, title, desc }) => (
@@ -342,7 +342,7 @@ export default function Landing() {
               </div>
               <p className="text-slate-500 text-sm mb-6">Everything you need to try it on a real contract.</p>
               <ul className="space-y-3 text-slate-700 text-sm flex-1">
-                {['Contry reads 2 contracts, on us', 'Plain-English summary of each one', 'Every date on your calendar, with reminders', 'Forward contracts straight from your email', 'Risky clauses flagged with the exact quote'].map((line) => (
+                {['Contry reads 2 contracts, on us', 'Plain-English summary of each one', 'Every date on your calendar, with reminders', 'Add as many contracts by hand as you like', 'Risky clauses flagged with the exact quote'].map((line) => (
                   <li key={line} className="flex items-start gap-2.5">
                     <ScrollText className="w-4 h-4 text-lime-700 flex-shrink-0 mt-0.5" />
                     <span>{line}</span>
