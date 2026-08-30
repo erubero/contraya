@@ -7,7 +7,7 @@ const LOGO = "/icons/icon-192.png";
 
 // Bump this by hand whenever the document text changes. Never compute it:
 // a legal document's revision date must not move on its own.
-const LAST_UPDATED = 'August 23, 2026';
+const LAST_UPDATED = 'August 30, 2026';
 
 export default function PrivacyPolicy() {
   usePageMeta({
@@ -44,11 +44,11 @@ export default function PrivacyPolicy() {
 
         <h3>Uploaded Files</h3>
         <p>Contracts and documents you upload are stored in private storage that only your account can access.</p>
-        <p>When you ask Contraya to read a contract, <strong>a copy of that document is sent to Anthropic PBC</strong>, the AI company whose model writes your summary. Anthropic is the only third party that ever receives the contents of your documents.</p>
+        <p>When you ask Contraya to read a contract, <strong>a copy of that document is sent to an outside company</strong> whose AI model writes your summary. That company is our data processor, and it is the only third party that ever receives the contents of your documents.</p>
         <ul>
           <li><strong>What is sent:</strong> the PDF or the page photos you selected, exactly as they are, including every name, address, amount, and date written in them. When you use Ask Contry, we also send your question and the contract details Contraya had already extracted from that same document.</li>
-          <li><strong>What is not sent:</strong> your email address, your name, and your account identifier. Anthropic is not told whose document it is.</li>
-          <li><strong>Who receives it:</strong> Anthropic PBC, through its commercial API at api.anthropic.com, acting as our data processor. Under Anthropic's commercial terms the content is not used to train its models, and inputs and outputs are deleted after a limited retention period. See the <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">Anthropic Privacy Policy</a>.</li>
+          <li><strong>What is not sent:</strong> your email address, your name, and your account identifier. The company is not told whose document it is.</li>
+          <li><strong>Who receives it:</strong> a United States provider of commercial AI model services, acting as our data processor under a commercial agreement. Under that agreement the content is not used to train its models, and inputs and outputs are deleted after a limited retention period. See <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">that company's privacy policy</a>.</li>
           <li><strong>Your permission:</strong> we ask inside the app before the first document is ever sent, and you can withdraw that permission at any time. See Section 5.</li>
         </ul>
         <p>Because a summary is produced by an AI model rather than by a person, nothing you upload is covered by attorney-client privilege, and using Contraya does not create an attorney-client relationship. Treat what you send here the way you would treat any document held by a service provider, not the way you would treat a file with your own attorney.</p>
@@ -72,14 +72,14 @@ export default function PrivacyPolicy() {
         <ul>
           <li>To provide and operate the contract organizing service</li>
           <li>To send contract date reminders, if you enable notifications</li>
-          <li>To read your document and produce its summary when you add a contract, which means sending it to Anthropic as described in Section 1</li>
+          <li>To read your document and produce its summary when you add a contract, which means sending it to our AI processor as described in Section 1</li>
           <li>To respond to support requests</li>
         </ul>
 
         <h2>4. Data Sharing</h2>
         <p>We do not sell or rent your personal data, and we never share it for advertising, marketing, or tracking. We share data only with the service providers that make the app work, only so they can provide that service to us, and only to the extent each one needs:</p>
         <ul>
-          <li><strong>Anthropic PBC</strong> (AI processing) receives the documents you ask Contraya to read and the questions you ask Ask Contry, in order to produce your summaries and answers. This requires your permission first, as described in Sections 1 and 5.</li>
+          <li><strong>Our AI processor</strong> (AI processing), the outside company described in Section 1, receives the documents you ask Contraya to read and the questions you ask Ask Contry, in order to produce your summaries and answers. This requires your permission first, as described in Sections 1 and 5.</li>
           <li><strong>Supabase</strong> (hosting) provides our database, authentication, and the private storage your files live in.</li>
           <li><strong>Cloudflare</strong> (hosting) serves this website and, if you use the optional email forwarding feature, routes the mail sent to your forwarding address.</li>
           <li><strong>Apple</strong> and <strong>RevenueCat</strong> (billing) process subscription purchases and tell us whether yours is active. Apple handles the payment itself; we never see your card details.</li>
@@ -88,8 +88,8 @@ export default function PrivacyPolicy() {
         <p>We may also disclose data if required by law or valid legal process, or where necessary to protect the rights and safety of users and the platform.</p>
 
         <h2>5. Your Consent to AI Processing</h2>
-        <p>Before Contraya sends any document to Anthropic, the app asks you for permission on a screen that names Anthropic, lists what will be sent, and lists what will not. Nothing is sent unless you tap to allow it. Declining does not lock you out of the app: you can still add contracts, enter their details yourself, and get date reminders.</p>
-        <p>You can withdraw your permission at any time in the app, under <strong>Settings, AI and Your Data</strong>. From that moment Contraya stops sending documents and questions to Anthropic. Summaries produced before you withdrew stay in your account until you delete them, and you can delete any contract, or your whole account, whenever you like.</p>
+        <p>Before Contraya sends any document out, the app asks you for permission on a screen that says the document is sent to an outside company to be read, lists what will be sent, lists what will not, and states how it is handled. Nothing is sent unless you tap to allow it. Declining does not lock you out of the app: you can still add contracts, enter their details yourself, and get date reminders.</p>
+        <p>You can withdraw your permission at any time in the app, under <strong>Settings, AI and Your Data</strong>. From that moment Contraya stops sending documents and questions out. Summaries produced before you withdrew stay in your account until you delete them, and you can delete any contract, or your whole account, whenever you like.</p>
 
         <h2>6. Data Retention</h2>
         <p>Your data is retained as long as your account is active. If you delete your account, your personal data, contract records, and uploaded files are deleted promptly, and any residual copies are removed from our systems within 30 days.</p>

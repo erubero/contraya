@@ -2,7 +2,7 @@ import { View, Text, Linking } from 'react-native';
 import { useTheme } from '@/theme/colors';
 import { PRIVACY_URL } from '@/lib/appMeta';
 import {
-  AI_PROVIDER,
+  AI_PROVIDER_PRIVACY_LINK_LABEL,
   AI_PROVIDER_PRIVACY_URL,
   AI_CONSENT_WHO,
   AI_CONSENT_SENT,
@@ -57,7 +57,7 @@ export default function AiDisclosure({ showRevoke = true }: { showRevoke?: boole
           onPress={() => Linking.openURL(AI_PROVIDER_PRIVACY_URL)}
           style={{ color: theme.brandText, textDecorationLine: 'underline' }}
         >
-          {`the ${AI_PROVIDER} Privacy Policy`}
+          {AI_PROVIDER_PRIVACY_LINK_LABEL}
         </Text>
         .
       </Text>

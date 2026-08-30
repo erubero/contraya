@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   AI_PROVIDER,
+  AI_PROVIDER_PUBLIC,
   AI_CONSENT_WHO,
   AI_CONSENT_SENT,
   AI_CONSENT_NOT_SENT,
@@ -90,22 +91,80 @@ describe('every path to the AI provider passes the consent gate', () => {
   });
 });
 
-// The provider name was demoted out of the sheet title and the Settings toggle
-// on 2026-08-24, because naming a vendor in a headline reads as co-branding.
-// That is a presentation choice and it is fine. Removing the name from the
-// DISCLOSURE is not fine, it is the 5.1.2(i) rejection, and after the demotion
-// there is no heading left to notice its absence. So this asserts the floor:
-// wherever the copy is arranged, the body a user reads before consenting still
-// says who receives their document.
-describe('the disclosure names the provider even though no heading does', () => {
-  it('names it in the consent body', () => {
-    const body = [
-      AI_CONSENT_WHO,
-      ...AI_CONSENT_SENT,
-      ...AI_CONSENT_NOT_SENT,
-      AI_CONSENT_HANDLING,
-    ].join(' ');
-    expect(body).toContain(AI_PROVIDER);
+// HISTORY, because the direction of this block reversed and the reason matters.
+//
+// The name was demoted out of the sheet title on 2026-08-24 (co-branding), and
+// this block was installed then to assert the floor: the BODY still had to name
+// who receives the document. On 2026-08-30 the owner decided to take the name
+// out of user-facing copy entirely, in the app and on the privacy policy and
+// terms pages. That was decided twice, in writing, with the 1.0 (6) rejection
+// on the table, and it is the owner's call.
+//
+// So the assertion is inverted rather than deleted. Deleting it would leave no
+// mechanical record that the absence is deliberate, and the next session to
+// read CLAUDE.md would helpfully "restore" the name. What is guarded now:
+// the neutral label is present, the vendor name is not, the concrete claims
+// that carry the disclosure without a name survive, and neither phrase Apple
+// already rejected can creep back in.
+//
+// KNOW THE COST: an unnamed third-party AI recipient is the shape of disclosure
+// 5.1.2(i) was written against, and STATUS.md calls the 1.0 (6) euphemism "the
+// single biggest self-inflicted wound". If review rejects this again, the fix
+// is one line in legal.ts: AI_PROVIDER_PUBLIC = AI_PROVIDER.
+describe('the disclosure carries the neutral label and not the provider name', () => {
+  const body = [
+    AI_CONSENT_WHO,
+    ...AI_CONSENT_SENT,
+    ...AI_CONSENT_NOT_SENT,
+    AI_CONSENT_HANDLING,
+  ].join(' ');
+
+  it('does not name the provider in the consent body', () => {
+    expect(body).not.toContain(AI_PROVIDER);
+  });
+
+  it('puts the neutral label there instead, so nothing just went missing', () => {
+    expect(body).toContain(AI_PROVIDER_PUBLIC);
+  });
+
+  // Without a name, these ARE the disclosure. Each one is the difference
+  // between this copy and "powered by AI", which is the phrasing the guideline
+  // was written against. Trimming any of them for brevity is a regression.
+  it.each([
+    ['the reading happens off the device', /not on your phone/],
+    ['the document is transmitted', /sent to that company/],
+    ['the connection is encrypted', /encrypted connection/],
+    ['it is not used for training', /not allowed to use it for training/],
+    ['it is deleted afterwards', /deletes it after a limited retention period/],
+  ])('still states that %s', (_label, pattern) => {
+    expect(body).toMatch(pattern);
+  });
+
+  // Both phrasings App Review rejected in 1.0 (6) were "third-party" plus a
+  // role noun. The neutral label is one careless edit away from becoming one of
+  // them again, so the words themselves are barred.
+  it.each([
+    ['third-party document-processing service provider'],
+    ['third-party AI provider'],
+  ])('never reintroduces the rejected phrase "%s"', (phrase) => {
+    expect(body.toLowerCase()).not.toContain(phrase.toLowerCase());
+  });
+
+  // legal.ts still holds the real name for the tests above. Every screen that
+  // renders copy must go through the label instead, and about.tsx hand-writes
+  // its sentence, so the files are checked directly rather than the constants.
+  it.each([
+    ['components/AiDisclosure.tsx', path.join(__dirname, '..', 'src', 'components', 'AiDisclosure.tsx')],
+    ['components/AiConsentSheet.tsx', path.join(__dirname, '..', 'src', 'components', 'AiConsentSheet.tsx')],
+    ['app/(app)/ai-data.tsx', mobile('app', '(app)', 'ai-data.tsx')],
+    ['app/(app)/about.tsx', mobile('app', '(app)', 'about.tsx')],
+    ['app/(app)/about-summaries.tsx', mobile('app', '(app)', 'about-summaries.tsx')],
+  ])('%s neither names the provider nor reaches for AI_PROVIDER', (_name, file) => {
+    const source = read(file);
+    expect(source).not.toMatch(/Anthropic/);
+    // \b stops this matching AI_PROVIDER_PUBLIC or AI_PROVIDER_PRIVACY_URL,
+    // since an underscore is a word character.
+    expect(source).not.toMatch(/\bAI_PROVIDER\b/);
   });
 
   it('renders that body on both the consent sheet and the Settings screen', () => {
@@ -130,6 +189,10 @@ describe('the server refuses without a consent record too', () => {
     // consume, so a refusal never costs a slot that then has to be refunded.
     // Matched on the fetch itself, not on the hostname, which also appears in
     // the comments explaining why this check is here.
+    //
+    // The provider name below is the BACKEND and is intentional. The 2026-08-30
+    // decision removed the name from user-facing COPY only; the edge functions
+    // still call the real host. Do not "finish the job" here.
     expect(source.indexOf('status: 403')).toBeLessThan(
       source.indexOf("fetch('https://api.anthropic.com")
     );

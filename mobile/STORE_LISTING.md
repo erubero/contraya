@@ -178,9 +178,14 @@ Contraya differs from Warraya here in three ways: push tokens ARE stored
 server side (the daily reminder cron), forwarded email metadata is stored
 (the email-in feature), and **uploaded documents are sent to Anthropic PBC**,
 the third-party AI provider whose model produces the summaries. Name Anthropic
-here and everywhere else. The euphemism this section used to carry
+HERE, in the App Review Notes, and in the App Privacy answers: these are
+statements of fact to Apple and they must stay true. The in-app copy, the
+privacy policy and the terms stopped naming the vendor on 2026-08-30 by owner
+decision (see CLAUDE.md); that scope split is deliberate and does not reach
+this section. The euphemism this section used to carry
 ("a third-party document-processing service provider") is what 1.0 (6) was
-rejected over on 2026-08-23 under guidelines 5.1.1(i) and 5.1.2(i). Declare:
+rejected over on 2026-08-23 under guidelines 5.1.1(i) and 5.1.2(i), so do not
+reach for it here no matter what the app now says. Declare:
 
 **Data collected and linked to the user (all for App Functionality, none for tracking):**
 - Contact Info → Email Address — account creation and sign-in
@@ -211,10 +216,21 @@ tracking. Documents and Ask Contry questions ARE shared with **Anthropic PBC**
 to produce the summaries and answers, which is App Functionality. Do not write
 "none" here and do not fall back on the service-provider framing to avoid
 saying it: the app asks the user's explicit permission before the first send
-(see §6), and an App Privacy answer that contradicts the consent screen is
-worse than either one alone. Note that the account identifiers above are NOT
-sent to Anthropic; only document content, the extracted contract details, and
-the user's typed question are.
+(see §6). Note that the account identifiers above are NOT sent to Anthropic;
+only document content, the extracted contract details, and the user's typed
+question are.
+
+**Known asymmetry, accepted on 2026-08-30 and not a drafting error.** This
+section used to warn that "an App Privacy answer that contradicts the consent
+screen is worse than either one alone". After the owner's decision to drop the
+vendor name from user-facing copy, that is exactly the position: this
+declaration names Anthropic PBC, the consent sheet describes an unnamed outside
+company. There is no wording that removes the asymmetry. The alternative,
+dropping the name from App Privacy too, is worse: under-declaring is a
+documented failure mode, and the listing euphemism is a named cause of the
+1.0 (6) rejection. So the declaration stays factual and the gap is accepted
+knowingly. If review raises it, restoring the name in copy is one line in
+`legal.ts`.
 
 (If crash reporting or analytics is added later, update this section.)
 
@@ -241,11 +257,11 @@ questions. No documents required.
 >
 > THIRD-PARTY AI (guidelines 5.1.1(i) and 5.1.2(i))
 >
-> The only AI provider is Anthropic PBC, via api.anthropic.com. Before any document leaves the device, a full-screen sheet names Anthropic, lists what is sent (the PDF or photos the user selects; for Ask Contry, the question and the details already extracted) and what is not (email address, name, account identifier), and requires a tap on "Allow and continue".
+> The only AI provider is Anthropic PBC, via api.anthropic.com. Before any document leaves the device, a full-screen sheet states that the document is sent to an outside company for an AI model to read, lists what is sent (the PDF or photos the user selects; for Ask Contry, the question and the details already extracted) and what is not (email address, name, account identifier), states that the content is not used for training and is deleted after a limited retention period, links to that company's privacy policy, and requires a tap on "Allow and continue". The sheet does not print the vendor name; the disclosure is the transmission, the recipient category, and the handling terms.
 >
 > To see it: sign in, tap the + button, then Upload a PDF or Take photos. The sheet appears before the file picker, so nothing is transmitted before the user answers. Declining leaves manual contract entry and date reminders working. It is revocable at Settings, AI and Your Data, and our server returns 403 for any account with no consent recorded.
 >
-> The privacy policy at https://usecontraya.com/privacy names Anthropic, itemizes what is collected and shared, confirms every provider gives equal protection, and describes revoking consent.
+> The privacy policy at https://usecontraya.com/privacy describes the recipient as our data processor, itemizes what is collected and shared, confirms every provider gives equal protection, and describes revoking consent. The sheet links to it.
 >
 > DISCLAIMERS
 >
@@ -267,6 +283,11 @@ what was reviewed and it genuinely did not ask; replying without uploading
 1.0 (7) invites the same rejection back. Paste below the line:
 
 
+**SENT for 1.0 (7). HISTORICAL, do not paste again.** It accurately describes
+build 7, whose sheet DID name the provider. The 2026-08-30 decision removed the
+name from user-facing copy, so every "it names Anthropic" sentence below is
+false of build 8 onward. A revised reply follows this block.
+
 > Thank you for the review. You are right that build 6 sent user documents to a third-party AI service without asking first. Build 7 fixes it.
 >
 > WHO: Anthropic PBC, via api.anthropic.com. No other AI service is used, and no other third party receives document contents.
@@ -282,6 +303,23 @@ what was reviewed and it genuinely did not ask; replying without uploading
 > PRIVACY POLICY: https://usecontraya.com/privacy now names Anthropic in Sections 1 and 4, itemizes what is collected and how, confirms every provider gives the same or equal protection, and describes withdrawing consent and requesting deletion in Sections 5 and 6. The Terms name Anthropic as well.
 >
 > We understand that carrying this in the policy alone is not sufficient, which is why the consent sheet and the Settings control are both in the app.
+
+**Revised reply, for build 8 onward.** Answers the "who" prong to Apple directly,
+in the Review Notes, while the in-app sheet describes the recipient rather than
+naming it. If review pushes back on the missing name, that is the sentence to
+concede: restoring it is one line in `legal.ts` (`AI_PROVIDER_PUBLIC`).
+
+> WHO: Anthropic PBC, via api.anthropic.com. No other AI service is used, and no other third party receives document contents.
+>
+> WHAT IS SENT: the PDF or page photos the user selects. For Ask Contry, also their question and the contract details already extracted from that document.
+>
+> WHAT IS NOT SENT: the user's email address, name, and account identifier. The provider is not told whose document it is.
+>
+> PERMISSION: a full-screen sheet appears before any document leaves the device. It states that the reading happens off the device, that the document is sent to an outside company over an encrypted connection, what is and is not sent, that the content is not used for training and is deleted after a limited retention period, and it links to that company's privacy policy. It requires a tap on "Allow and continue". To see it: sign in, tap the + button, then Upload a PDF. The sheet appears before the file picker. "Not now" cancels, and the app still works for adding contracts by hand.
+>
+> WITHDRAWAL: Settings, AI and Your Data, which shows the same disclosure and a switch. Our server enforces it too, returning 403 for any account with no consent recorded, so a modified client cannot bypass it.
+>
+> PRIVACY POLICY: https://usecontraya.com/privacy itemizes what is collected and how, describes the AI processor and its handling terms, confirms every provider gives the same or equal protection, and describes withdrawing consent and requesting deletion in Sections 5 and 6.
 
 ---
 

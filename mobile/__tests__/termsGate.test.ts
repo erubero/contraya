@@ -15,6 +15,7 @@ import {
   TERMS_LINK_PRIVACY,
   TERMS_REQUIRED_ERROR,
   AI_PROVIDER,
+  AI_PROVIDER_PUBLIC,
 } from '@/lib/legal';
 
 const app = (...p: string[]) => path.join(__dirname, '..', 'app', ...p);
@@ -72,7 +73,16 @@ describe('the terms acceptance never stands in for the AI consent', () => {
   ];
 
   it.each(TERMS_COPY)('%s says nothing about AI or the provider', (copy) => {
-    expect(copy).not.toMatch(new RegExp(AI_PROVIDER, 'i'));
+    const lowered = copy.toLowerCase();
+    // Case-folded contains rather than new RegExp(...): these are copy
+    // constants, and building a pattern out of prose breaks the day one of
+    // them contains a regex metacharacter.
+    expect(lowered).not.toContain(AI_PROVIDER.toLowerCase());
+    // Since 2026-08-30 the copy says "an outside company" instead of naming the
+    // provider, so guarding the name alone would let the terms adopt the label
+    // and quietly start standing in for the AI consent. That merge is the exact
+    // thing this block exists to stop, so both strings are barred.
+    expect(lowered).not.toContain(AI_PROVIDER_PUBLIC.toLowerCase());
     expect(copy).not.toMatch(/\bAI\b/);
   });
 });

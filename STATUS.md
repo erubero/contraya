@@ -1,6 +1,66 @@
 # Contraya — STATUS (source of truth)
 
-Updated: 2026-08-23. Read this first.
+Updated: 2026-08-30. Read this first.
+
+## 2026-08-30 — 1.0 (7) rejected 2.1(a): three dead buttons, and then the name came out
+
+Two separate things happened today. They are unrelated in cause and both ride
+build 8.
+
+### 1. The rejection: 2.1(a), "did not respond when we tapped"
+
+Submission `77c0757f`, 1.0 (7), reviewed 2026-08-26 on an iPad Air 11-inch (M3).
+Upload the PDF, Photograph the pages and Choose from Library all did nothing.
+
+Those three are the three call sites of `ensureAiConsent()` in `add.tsx`. The
+gate shipped 2026-08-23 @ `7fee777`, three days before review, and the last
+device test was 2026-08-10, so **the consent flow had never run on hardware.**
+
+`AiConsentProvider` rendered the sheet itself, beside the `<Stack>` in
+`(app)/_layout.tsx`. React Native presents a `<Modal>` from the controller that
+owns where it is MOUNTED, not the frontmost one, and `add` is
+`presentation: 'modal'`. UIKit was asked to present on a controller already
+presenting, refused with a logged warning, and threw nothing. The promise never
+settled and the latched `resolver.current` then made every later tap return
+false. Reproduced on the simulator: `[REPRO] calling ensureAiConsent` followed
+by `Attempt to present <RCTFabricModalHostViewController> ... which is already
+presenting <RNSScreen>`, and no resolve line.
+
+**NOT an iPad bug**, despite the letter. `TARGETED_DEVICE_FAMILY = 1`, so Apple
+ran the iPhone build in compatibility mode on an iPad. Same controller
+hierarchy: the buttons were dead on iPhone too. Do not tell review this was an
+iPad fix.
+
+Fixed @ `28ed398`: the sheet is mounted by the asking screen via
+`<AiConsentHost />`, so its owner is that screen's own controller. Provider
+keeps the state plus a host stack, last mounted wins. A host unmounting mid-ask
+settles the promise; asking with no host mounted fails fast.
+`aiConsentGate.test.ts` fails the build if a screen asks without hosting.
+Build bumped to 8 @ `b85a9b5` (`app.config.ts` AND `ios/Contraya/Info.plist`,
+which is gitignored and carries the literal that ships; no prebuild).
+
+### 2. The provider name is out of user-facing copy
+
+Owner's decision, made twice in writing after I advised against it both times.
+Scope: the app AND the privacy policy and terms pages. `AI_PROVIDER` stays
+'Anthropic' for the App Review Notes, App Privacy answers, the store
+description and the two gate tests; `AI_PROVIDER_PUBLIC` = 'an outside company'
+is what users read. The consent sheet keeps a link to the provider's own privacy
+policy under a neutral label, so the name is one tap away in Safari.
+
+**What this costs, recorded so nobody has to rediscover it.** An unnamed
+third-party AI recipient is the shape 5.1.2(i) was written against, and the
+1.0 (6) entry below calls the euphemism "the single biggest self-inflicted
+wound". Of the four prongs Apple listed, build 6 failed all four; build 8 keeps
+what-is-sent, explicit-permission and the policy, and softens only who. The
+neutral label deliberately avoids the "third-party + role noun" shape of both
+rejected phrasings, and a test bars either from reappearing. **If review
+rejects on 5.1.2(i) again, the fix is one line: `AI_PROVIDER_PUBLIC =
+AI_PROVIDER`.** The App Privacy declaration still names Anthropic PBC while the
+sheet does not; that asymmetry is known and accepted, see STORE_LISTING §3.
+
+The entries below are the record as it stood on their dates. They say naming
+the provider is the fix, and that was true then. They are not edited.
 
 ## 2026-08-23 later — terms acceptance is explicit now, and deliberately NOT the AI consent
 
