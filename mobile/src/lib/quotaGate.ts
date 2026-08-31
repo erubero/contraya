@@ -29,10 +29,17 @@ export type GateDecision =
 export function analysisGate(input: {
   isPro: boolean;
   offeringReady: boolean;
+  ready: boolean;
   lifetime: number;
   month: number;
 }): GateDecision {
-  const { isPro, offeringReady, lifetime, month } = input;
+  const { isPro, offeringReady, ready, lifetime, month } = input;
+  // Same guard chatOpenGate got in efddd1b, and for the same reason: before the
+  // first entitlement read lands, isPro is just useState(false), so deciding
+  // here would be reading a default and calling it an answer. This gate was
+  // left out of that fix and out of the caller census below, which is why it
+  // went unnoticed for three weeks.
+  if (!ready) return 'allow';
   if (!isPro && offeringReady && lifetime >= FREE_ANALYSIS_LIFETIME_LIMIT) return 'paywall';
   if (isPro && month >= PRO_MONTHLY_ANALYSES) return 'quota';
   return 'allow';
@@ -43,10 +50,14 @@ export function analysisGate(input: {
  *
  * `ready` means the first entitlement read has completed. Until it has, isPro
  * is just useState(false) — cold start assumes not-pro — so a paywall decision
- * before `ready` would be made on a default, not on an answer. This was the
- * one paywall caller that skipped the guard (deviceCalendar checks `ready` at
- * its own gate), and it showed: navigating to chat could beat the resolve and
- * flash the paywall at a subscribed user.
+ * before `ready` would be made on a default, not on an answer. Navigating to
+ * chat could beat the resolve and flash the paywall at a subscribed user.
+ *
+ * The census that used to sit here claimed chat was "the one paywall caller
+ * that skipped the guard". It was wrong: analysisGate had no `ready` parameter
+ * at all, so it could not have been checked, and nobody noticed because the
+ * sentence read like an inventory. analysisGate takes it as of 2026-08-30.
+ * deviceCalendar checks `ready` at its own gate (deviceCalendar.ts:305).
  */
 export function chatOpenGate(input: {
   isPro: boolean;

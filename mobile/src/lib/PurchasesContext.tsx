@@ -36,6 +36,16 @@ export function PurchasesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
+      // 'loading' is NOT a state where the answer is known. AuthContext starts
+      // there on every cold start, and latching `ready` on the way past used to
+      // make this flag mean "we got here" instead of "pro status has been
+      // resolved", which is what line 11 promises and what deviceCalendar's
+      // "never act on a guess" check relies on. Cold start hid it because
+      // offeringReady was false too and every gate fails open; an in-process
+      // session swap did not, because offeringReady stays true from the
+      // previous refresh and the window is {ready, offering, !isPro}, which is
+      // a paywall on all three gates.
+      if (status === 'loading') return;
       if (!isConfigured || !purchasesConfigured || status !== 'signedIn') {
         setReady(true);
         return;

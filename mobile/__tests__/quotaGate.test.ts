@@ -8,8 +8,8 @@ import {
   PRO_MONTHLY_CHATS,
 } from '@/lib/limits';
 
-const free = { isPro: false, offeringReady: true };
-const pro = { isPro: true, offeringReady: true };
+const free = { isPro: false, offeringReady: true, ready: true };
+const pro = { isPro: true, offeringReady: true, ready: true };
 
 describe('analysisGate', () => {
   it('allows a free user below the lifetime limit', () => {
@@ -33,8 +33,26 @@ describe('analysisGate', () => {
     // what a store outage looks like. Never "fix" this into a block — it would
     // trap users behind a paywall they cannot buy.
     expect(
-      analysisGate({ isPro: false, offeringReady: false, lifetime: 999, month: 0 })
+      analysisGate({ isPro: false, offeringReady: false, ready: true, lifetime: 999, month: 0 })
     ).toBe('allow');
+  });
+
+  it('never paywalls before the entitlement has resolved', () => {
+    // The mirror of the chatOpenGate case below. Until the first read lands,
+    // isPro is useState(false), so paywalling here would be reading a default
+    // and calling it an answer. analysisGate went without this guard until
+    // 2026-08-30 while chat had it since efddd1b.
+    expect(
+      analysisGate({ isPro: false, offeringReady: true, ready: false, lifetime: 999, month: 0 })
+    ).toBe('allow');
+  });
+
+  it('still paywalls the same account once the read HAS landed', () => {
+    // Pins that the guard above is a timing guard and not an accidental
+    // amnesty: same inputs, ready flipped, opposite verdict.
+    expect(
+      analysisGate({ isPro: false, offeringReady: true, ready: true, lifetime: 999, month: 0 })
+    ).toBe('paywall');
   });
 
   it('allows a premium user below the monthly quota', () => {

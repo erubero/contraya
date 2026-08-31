@@ -310,6 +310,7 @@ export default function AddContract() {
     const decision = analysisGate({
       isPro,
       offeringReady,
+      ready,
       lifetime: counts.lifetime,
       month: counts.month,
     });

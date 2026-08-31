@@ -16,6 +16,7 @@ import { useTabBarClearance } from '@/components/TabBar';
 import { usePurchases } from '@/lib/PurchasesContext';
 import {
   purchasesConfigured, presentPaywall, restore, presentCustomerCenter, getAppUserId,
+  readEntitlementState, ENTITLEMENT,
 } from '@/lib/purchases';
 import { PRO_MONTHLY_ANALYSES, PRO_MONTHLY_CHATS } from '@/lib/limits';
 import { SectionTitle, SettingsGroup, SettingsRow, settingsCard } from '@/components/SettingsRow';
@@ -31,14 +32,16 @@ export default function Settings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { email, displayName, avatarPath, isDemo, signOut } = useAuth();
-  const { isPro, refresh: refreshPro } = usePurchases();
+  const { isPro, ready, offeringReady, refresh: refreshPro } = usePurchases();
 
   // For the diagnostics footer. Re-read when entitlement state moves, since
   // that is exactly when an identity switch would have happened.
   const [appUserId, setAppUserId] = useState<string | null>(null);
+  const [storeState, setStoreState] = useState<Awaited<ReturnType<typeof readEntitlementState>>>(null);
   useEffect(() => {
     let cancelled = false;
     getAppUserId().then((id) => { if (!cancelled) setAppUserId(id); });
+    readEntitlementState().then((s) => { if (!cancelled) setStoreState(s); });
     return () => { cancelled = true; };
   }, [isPro]);
 
@@ -263,14 +266,34 @@ export default function Settings() {
           billing bug turned entirely on WHICH App User ID was live, and there
           was no way to see it without a debugger: Apple said subscribed,
           RevenueCat said no, and the difference was invisible on device. The
-          id is the user's own account id, not a secret. */}
+          id is the user's own account id, not a secret.
+
+          The entitlement line was added 2026-08-30 after the same report came
+          back a third time. `isPro` alone cannot answer the only question that
+          matters when someone says "I am subscribed and it still paywalls me":
+          whether the entitlement is UNRESOLVED or resolved-and-absent. Those
+          need different fixes and look identical from the outside, so all
+          three flags are printed. Reading `entitlement: none` with
+          `resolved yes` means the store was asked and said no, which is a
+          dashboard problem and not a client one. */}
       <View style={{ alignItems: 'center', gap: 2, paddingTop: 4 }}>
         <Text style={{ color: theme.mutedForeground, fontSize: 12 }}>
           {`Contraya ${Constants.expoConfig?.version ?? ''} (${Constants.expoConfig?.ios?.buildNumber ?? ''})`}
         </Text>
         {appUserId ? (
-          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} numberOfLines={1}>
+          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} selectable numberOfLines={1}>
             {`Store identity: ${appUserId}`}
+          </Text>
+        ) : null}
+        {purchasesConfigured ? (
+          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} selectable>
+            {`${ENTITLEMENT}: ${isPro ? 'active' : 'none'} · resolved ${ready ? 'yes' : 'no'} · offering ${offeringReady ? 'yes' : 'no'}`}
+          </Text>
+        ) : null}
+        {storeState ? (
+          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} selectable>
+            {`store: ${storeState.activeIds.length ? storeState.activeIds.join(', ') : 'no active entitlements'}`}
+            {storeState.environment ? ` · ${storeState.environment}` : ''}
           </Text>
         ) : null}
       </View>

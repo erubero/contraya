@@ -13,7 +13,11 @@ import {
 const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
 const KEY = Platform.OS === 'android' ? ANDROID_KEY : IOS_KEY;
-const ENTITLEMENT = 'premium';
+export const ENTITLEMENT = 'premium';
+
+// Long enough that a slow sheet on a cold network is never cut short, short
+// enough that a dropped handler does not look like a frozen app.
+const PAYWALL_TIMEOUT_MS = 60_000;
 
 export const purchasesConfigured = KEY.length > 0;
 
@@ -81,6 +85,44 @@ export async function getAppUserId(): Promise<string | null> {
     return await Purchases.getAppUserID();
   } catch (err) {
     trace('getAppUserId', err);
+    return null;
+  }
+}
+
+/**
+ * What the store ACTUALLY says, for the diagnostics footer.
+ *
+ * Exists because the two billing bugs on this app both came down to a
+ * disagreement the device could not show: Apple says subscribed, RevenueCat
+ * says no entitlement, and the only way to tell "not resolved yet" from
+ * "resolved, and the answer is no" was a debugger. `isPro` alone cannot make
+ * that distinction, so it is not enough to print it.
+ *
+ * Returns null when the SDK never configured, which is itself the answer in
+ * that case. Never throws: a diagnostics surface that can crash Settings is
+ * worse than one that says nothing.
+ */
+export async function readEntitlementState(): Promise<{
+  activeIds: string[];
+  environment: string | null;
+  expires: string | null;
+} | null> {
+  if (!purchasesConfigured || !started) return null;
+  try {
+    const info = await Purchases.getCustomerInfo();
+    const active = info.entitlements.active;
+    const mine = active[ENTITLEMENT];
+    return {
+      activeIds: Object.keys(active),
+      // Sandbox vs production is one of the four things the dashboard check
+      // asks for, and it is knowable right here.
+      environment: (mine as { isSandbox?: boolean } | undefined)?.isSandbox === undefined
+        ? null
+        : (mine as { isSandbox?: boolean }).isSandbox ? 'sandbox' : 'production',
+      expires: (mine as { expirationDate?: string | null } | undefined)?.expirationDate ?? null,
+    };
+  } catch (err) {
+    trace('readEntitlementState', err);
     return null;
   }
 }
@@ -159,9 +201,23 @@ export async function presentPaywall(): Promise<boolean> {
     return true;
   }
   try {
-    const result = await RevenueCatUI.presentPaywallIfNeeded({
-      requiredEntitlementIdentifier: ENTITLEMENT,
-    });
+    // The timeout the 1aa4269 commit message said was here and never was.
+    // The bridge drops its result handler entirely when its own pre-check
+    // throws, so this promise can simply never settle, and an awaited gate
+    // then wedges forever with no sheet and no error. That is the same shape
+    // as the 2.1(a) rejection: a tap that does nothing, in silence.
+    //
+    // Timing out is not the same as denying. CustomerInfo is the truth per
+    // this file's rule, so the timeout falls through to the same re-read the
+    // non-success path uses rather than reporting no-access.
+    const result = await Promise.race([
+      RevenueCatUI.presentPaywallIfNeeded({ requiredEntitlementIdentifier: ENTITLEMENT }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), PAYWALL_TIMEOUT_MS)),
+    ]);
+    if (result === null) {
+      trace('presentPaywall', 'bridge did not settle, falling back to CustomerInfo');
+      return entitled(await Purchases.getCustomerInfo());
+    }
     if (
       result === PAYWALL_RESULT.NOT_PRESENTED ||
       result === PAYWALL_RESULT.PURCHASED ||
