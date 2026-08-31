@@ -4,6 +4,7 @@ import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import {
   RestoreOutcome, restoreErrorOutcome, restoreResultOutcome,
 } from '@/data/restoreOutcome';
+import { hasPremium, ENTITLEMENT, PREMIUM_PRODUCT_IDS } from '@/data/entitlement';
 
 // Thin wrapper around RevenueCat. The public SDK keys are safe to embed (like
 // the Supabase anon key). Everything no-ops when no key is set for the platform,
@@ -13,7 +14,10 @@ import {
 const IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '';
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
 const KEY = Platform.OS === 'android' ? ANDROID_KEY : IOS_KEY;
-export const ENTITLEMENT = 'premium';
+// Re-exported so call sites keep importing store concerns from the store
+// wrapper; the values and the rule live in the pure module so they are
+// testable without the native SDK.
+export { ENTITLEMENT, PREMIUM_PRODUCT_IDS };
 
 // Long enough that a slow sheet on a cold network is never cut short, short
 // enough that a dropped handler does not look like a frozen app.
@@ -21,8 +25,16 @@ const PAYWALL_TIMEOUT_MS = 60_000;
 
 export const purchasesConfigured = KEY.length > 0;
 
+/**
+ * Whether this customer has paid for premium. The rule is two-sourced on
+ * purpose (entitlement first, our own product ids as the floor beneath it) and
+ * the 2026-08-30 incident that made it so is documented in `data/entitlement.ts`.
+ */
 function entitled(info: CustomerInfo): boolean {
-  return info.entitlements.active[ENTITLEMENT] !== undefined;
+  return hasPremium({
+    entitlementIds: Object.keys(info.entitlements.active),
+    subscriptions: info.activeSubscriptions,
+  });
 }
 
 let started = false;
@@ -104,6 +116,7 @@ export async function getAppUserId(): Promise<string | null> {
  */
 export async function readEntitlementState(): Promise<{
   activeIds: string[];
+  subscriptions: string[];
   environment: string | null;
   expires: string | null;
 } | null> {
@@ -114,6 +127,9 @@ export async function readEntitlementState(): Promise<{
     const mine = active[ENTITLEMENT];
     return {
       activeIds: Object.keys(active),
+      // The half that names the 2026-08-30 bug on sight: a subscription here
+      // with nothing in activeIds is a dashboard mapping gap, not a free user.
+      subscriptions: [...info.activeSubscriptions],
       // Sandbox vs production is one of the four things the dashboard check
       // asks for, and it is knowable right here.
       environment: (mine as { isSandbox?: boolean } | undefined)?.isSandbox === undefined

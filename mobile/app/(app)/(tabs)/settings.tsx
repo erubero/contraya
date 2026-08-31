@@ -292,8 +292,18 @@ export default function Settings() {
         ) : null}
         {storeState ? (
           <Text style={{ color: theme.mutedForeground, fontSize: 10 }} selectable>
-            {`store: ${storeState.activeIds.length ? storeState.activeIds.join(', ') : 'no active entitlements'}`}
+            {`entitlements: ${storeState.activeIds.length ? storeState.activeIds.join(', ') : 'none'}`}
             {storeState.environment ? ` · ${storeState.environment}` : ''}
+          </Text>
+        ) : null}
+        {/* Printed next to the line above on purpose. A subscription here with
+            "entitlements: none" above it is the 2026-08-30 bug exactly: the
+            receipt is real and on the right account, and the dashboard has not
+            mapped the product to the entitlement. Reading them apart is what
+            made that take three sessions. */}
+        {storeState ? (
+          <Text style={{ color: theme.mutedForeground, fontSize: 10 }} selectable>
+            {`subscriptions: ${storeState.subscriptions.length ? storeState.subscriptions.join(', ') : 'none'}`}
           </Text>
         ) : null}
       </View>

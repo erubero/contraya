@@ -136,8 +136,18 @@ describe('invariants that span the client and the edge functions', () => {
 
   it('pins the RevenueCat entitlement identifier to "premium"', () => {
     // Hand-maintained in the RevenueCat dashboard across two repos. A drifted
-    // string here means every paying user reads as free, silently.
-    const src = read('src', 'lib', 'purchases.ts');
-    expect(src).toMatch(/const ENTITLEMENT = 'premium';/);
+    // string here means every paying user reads as free, silently. Moved out of
+    // purchases.ts on 2026-08-30 into the pure module, so it can be imported by
+    // a real test instead of only grepped.
+    const src = read('src', 'data', 'entitlement.ts');
+    expect(src).toMatch(/export const ENTITLEMENT = 'premium';/);
+  });
+
+  it('pins the product ids the entitlement is meant to map to', () => {
+    // These are the floor under the entitlement. A typo silently disables the
+    // fallback and restores the 2026-08-30 bug: a real subscriber, walled.
+    const src = read('src', 'data', 'entitlement.ts');
+    expect(src).toMatch(/'contraya_premium_monthly'/);
+    expect(src).toMatch(/'contraya_premium_annual'/);
   });
 });
